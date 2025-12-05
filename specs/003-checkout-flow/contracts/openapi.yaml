@@ -1,0 +1,149 @@
+openapi: 3.0.0
+info:
+  title: Checkout Flow API
+  version: 1.0.0
+  description: API for processing checkout orders.
+
+paths:
+  /api/orders:
+    post:
+      summary: Create a new order (Checkout)
+      operationId: createOrder
+      tags:
+        - Orders
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateOrderRequest'
+      responses:
+        '201':
+          description: Order created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrderResponse'
+        '400':
+          description: Invalid input (validation error)
+        '422':
+          description: Business logic error (e.g., out of stock)
+
+  /api/orders/{id}:
+    get:
+      summary: Get order details
+      operationId: getOrder
+      tags:
+        - Orders
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Order details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrderResponse'
+        '404':
+          description: Order not found
+
+components:
+  schemas:
+    CreateOrderRequest:
+      type: object
+      required:
+        - items
+        - purchaser
+        - shipping
+        - payment
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/OrderItemInput'
+        purchaser:
+          $ref: '#/components/schemas/PurchaserInfoInput'
+        shipping:
+          $ref: '#/components/schemas/ShippingInfoInput'
+        payment:
+          $ref: '#/components/schemas/PaymentInfoInput'
+        note:
+          type: string
+
+    OrderItemInput:
+      type: object
+      required:
+        - product_id
+        - quantity
+      properties:
+        product_id:
+          type: string
+          format: uuid
+        quantity:
+          type: integer
+          minimum: 1
+
+    PurchaserInfoInput:
+      type: object
+      required:
+        - name
+        - phone
+        - email
+      properties:
+        name:
+          type: string
+        phone:
+          type: string
+        email:
+          type: string
+          format: email
+
+    ShippingInfoInput:
+      type: object
+      required:
+        - recipient_name
+        - recipient_phone
+        - method
+      properties:
+        recipient_name:
+          type: string
+        recipient_phone:
+          type: string
+        method:
+          type: string
+          enum: [HOME_DELIVERY, STORE_PICKUP_711]
+        address:
+          type: string
+        store_id:
+          type: string
+        store_name:
+          type: string
+
+    PaymentInfoInput:
+      type: object
+      required:
+        - method
+      properties:
+        method:
+          type: string
+          enum: [CREDIT_CARD, COD, ATM]
+
+    OrderResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        status:
+          type: string
+        total_amount:
+          type: number
+        created_at:
+          type: string
+          format: date-time
+        # Include other fields as needed for display
