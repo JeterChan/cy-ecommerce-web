@@ -7,6 +7,8 @@ Auto-generated from all feature plans. Last updated: 2025-12-03
 - N/A (Frontend only, Mock Data) (001-product-catalog)
 - TypeScript 5.x (Node.js 18+) + Vue.js 3.x, Vite 5.x, Tailwind CSS 3.x, shadcn-vue, Pinia 2.x (002-shopping-cart)
 - LocalStorage (Client-side persistence) (002-shopping-cart)
+- Frontend: Vue 3 (Node 18+); Backend: Python 3.10+ (003-checkout-flow)
+- PostgreSQL (implied by existing backend) (003-checkout-flow)
 
 - (001-product-catalog)
 
@@ -27,9 +29,9 @@ tests/
 : Follow standard conventions
 
 ## Recent Changes
+- 003-checkout-flow: Added Frontend: Vue 3 (Node 18+); Backend: Python 3.10+
 - 002-shopping-cart: Added TypeScript 5.x (Node.js 18+) + Vue.js 3.x, Vite 5.x, Tailwind CSS 3.x, shadcn-vue, Pinia 2.x
 - 002-shopping-cart: Added [if applicable, e.g., PostgreSQL, CoreData, files or N/A]
-- 001-product-catalog: Added TypeScript 5.x (Node.js 18+) + Vue.js 3.x, Vite 5.x, Tailwind CSS 3.x, shadcn-vue, vue-router 4.x
 
 
 <!-- MANUAL ADDITIONS START -->
