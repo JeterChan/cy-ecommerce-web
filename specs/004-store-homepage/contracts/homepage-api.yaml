@@ -1,0 +1,74 @@
+openapi: 3.0.0
+info:
+  title: Homepage API
+  version: 1.0.0
+  description: API contracts for Store Homepage feature (Mock)
+
+paths:
+  /products/featured:
+    get:
+      summary: Get seasonal featured products
+      operationId: getFeaturedProducts
+      responses:
+        '200':
+          description: A list of featured products
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Product'
+
+  /categories:
+    get:
+      summary: Get list of product categories
+      operationId: getCategories
+      responses:
+        '200':
+          description: List of available categories
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: string
+
+  /promotion/current:
+    get:
+      summary: Get current promotion rule
+      operationId: getCurrentPromotion
+      responses:
+        '200':
+          description: Current active promotion
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Promotion'
+
+components:
+  schemas:
+    Product:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        price:
+          type: number
+        imageUrl:
+          type: string
+        is_featured:
+          type: boolean
+    
+    Promotion:
+      type: object
+      properties:
+        title:
+          type: string
+        description:
+          type: string
+        threshold:
+          type: number
+        discount_rate:
+          type: number
