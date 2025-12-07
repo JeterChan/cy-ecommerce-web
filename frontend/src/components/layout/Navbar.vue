@@ -77,7 +77,7 @@ const navigateToCategory = (category: string) => {
 
       <!-- Logo -->
       <RouterLink to="/" class="mr-6 flex items-center space-x-2">
-        <span class="hidden font-bold sm:inline-block text-xl">CY Shop</span>
+        <span class="hidden font-bold sm:inline-block text-xl">CY E-Commerce</span>
         <span class="font-bold sm:hidden text-xl">CY</span>
       </RouterLink>
 

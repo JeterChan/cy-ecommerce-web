@@ -8,6 +8,10 @@ import PurchaserForm from '@/components/Checkout/PurchaserForm.vue'
 import ShippingForm from '@/components/Checkout/ShippingForm.vue'
 import PaymentMethod from '@/components/Checkout/PaymentMethod.vue'
 import { useCheckoutValidation } from '@/composables/useCheckoutValidation'
+import Navbar from '@/components/layout/Navbar.vue'
+import Footer from '@/components/layout/Footer.vue'
+import { Button } from '@/components/ui/button'
+import { ArrowLeft } from 'lucide-vue-next'
 
 const router = useRouter()
 const store = useCheckoutStore()
@@ -45,50 +49,64 @@ const handleSubmit = async () => {
     console.error(e)
   }
 }
+const goBackToCart = () => {
+  router.push('/cart')
+}
 </script>
 
 <template>
-  <div class="container mx-auto px-4 py-8">
-    <h1 class="text-2xl font-bold mb-6">結帳</h1>
-    
-    <!-- Error Alert -->
-    <div v-if="error" class="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded mb-6 relative" role="alert">
-      <span class="block sm:inline">{{ error }}</span>
-    </div>
+  <div class="min-h-screen bg-background flex flex-col">
+    <Navbar />
 
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-      <!-- Steps will go here -->
-      <div class="space-y-6">
-        <!-- Forms -->
-        <PurchaserForm 
-          v-model="purchaser" 
-          :errors="errors"
-        />
-        
-        <ShippingForm 
-          v-model="shipping" 
-          v-model:note="orderNote"
-          :errors="errors"
-        />
+    <main class="flex-grow container mx-auto px-4 py-8">
+      <div class="flex items-center justify-between mb-6">
+        <h1 class="text-2xl font-bold">結帳</h1>
+        <Button variant="ghost" @click="goBackToCart" class="text-muted-foreground hover:text-primary">
+          <ArrowLeft class="mr-2 h-4 w-4" /> 返回購物車
+        </Button>
+      </div>
+      
+      <!-- Error Alert -->
+      <div v-if="error" class="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded mb-6 relative" role="alert">
+        <span class="block sm:inline">{{ error }}</span>
+      </div>
 
-        <PaymentMethod 
-          v-model="payment"
-        />
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <!-- Steps will go here -->
+        <div class="space-y-6">
+          <!-- Forms -->
+          <PurchaserForm 
+            v-model="purchaser" 
+            :errors="errors"
+          />
+          
+          <ShippingForm 
+            v-model="shipping" 
+            v-model:note="orderNote"
+            :errors="errors"
+          />
+
+          <PaymentMethod 
+            v-model="payment"
+          />
+        </div>
+        <div>
+          <OrderSummary />
+          <Button 
+            @click="handleSubmit"
+            :disabled="isSubmitting"
+            class="w-full h-14 text-lg font-bold mt-6"
+          >
+            <svg v-if="isSubmitting" class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            {{ isSubmitting ? '處理中...' : '送出訂單' }}
+          </Button>
+        </div>
       </div>
-      <div>
-        <OrderSummary />
-        <button 
-          @click="handleSubmit"
-          :disabled="isSubmitting"
-          class="w-full bg-slate-900 text-white py-4 rounded-lg font-bold text-lg hover:bg-slate-800 transition-transform active:scale-[0.98] shadow-lg hover:shadow-xl mt-6 disabled:opacity-50 disabled:cursor-not-allowed flex justify-center items-center"
-        >
-          <svg v-if="isSubmitting" class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-          </svg>
-          {{ isSubmitting ? '處理中...' : '送出訂單' }}
-        </button>
-      </div>
-    </div>
+    </main>
+
+    <Footer />
   </div>
 </template>

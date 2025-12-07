@@ -28,9 +28,17 @@ const formatPrice = (price: number) => {
       <span class="font-bold text-slate-900 text-2xl">{{ formatPrice(totalAmount) }}</span>
     </div>
     
-    <button @click="$router.push('/checkout')" class="w-full bg-slate-900 text-white py-4 rounded-lg font-bold text-lg hover:bg-slate-800 transition-transform active:scale-[0.98] shadow-lg hover:shadow-xl">
-      前往結帳
-    </button>
+        <button 
+    
+          @click="$router.push('/checkout')" 
+    
+          class="w-full bg-primary text-primary-foreground py-4 rounded-lg font-bold text-lg hover:bg-primary/90 transition-transform active:scale-[0.98] shadow-lg hover:shadow-xl"
+    
+        >
+    
+          前往結帳
+    
+        </button>
     <p class="text-center text-xs text-gray-400 mt-3">
       * 此為展示頁面，不提供實際結帳功能
     </p>

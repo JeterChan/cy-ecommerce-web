@@ -5,6 +5,7 @@ export interface Product {
   price: number;
   imageUrl: string;
   tags: string[];
+  is_featured?: boolean;
 }
 
 export interface ProductListResponse {
@@ -17,6 +18,7 @@ export interface ProductListResponse {
 export interface ProductSearchParams {
   query?: string;
   tag?: string;
+  tags?: string[];
   page?: number;
   limit?: number;
 }
