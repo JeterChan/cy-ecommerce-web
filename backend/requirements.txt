@@ -26,3 +26,6 @@ pytest-asyncio>=0.21.0
 httpx>=0.24.0
 ruff>=0.0.280
 black>=23.7.0
+
+#  Code Formatter
+black>=23.7.0
