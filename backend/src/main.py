@@ -8,15 +8,15 @@ app = FastAPI(
     openapi_url="/api/openapi.json",
 )
 
+
 @app.get("/api")
 async def root():
     return {
         "message": "Welcome to the CyWeb E-commerce Backend API!",
-        "status": "running"
+        "status": "running",
     }
+
 
 @app.get("/api/health")
 async def health_check():
-    return {
-        "status": "ok"
-    }
+    return {"status": "ok"}
