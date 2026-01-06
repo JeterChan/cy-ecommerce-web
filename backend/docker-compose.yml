@@ -1,0 +1,40 @@
+services:
+  api:
+    build: .
+    container_name: ecommerce_api
+    ports:
+      - "8000:8000" # Map port 8000 of the container to port 8000 on the host
+    volumes:
+      - ./src:/app/src # Mount the src directory to /app/src in the container
+    environment:
+      - DATABASE_URL=postgresql://user:password@db:5432/ecommerce_db
+      - REDIS_URL=redis://cache:6379/0
+    depends_on:
+      - db
+      - redis
+    restart: always
+
+  # PostgreSQL
+  db:
+    image: postgres:15-alpine
+    container_name: ecommerce_db
+    ports:
+      - "5432:5432" # Map port 5432 of the container to port 5432 on the host
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: ecommerce_db
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    restart: always
+
+  # Redis
+  redis:
+    image: redis:7-alpine
+    container_name: ecommerce_redis
+    ports:
+      - "6379:6379" # Map port 6379 of the container to port 6379 on the host
+    restart: always
+
+volumes:
+  postgres_data:
