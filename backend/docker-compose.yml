@@ -6,9 +6,17 @@ services:
       - "8000:8000" # Map port 8000 of the container to port 8000 on the host
     volumes:
       - ./src:/app/src # Mount the src directory to /app/src in the container
+      - ./tests:/app/tests # Mount the tests directory to /app/tests in the container
+      - ./alembic:/app/alembic # Mount the alembic directory to /app/alembic in the container
+      - ./alembic.ini:/app/alembic.ini
     environment:
-      - DATABASE_URL=postgresql://user:password@db:5432/ecommerce_db
-      - REDIS_URL=redis://cache:6379/0
+      - DATABASE_URL=postgresql+asyncpg://${DB_USER}:${DB_PASSWORD}@db:5432/${DB_NAME}
+      - REDIS_URL=${REDIS_URL}
+      - SECRET_KEY=${SECRET_KEY}
+      - ALGORITHM=${ALGORITHM}
+      - ACCESS_TOKEN_EXPIRE_MINUTES=${ACCESS_TOKEN_EXPIRE_MINUTES}
+    env_file:
+      - .env
     depends_on:
       - db
       - redis
@@ -19,11 +27,13 @@ services:
     image: postgres:15-alpine
     container_name: ecommerce_db
     ports:
-      - "5432:5432" # Map port 5432 of the container to port 5432 on the host
+      - "${DB_PORT}:5432" # Map port 5432 of the container to port 5432 on the host
     environment:
-      POSTGRES_USER: user
-      POSTGRES_PASSWORD: password
-      POSTGRES_DB: ecommerce_db
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME}
+    env_file:
+      - .env
     volumes:
       - postgres_data:/var/lib/postgresql/data
     restart: always
