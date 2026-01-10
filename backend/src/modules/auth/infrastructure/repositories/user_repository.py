@@ -21,12 +21,27 @@ class UserRepository(IUserRepository):
 
     def __init__(self, session: AsyncSession):
         """
-        init repository
-        :param session: SQLAlchemy 異步 Session (由 FastAPI Dependency 注入)
+        Store the provided asynchronous SQLAlchemy session for use by repository methods.
+        
+        Parameters:
+            session (AsyncSession): Asynchronous SQLAlchemy session used for database operations (e.g., injected dependency).
         """
         self.session = session
 
     async def create(self, user:UserEntity) -> UserEntity:
+        """
+        Persist the given domain UserEntity and return the persisted entity with database-generated fields populated.
+        
+        Parameters:
+            user (UserEntity): Domain user entity to persist.
+        
+        Returns:
+            UserEntity: The persisted user entity with database-generated fields (e.g., id, created_at, updated_at) populated.
+        
+        Raises:
+            DuplicateEmailError: If a user with the same email already exists.
+            IntegrityError: Re-raises other integrity violations from the database.
+        """
         try:
             # Entity -> ORM Model
             user_model = self._entity_to_model(user)
@@ -52,7 +67,13 @@ class UserRepository(IUserRepository):
     @staticmethod
     def _entity_to_model(entity: UserEntity) -> UserModel:
         """
-        Entity -> ORM Model 轉換
+        Convert a domain UserEntity into a UserModel with corresponding field values.
+        
+        Parameters:
+            entity (UserEntity): Domain user entity to convert.
+        
+        Returns:
+            UserModel: ORM model populated with the entity's id, username, email, password_hash, is_activate, created_at, and updated_at.
         """
 
         return UserModel(
@@ -68,7 +89,13 @@ class UserRepository(IUserRepository):
     @staticmethod
     def _model_to_entity(model:UserModel) -> UserEntity:
         """
-        ORM Model -> Entity
+        Convert a UserModel ORM instance into a UserEntity domain object.
+        
+        Parameters:
+            model (UserModel): ORM user model to convert.
+        
+        Returns:
+            UserEntity: Domain representation with id, username, email, password_hash, is_activate, created_at, and updated_at populated from the ORM model.
         """
 
         return UserEntity(

@@ -31,11 +31,18 @@ class RegisterUserInputDTO(BaseModel):
     @classmethod
     def validate_username(cls, value: str) -> str:
         """
-        驗證使用者名稱格式
-
-        規則：
-        - 只能包含字母、數字、底線、連字號
-        - 不能以底線或連字號開頭/結尾
+        Validate and normalize a username.
+        
+        Enforces that the username contains only letters, digits, underscores, or hyphens and does not start or end with an underscore or hyphen; returns the username converted to lowercase.
+        
+        Parameters:
+            value (str): The raw username to validate.
+        
+        Returns:
+            str: The validated username in lowercase.
+        
+        Raises:
+            ValueError: If the username contains invalid characters or starts/ends with an underscore or hyphen.
         """
         if not value.replace("_", "").replace("-", "").isalnum():
             raise ValueError(
@@ -53,12 +60,13 @@ class RegisterUserInputDTO(BaseModel):
     @classmethod
     def validate_password(cls, value: str) -> str:
         """
-        驗證密碼強度
-
-        規則：
-        - 至少包含一個大寫字母
-        - 至少包含一個小寫字母
-        - 至少包含一個數字
+        Ensure the password contains at least one uppercase letter, one lowercase letter, and one digit.
+        
+        Returns:
+            The original password string.
+        
+        Raises:
+            ValueError: If the password is missing an uppercase letter, lowercase letter, or digit.
         """
         if not any(c.isupper() for c in value):
             raise ValueError("Password must contain at least one uppercase letter")
