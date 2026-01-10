@@ -1,6 +1,8 @@
 from abc import ABC, abstractmethod
 from typing import Optional, List
 
+from pydantic import UUID4
+
 from src.modules.auth.domain.entities import UserEntity
 
 class IUserRepository(ABC):
@@ -31,7 +33,7 @@ class IUserRepository(ABC):
         pass
 
     @abstractmethod
-    async def get_by_id(self, user_id: int) -> Optional[UserEntity]:
+    async def get_by_id(self, user_id: UUID4) -> Optional[UserEntity]:
         """
         根據 ID 查詢 User
         :param user_id: 使用者 ID
