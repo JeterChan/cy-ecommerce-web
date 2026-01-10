@@ -15,17 +15,16 @@ async def register_user(
         db: AsyncSession = Depends(get_db)
 ):
     """
-    註冊新使用者 API
-
-    依賴注入流程：
-    1. FastAPI 驗證 RegisterRequest
-    2. 轉換為 RegisterUserInputDTO
-    3. 注入 AsyncSession
-    4. 建立 UserRepository
-    5. 建立 RegisterUserUseCase
-    6. 執行業務邏輯
-    7. 返回 RegisterResponse
-    """
+        Register a new user and return the created user's data.
+        
+        Creates a user from the provided request and returns a RegisterResponse with the new user's id, username, email, activation flag, and creation timestamp.
+        
+        Returns:
+            RegisterResponse: Contains `id`, `username`, `email`, `is_activate`, and `created_at` (ISO 8601 string or `None`).
+        
+        Raises:
+            HTTPException: With status 400 Bad Request when the provided email is already in use.
+        """
     try:
         # API Request -> Use Case Input DTO
         input_dto = RegisterUserInputDTO(

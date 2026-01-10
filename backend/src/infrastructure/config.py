@@ -19,6 +19,12 @@ class Settings(BaseSettings):
     @property
     def database_url(self) -> str:
         # 如果是 Docker 內部通訊，或者是外部連線，格式統一處理
+        """
+        Builds the SQLAlchemy+asyncpg PostgreSQL connection URL from the current settings.
+        
+        Returns:
+            str: Connection URL formatted as "postgresql+asyncpg://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}".
+        """
         return f"postgresql+asyncpg://{self.DB_USER}:{self.DB_PASSWORD}@{self.DB_HOST}:{self.DB_PORT}/{self.DB_NAME}"
 
     model_config = {

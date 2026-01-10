@@ -17,17 +17,43 @@ REFRESH_TOKEN_EXPIRE_DAYS = int(os.getenv("REFRESH_TOKEN_EXPIRE_DAYS", 7))
 
 # 密碼處理
 def verify_password(plain_password: str, hashed_password: str) -> bool:
-    """Verify a plain password against its hash."""
+    """
+    Determine whether a plaintext password matches a stored hashed password.
+    
+    Parameters:
+    	plain_password (str): Plaintext password to verify.
+    	hashed_password (str): Stored hashed password to compare against.
+    
+    Returns:
+    	bool: `True` if `plain_password` matches `hashed_password`, `False` otherwise.
+    """
     return pwd_context.verify(plain_password, hashed_password)
 
 # 註冊時使用, 將明文的密碼加密, 未來用於儲存在資料庫
 def get_password_hash(password: str) -> str:
-    """Hash a password using bcrypt."""
+    """
+    Generate a secure hashed representation of a password for storage.
+    
+    Parameters:
+        password (str): Plaintext password to hash.
+    
+    Returns:
+        str: Hashed password suitable for storage.
+    """
     return pwd_context.hash(password)
 
 # Token 生成
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -> str:
-    """Create a JWT access token."""
+    """
+    Create a JWT access token containing the provided claims and an expiration.
+    
+    Parameters:
+        data (dict): Claims to include in the token (e.g., "sub" for subject, "user_id", "role").
+        expires_delta (Optional[timedelta]): Optional custom time span to set the token's expiration; when omitted a default expiry is used.
+    
+    Returns:
+        encoded_jwt (str): Encoded JWT string containing the provided claims plus an "exp" claim and a "type" set to "access".
+    """
     # data 內容
     # data = {
     #   "sub" -> 用戶識別
@@ -51,7 +77,15 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -
     return encoded_jwt
 
 def create_refresh_token(data: dict) -> str:
-    """Create a JWT refresh token."""
+    """
+    Create a refresh JWT that includes the provided claims and an expiration.
+    
+    Parameters:
+        data (dict): Claims to include in the token payload.
+    
+    Returns:
+        refresh_token (str): Encoded JWT string containing the provided claims plus an "exp" claim set to the refresh expiry and a "type" claim with value "refresh".
+    """
     to_encode = data.copy()
     expire = datetime.now(timezone.utc) + timedelta(days=REFRESH_TOKEN_EXPIRE_DAYS)
     to_encode.update({"exp": expire, "type": "refresh"})
@@ -60,7 +94,17 @@ def create_refresh_token(data: dict) -> str:
 
 # Token 驗證
 def verify_token(token :str, token_type: str = "access") -> Optional[dict]:
-    """Verify and decode a JWT token."""
+    """
+    Validate a JWT and return its decoded payload when its `type` claim matches the expected token_type.
+    
+    Parameters:
+        token (str): The JWT string to validate and decode.
+        token_type (str): Expected value of the payload's `type` claim (defaults to "access").
+    
+    Returns:
+        dict: Decoded JWT payload if the token is valid and its `type` claim equals `token_type`.
+        `None`: If the token is invalid, cannot be decoded, or the `type` claim does not match.
+    """
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         if payload.get("type") != token_type:
