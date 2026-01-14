@@ -1,4 +1,4 @@
-from src.shared.domain.entity import BaseEntity
+from shared.domain.entity import BaseEntity
 from pydantic import EmailStr
 
 class UserEntity(BaseEntity):
@@ -6,17 +6,17 @@ class UserEntity(BaseEntity):
     email:EmailStr
     username:str
     password_hash:str
-    is_activate: bool = True
+    is_active: bool = True
 
     def activate(self) -> None:
         """啟用使用者帳號"""
-        self.is_activate = True
+        self.is_active = True
 
     def deactivate(self) -> None:
         """停用使用者帳號"""
-        self.is_activate = False
+        self.is_active = False
 
     def verify_password(self, plain_password: str) -> bool:
         """驗證密碼"""
-        from src.core.security import verify_password
+        from core.security import verify_password
         return verify_password(plain_password, self.password_hash)
