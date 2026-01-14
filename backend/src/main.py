@@ -1,5 +1,4 @@
 from fastapi import FastAPI
-from fastapi.exceptions import RequestValidationError
 
 from infrastructure.database import recreate_all
 from contextlib import asynccontextmanager
@@ -14,15 +13,7 @@ from core.exceptions import (
     InvalidCredentialsError,
     ValidationError
 )
-
-from core.exceptions import (
-    DuplicateEmailError,
-    UserNotFoundError,
-    InvalidCredentialsError,
-    ValidationError
-)
 from core.exception_handlers import (
-    pydantic_validation_exception_handler,
     resource_not_found_exception_handler,
     business_rule_violation_exception_handler,
     domain_exception_handler,

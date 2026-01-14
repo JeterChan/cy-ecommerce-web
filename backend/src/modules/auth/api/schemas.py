@@ -1,3 +1,5 @@
+from typing import Optional
+
 from pydantic import BaseModel, EmailStr, Field, ConfigDict
 from uuid import UUID
 from datetime import datetime
@@ -34,7 +36,7 @@ class RegisterResponse(UserBase):
     id: UUID = Field(..., description="使用者ID")
     is_active: bool = Field(default=True, description="帳號啟用狀態")
     created_at: datetime = Field(..., description="建立時間")
-    updated_at: datetime = Field(None, description="更新時間")
+    updated_at: Optional[datetime] = Field(None, description="更新時間")
 
     model_config = ConfigDict(
         from_attributes=True, # 允許從 User Entity 讀取

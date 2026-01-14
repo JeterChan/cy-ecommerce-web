@@ -8,7 +8,8 @@ from infrastructure.database import get_db
 from modules.auth.api.schemas import (
     RegisterResponse,
     LoginRequest,
-    LoginResponse
+    LoginResponse,
+    RegisterRequest
 )
 from modules.auth.infrastructure.repositories.user_repository import UserRepository
 from modules.auth.use_cases import (
@@ -18,7 +19,7 @@ from modules.auth.use_cases import (
     LoginUserUseCase
 )
 
-router = APIRouter(prefix="/auth", tags=["Authentication"])
+router = APIRouter(prefix="/api/v1/auth", tags=["Authentication"])
 
 # HTTP Bearer 認證 scheme
 security = HTTPBearer()
@@ -82,11 +83,11 @@ async def get_current_user(
 # ==================== API Endpoints ====================
 
 @router.post(
-    "/api/v1/auth/register",
+    "/register",
     status_code=status.HTTP_201_CREATED,
     response_model=RegisterResponse)
 async def register_user(
-        input_dto: RegisterUserInputDTO,
+        request: RegisterRequest,
         db: AsyncSession = Depends(get_db)
 ):
     """
@@ -101,6 +102,12 @@ async def register_user(
     6. 執行業務邏輯
     7. 返回 RegisterResponse
     """
+    # API schema -> Use Case DTO
+    input_dto = RegisterUserInputDTO(
+        email=request.email,
+        username=request.username,
+        password=request.password
+    )
 
     # 建立 Repository 和 Use Case
     user_repo = UserRepository(db)
@@ -121,7 +128,7 @@ async def register_user(
 
 
 @router.post(
-    "/api/v1/auth/login",
+    "/login",
     status_code=status.HTTP_200_OK,
     response_model=LoginResponse
 )
@@ -188,7 +195,7 @@ async def login_user(
 
 
 @router.get(
-    "/api/v1/auth/users/me",
+    "/users/me",
     status_code=status.HTTP_200_OK,
     response_model=RegisterResponse
 )
