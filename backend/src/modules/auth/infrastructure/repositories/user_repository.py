@@ -1,12 +1,12 @@
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, update, delete
-from typing import Optional, List
+from sqlalchemy import select
+from typing import Optional
 from sqlalchemy.exc import IntegrityError
 
-from src.modules.auth.domain.repositories.i_user_repository import IUserRepository
-from src.modules.auth.domain.entities import UserEntity
-from src.modules.auth.infrastructure.models.user import UserModel
-from src.core.exceptions import DuplicateEmailError, UserNotFoundError
+from modules.auth.domain.repositories.i_user_repository import IUserRepository
+from modules.auth.domain.entity import UserEntity
+from modules.auth.infrastructure.models.user import UserModel
+from core.exceptions import DuplicateEmailError
 
 class UserRepository(IUserRepository):
     """
@@ -21,33 +21,20 @@ class UserRepository(IUserRepository):
 
     def __init__(self, session: AsyncSession):
         """
-        Store the provided asynchronous SQLAlchemy session for use by repository methods.
-        
-        Parameters:
-            session (AsyncSession): Asynchronous SQLAlchemy session used for database operations (e.g., injected dependency).
+        init repository
+        :param session: SQLAlchemy 異步 Session (由 FastAPI Dependency 注入)
         """
         self.session = session
 
     async def create(self, user:UserEntity) -> UserEntity:
-        """
-        Persist the given domain UserEntity and return the persisted entity with database-generated fields populated.
-        
-        Parameters:
-            user (UserEntity): Domain user entity to persist.
-        
-        Returns:
-            UserEntity: The persisted user entity with database-generated fields (e.g., id, created_at, updated_at) populated.
-        
-        Raises:
-            DuplicateEmailError: If a user with the same email already exists.
-            IntegrityError: Re-raises other integrity violations from the database.
-        """
         try:
             # Entity -> ORM Model
             user_model = self._entity_to_model(user)
 
             # add to Session
             self.session.add(user_model)
+
+            await self.session.commit()
 
             # 刷新以得到db生成的欄位
             await self.session.refresh(user_model)
@@ -63,25 +50,43 @@ class UserRepository(IUserRepository):
 
             raise
 
+    async def exists_by_email(self, email:str) -> bool:
+        stmt = select(UserModel).where(UserModel.email == email)
+        result = await self.session.execute(stmt)
+        user = result.scalar_one_or_none()
+        return user is not None
+
+    async def get_by_email(self, email: str) -> Optional[UserEntity]:
+        """
+        根據 email 查詢使用者
+
+        Args:
+            email: 使用者電子郵件
+
+        Returns:
+            User Entity 或 None（如果不存在）
+        """
+        stmt = select(UserModel).where(UserModel.email == email)
+        result = await self.session.execute(stmt)
+        user_model = result.scalar_one_or_none()
+
+        if user_model is None:
+            return None
+
+        return self._model_to_entity(user_model)
 
     @staticmethod
     def _entity_to_model(entity: UserEntity) -> UserModel:
         """
-        Convert a domain UserEntity into a UserModel with corresponding field values.
-        
-        Parameters:
-            entity (UserEntity): Domain user entity to convert.
-        
-        Returns:
-            UserModel: ORM model populated with the entity's id, username, email, password_hash, is_activate, created_at, and updated_at.
+        Entity -> ORM Model 轉換
         """
 
         return UserModel(
             id=entity.id,
             username=entity.username,
-            email=entity.email,
+            email=str(entity.email),  # EmailStr -> str
             password_hash=entity.password_hash,
-            is_activate=entity.is_activate,
+            is_active=entity.is_active,
             created_at=entity.created_at,
             updated_at=entity.updated_at,
         )
@@ -89,21 +94,16 @@ class UserRepository(IUserRepository):
     @staticmethod
     def _model_to_entity(model:UserModel) -> UserEntity:
         """
-        Convert a UserModel ORM instance into a UserEntity domain object.
-        
-        Parameters:
-            model (UserModel): ORM user model to convert.
-        
-        Returns:
-            UserEntity: Domain representation with id, username, email, password_hash, is_activate, created_at, and updated_at populated from the ORM model.
+        ORM Model -> Entity
+        Pydantic 會自動驗證並轉換 str 為 EmailStr
         """
 
         return UserEntity(
             id=model.id,
             username=model.username,
-            email=model.email,
+            email=model.email,  # type: ignore[arg-type]  # Pydantic 自動處理 str -> EmailStr
             password_hash=model.password_hash,
-            is_activate=model.is_activate,
+            is_active=model.is_active,
             created_at=model.created_at,
             updated_at=model.updated_at,
         )

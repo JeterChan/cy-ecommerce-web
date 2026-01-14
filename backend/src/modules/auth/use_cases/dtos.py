@@ -1,6 +1,7 @@
 from pydantic import BaseModel, EmailStr, Field, field_validator, UUID4
 from datetime import datetime
 from typing import Optional
+from modules.auth.domain.value_objects.password import Password
 
 # Use Case : register
 class RegisterUserInputDTO(BaseModel):
@@ -31,18 +32,11 @@ class RegisterUserInputDTO(BaseModel):
     @classmethod
     def validate_username(cls, value: str) -> str:
         """
-        Validate and normalize a username.
-        
-        Enforces that the username contains only letters, digits, underscores, or hyphens and does not start or end with an underscore or hyphen; returns the username converted to lowercase.
-        
-        Parameters:
-            value (str): The raw username to validate.
-        
-        Returns:
-            str: The validated username in lowercase.
-        
-        Raises:
-            ValueError: If the username contains invalid characters or starts/ends with an underscore or hyphen.
+        驗證使用者名稱格式
+
+        規則：
+        - 只能包含字母、數字、底線、連字號
+        - 不能以底線或連字號開頭/結尾
         """
         if not value.replace("_", "").replace("-", "").isalnum():
             raise ValueError(
@@ -60,13 +54,12 @@ class RegisterUserInputDTO(BaseModel):
     @classmethod
     def validate_password(cls, value: str) -> str:
         """
-        Ensure the password contains at least one uppercase letter, one lowercase letter, and one digit.
-        
-        Returns:
-            The original password string.
-        
-        Raises:
-            ValueError: If the password is missing an uppercase letter, lowercase letter, or digit.
+        驗證密碼強度
+
+        規則：
+        - 至少包含一個大寫字母
+        - 至少包含一個小寫字母
+        - 至少包含一個數字
         """
         if not any(c.isupper() for c in value):
             raise ValueError("Password must contain at least one uppercase letter")
@@ -84,7 +77,74 @@ class RegisterUserInputDTO(BaseModel):
             "example": {
                 "username": "john_doe",
                 "email": "john@example.com",
+                "created_at": "2024-01-15T10:30:00Z"
+            }
+        }
+
+
+# Use Case: login
+class LoginUserInputDTO(BaseModel):
+    """登入 Use Case 的 Input"""
+    email: EmailStr = Field(
+        ...,
+        description="電子郵件",
+        examples=["user@example.com"]
+    )
+
+    password: str = Field(
+        ...,
+        min_length=8,
+        max_length=128,
+        description="密碼",
+        examples=["SecurePassword123!"]
+    )
+
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "email": "john@example.com",
                 "password": "SecurePass123!"
+            }
+        }
+
+
+class LoginUserOutputDTO(BaseModel):
+    """
+    登入 Use Case 的 Output DTO
+    職責：
+    - 返回使用者資料和 JWT tokens
+    - 隱藏敏感資訊（如 password_hash）
+    """
+
+    # 使用者資料
+    id: UUID4 = Field(..., description="使用者 ID")
+    username: str = Field(..., description="使用者名稱")
+    email: EmailStr = Field(..., description="電子郵件")
+    is_active: bool = Field(..., description="是否啟用")
+    created_at: Optional[datetime] = Field(None, description="建立時間")
+    updated_at: Optional[datetime] = Field(None, description="更新時間")
+
+    # JWT tokens
+    access_token: str = Field(..., description="Access Token")
+    token_type: str = Field(default="bearer", description="Token 類型")
+    refresh_token: Optional[str] = Field(None, description="Refresh Token")
+
+    class Config:
+        from_attributes = True
+        json_encoders = {
+            datetime: lambda v: v.isoformat(),
+        }
+        json_schema_extra = {
+            "example": {
+                "id": "550e8400-e29b-41d4-a716-446655440000",
+                "username": "john_doe",
+                "email": "john@example.com",
+                "is_active": True,
+                "created_at": "2024-01-15T10:30:00Z",
+                "updated_at": "2024-01-15T10:30:00Z",
+                "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+                "token_type": "bearer",
+                "refresh_token": None
             }
         }
 
@@ -102,9 +162,13 @@ class RegisterUserOutputDTO(BaseModel):
     email: EmailStr = Field(..., description="電子郵件")
     is_active: bool = Field(..., description="是否啟用")
     created_at: Optional[datetime] = Field(None, description="建立時間")
+    updated_at: Optional[datetime] = Field(None, description="更新時間")
 
     class Config:
         from_attributes = True  # 允許從 ORM 模型轉換
+        json_encoders = {
+            datetime: lambda v: v.isoformat(),
+        }
         json_schema_extra = {
             "example": {
                 "id": 1,

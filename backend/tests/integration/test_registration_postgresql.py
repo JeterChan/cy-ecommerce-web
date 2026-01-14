@@ -193,18 +193,18 @@ class TestRegisterUserIntegration:
 
         # Assert - 從資料庫查詢使用者
         result = await async_session.execute(
-            text("SELECT hashed_password FROM users WHERE id = :id"),
+            text("SELECT password_hash FROM users WHERE id = :id"),
             {"id": output_dto.id}
         )
-        hashed_password = result.scalar_one()
+        password_hash = result.scalar_one()
 
         # 密碼應該被雜湊（不是明文）
-        assert hashed_password != plain_password
-        assert hashed_password.startswith("$2b$")  # Bcrypt 前綴
+        assert password_hash != plain_password
+        assert password_hash.startswith("$2b$")  # Bcrypt 前綴
 
         # 應該可以驗證密碼
-        assert verify_password(plain_password, hashed_password) is True
-        assert verify_password("WrongPassword", hashed_password) is False
+        assert verify_password(plain_password, password_hash) is True
+        assert verify_password("WrongPassword", password_hash) is False
 
     async def test_register_multiple_users_in_database(
         self, register_use_case, async_session
@@ -256,12 +256,12 @@ class TestRegisterUserIntegration:
 
         # Assert - 從資料庫查詢（PostgreSQL 用 BOOLEAN）
         result = await async_session.execute(
-            text("SELECT is_active, is_superuser FROM users WHERE id = :id"),
+            text("SELECT is_is_activate, is_superuser FROM users WHERE id = :id"),
             {"id": output_dto.id}
         )
         row = result.fetchone()
 
-        assert row.is_active is True
+        assert row.is_activate is True
         assert row.is_superuser is False
 
     # ==================== 錯誤案例 ====================
@@ -418,7 +418,7 @@ class TestUserRepositoryIntegration:
         user_entity = UserEntity(
             username="repo_test",
             email="repo@example.com",
-            hashed_password="$2b$12$hashedpassword",
+            password_hash="$2b$12$hashedpassword",
             is_active=True,
             is_superuser=False,
         )
@@ -439,7 +439,7 @@ class TestUserRepositoryIntegration:
         user_entity = UserEntity(
             username="email_test",
             email="email_test@example.com",
-            hashed_password="$2b$12$hashedpassword",
+            password_hash="$2b$12$hashedpassword",
         )
         await user_repository.create(user_entity)
 
@@ -459,7 +459,7 @@ class TestUserRepositoryIntegration:
         user_entity = UserEntity(
             username="exists_test",
             email="exists@example.com",
-            hashed_password="$2b$12$hashedpassword",
+            password_hash="$2b$12$hashedpassword",
         )
         await user_repository.create(user_entity)
 

@@ -1,7 +1,8 @@
 from abc import ABC, abstractmethod
 from typing import Optional, List
 
-from src.modules.auth.domain.entities import UserEntity
+from pydantic import UUID4
+from modules.auth.domain.entity import UserEntity
 
 class IUserRepository(ABC):
     """
@@ -20,102 +21,83 @@ class IUserRepository(ABC):
     @abstractmethod
     async def create(self, user: UserEntity) -> UserEntity:
         """
-        Create a new user in the repository.
-        
-        Parameters:
-            user (UserEntity): User entity to persist.
-        
+        Create New User
+
+        Args:
+            user: User Entity 實例
+
         Returns:
-            UserEntity: The created user entity including generated fields such as `id`.
+            建立後的 User Entity (包含 ID 等資料庫生成欄位)
         """
         pass
 
     @abstractmethod
     async def get_by_id(self, user_id: int) -> Optional[UserEntity]:
         """
-        Retrieve a user by their numeric ID.
-        
-        Parameters:
-            user_id (int): The user's numeric identifier.
-        
-        Returns:
-            UserEntity or `None`: `UserEntity` if a user with the given ID exists, `None` otherwise.
+        根據 ID 查詢 User
+        :param user_id: 使用者 ID
+        :return: User Entity or None
         """
         pass
 
     @abstractmethod
     async def get_by_email(self, email:str) -> Optional[UserEntity]:
         """
-        Retrieve a user by email.
-        
-        Returns:
-            UserEntity if a user with the given email exists, `None` otherwise.
+        根據 email 查詢 User
+        :param email: 使用者 email
+        :return: User Entity or None
         """
         pass
 
     @abstractmethod
     async def get_by_username(self, username:str) -> Optional[UserEntity]:
         """
-        Retrieve a user by username.
-        
-        Parameters:
-            username (str): The username to look up.
-        
-        Returns:
-            Optional[UserEntity]: `UserEntity` if a user with the given username exists, `None` otherwise.
-        """
+               根據使用者名稱查詢使用者
+
+               Args:
+                   username: 使用者名稱
+
+               Returns:
+                   User Entity 或 None
+               """
         pass
 
     @abstractmethod
     async def get_all(self, skip: int=0, limit: int=100) -> List[UserEntity]:
         """
-        Retrieve a paginated list of users.
-        
-        Parameters:
-            skip (int): Number of records to skip before collecting results.
-            limit (int): Maximum number of records to return.
-        
-        Returns:
-            List[UserEntity]: List of users according to the pagination parameters; empty list if no users are found.
+        查詢所有使用者(分頁）
+        :param skip: 跳過的紀錄數
+        :param limit: 返回最大的紀錄數
+        :return: User Entity 列表
         """
         pass
 
     @abstractmethod
     async def update(self, user_id:int, user_data:dict) -> UserEntity:
         """
-        Update a user's fields and return the updated UserEntity.
-        
-        Parameters:
-            user_id (int): ID of the user to update.
-            user_data (dict): Mapping of fields to update and their new values.
-        
-        Returns:
-            UserEntity: The updated user entity with applied changes.
-        
+        update user data
+        :param user_id: user id
+        :param user_data: 要更新的欄位字典
+        :return: 更新後的 User Entity
         Raises:
-            UserNotFoundError: If no user exists with the given `user_id`.
+            UserNotFoundError: 當使用者不存在時拋出
         """
         pass
 
     @abstractmethod
     async def delete(self, user_id:int) -> bool:
         """
-        Remove the user with the given ID.
-        
-        Parameters:
-            user_id (int): ID of the user to remove.
-        
-        Returns:
-            bool: `True` if the user was deleted, `False` otherwise.
+        刪除使用者
+        :param user_id: user id
+        :return: True or False
         """
         pass
 
     @abstractmethod
     async def exists_by_email(self, email:str) -> bool:
         """
-        Determine whether a user with the given email exists.
-        
-        Returns:
-            `true` if a user with the given email exists, `false` otherwise.
+        檢查 email 是否存在
+        :param email: email
+        :return: True of False
         """
         pass

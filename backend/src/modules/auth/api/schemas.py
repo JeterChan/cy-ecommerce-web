@@ -1,4 +1,5 @@
-from pydantic import BaseModel, EmailStr, Field, ConfigDict, UUID4
+from pydantic import BaseModel, EmailStr, Field, ConfigDict
+from uuid import UUID
 from datetime import datetime
 
 # Base Model
@@ -30,13 +31,17 @@ class RegisterRequest(UserBase):
 
 class RegisterResponse(UserBase):
     """使用者資料回應"""
-    id: UUID4 = Field(..., description="使用者ID")
-    is_activate: bool = Field(default=True, description="帳號啟用狀態")
+    id: UUID = Field(..., description="使用者ID")
+    is_active: bool = Field(default=True, description="帳號啟用狀態")
     created_at: datetime = Field(..., description="建立時間")
-    updated_at: datetime = Field(..., description="更新時間")
+    updated_at: datetime = Field(None, description="更新時間")
 
     model_config = ConfigDict(
         from_attributes=True, # 允許從 User Entity 讀取
+        json_encoders={
+            UUID: str,
+            datetime: lambda v: v.isoformat() if v else None,
+        },
         json_schema_extra={
             "example": {
                 "id": "550e8400-e29b-41d4-a716-446655440000",
@@ -48,4 +53,61 @@ class RegisterResponse(UserBase):
             }
         }
     )
+
+
+# Login Schemas
+class LoginRequest(BaseModel):
+    """登入請求"""
+    email: EmailStr = Field(..., description="使用者信箱")
+    password: str = Field(..., min_length=8, description="密碼")
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "example": {
+                "email": "user@example.com",
+                "password": "SecureP@ssw0rd"
+            }
+        }
+    )
+
+
+class TokenResponse(BaseModel):
+    """Token 回應"""
+    access_token: str = Field(..., description="JWT Access Token")
+    token_type: str = Field(default="bearer", description="Token 類型")
+    refresh_token: str | None = Field(None, description="JWT Refresh Token (可選)")
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "example": {
+                "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+                "token_type": "bearer",
+                "refresh_token": None
+            }
+        }
+    )
+
+
+class LoginResponse(TokenResponse):
+    """登入回應 (繼承 TokenResponse)"""
+    user: RegisterResponse = Field(..., description="使用者資料")
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "example": {
+                "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+                "token_type": "bearer",
+                "refresh_token": None,
+                "user": {
+                    "id": "550e8400-e29b-41d4-a716-446655440000",
+                    "email": "user@example.com",
+                    "username": "john_doe",
+                    "is_activate": True,
+                    "created_at": "2024-01-15T10:30:00Z",
+                    "updated_at": "2024-01-15T10:30:00Z"
+                }
+            }
+        }
+    )
+
 

@@ -1,11 +1,11 @@
-from src.modules.auth.domain.repositories.i_user_repository import IUserRepository
-from src.modules.auth.domain.entities import UserEntity
-from src.modules.auth.use_cases.dtos import (
+from modules.auth.domain.repositories.i_user_repository import IUserRepository
+from modules.auth.domain.entity import UserEntity
+from modules.auth.use_cases.dtos import (
     RegisterUserInputDTO,
     RegisterUserOutputDTO
 )
-from src.core.exceptions import DuplicateEmailError
-from src.core.security import get_password_hash
+from core.exceptions import DuplicateEmailError
+from core.security import get_password_hash
 
 class RegisterUserUseCase:
     """
@@ -41,10 +41,9 @@ class RegisterUserUseCase:
             DuplicateEmailError: If the provided email is already registered.
         """
         # step 1: check email register or not
-        if await self.user_repository.exists_by_email(input_dto.email):
-            raise DuplicateEmailError(
-                f"Email {input_dto.email} is already registered"
-            )
+        email = str(input_dto.email)
+        if await self.user_repository.exists_by_email(email):
+            raise DuplicateEmailError(email)
         # step 2: 對密碼做雜湊處理
         hashed_password = get_password_hash(input_dto.password)
 
@@ -53,7 +52,7 @@ class RegisterUserUseCase:
             username=input_dto.username,
             email=input_dto.email,
             password_hash=hashed_password,
-            is_activate=True,
+            is_active=True,
         )
 
         # step 4: 透過 Repository 儲存
@@ -64,6 +63,8 @@ class RegisterUserUseCase:
             id=created_user.id,
             username=created_user.username,
             email=created_user.email,
-            is_active=created_user.is_activate,  # Entity 使用 is_activate
+            is_active=created_user.is_active,  # Entity 使用 is_active
             created_at=created_user.created_at,
+            updated_at=created_user.updated_at,
         )
+

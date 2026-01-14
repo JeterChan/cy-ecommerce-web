@@ -1,0 +1,8 @@
+reviews:
+  auto_review:
+    enabled: true
+    # 這裡填入你想觸發自動 Review 的目標分支
+    # "*" 代表所有分支，包含 develop, feature/* 等
+    target_branches:
+      - "master"
+      - "dev"
