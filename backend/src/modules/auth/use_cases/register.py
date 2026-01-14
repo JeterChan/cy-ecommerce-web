@@ -19,16 +19,26 @@ class RegisterUserUseCase:
 
     # Dependency Injection
     def __init__(self, user_repository: IUserRepository):
+        """
+        Initialize the use case with its user repository dependency.
+        
+        Parameters:
+            user_repository (IUserRepository): Repository providing user persistence and lookup operations required by the use case.
+        """
         self.user_repository = user_repository
 
     async def execute(self, input_dto: RegisterUserInputDTO) -> RegisterUserOutputDTO:
         """
-        流程：
-        1. 驗證電子郵件是否已註冊
-        2. 對密碼進行雜湊處理
-        3. 建立 User Entity
-        4. 透過 Repository 儲存到資料庫
-        5. 轉換為 OutputDTO
+        Register a new user and return a DTO representing the created user.
+        
+        Parameters:
+            input_dto (RegisterUserInputDTO): Input data with `username`, `email`, and `password`.
+        
+        Returns:
+            RegisterUserOutputDTO: DTO containing the created user's `id`, `username`, `email`, `is_active`, and `created_at`.
+        
+        Raises:
+            DuplicateEmailError: If the provided email is already registered.
         """
         # step 1: check email register or not
         email = str(input_dto.email)

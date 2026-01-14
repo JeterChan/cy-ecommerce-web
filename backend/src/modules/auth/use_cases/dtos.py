@@ -53,11 +53,24 @@ class RegisterUserInputDTO(BaseModel):
     @field_validator("password")
     @classmethod
     def validate_password(cls, value: str) -> str:
-        try:
-            Password(value=value)
-            return value
-        except ValueError as e:
-            raise ValueError(str(e)) from e
+        """
+        驗證密碼強度
+
+        規則：
+        - 至少包含一個大寫字母
+        - 至少包含一個小寫字母
+        - 至少包含一個數字
+        """
+        if not any(c.isupper() for c in value):
+            raise ValueError("Password must contain at least one uppercase letter")
+
+        if not any(c.islower() for c in value):
+            raise ValueError("Password must contain at least one lowercase letter")
+
+        if not any(c.isdigit() for c in value):
+            raise ValueError("Password must contain at least one digit")
+
+        return value
 
     class Config:
         json_schema_extra = {

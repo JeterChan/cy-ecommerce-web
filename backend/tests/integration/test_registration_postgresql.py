@@ -48,9 +48,12 @@ TEST_DATABASE_URL = (
 @pytest_asyncio.fixture(scope="function")
 async def async_engine():
     """
-    建立測試用的異步引擎
-
-    使用 function scope 確保每個測試都有乾淨的資料庫狀態
+    Create an asynchronous SQLAlchemy engine for the test database and ensure a clean schema before and after each test.
+    
+    This fixture drops all tables and recreates them before yielding the engine, then drops all tables and disposes the engine after the test completes. It is intended for use with function-scoped tests to guarantee an isolated database state.
+    
+    Returns:
+        engine (AsyncEngine): An async SQLAlchemy engine connected to the test database with a clean schema.
     """
     engine = create_async_engine(
         TEST_DATABASE_URL,
@@ -74,7 +77,17 @@ async def async_engine():
 
 @pytest_asyncio.fixture
 async def async_session(async_engine) -> AsyncSession:
-    """建立測試用的 Session"""
+    """
+    Provide an AsyncSession bound to the given async engine for use in tests.
+    
+    The session is created with expire_on_commit=False and is yielded to the caller. After use, the session is rolled back to leave the database state unchanged.
+    
+    Parameters:
+        async_engine (AsyncEngine): SQLAlchemy asynchronous engine to bind the session to.
+    
+    Returns:
+        AsyncSession: A session instance for executing database operations within a test.
+    """
     AsyncTestingSessionLocal = async_sessionmaker(
         async_engine,
         class_=AsyncSession,
@@ -89,13 +102,29 @@ async def async_session(async_engine) -> AsyncSession:
 
 @pytest_asyncio.fixture
 async def user_repository(async_session) -> UserRepository:
-    """建立 UserRepository 實例"""
+    """
+    Provide a UserRepository configured to use the provided asynchronous session.
+    
+    Parameters:
+        async_session: AsyncSession used for database interactions within the repository.
+    
+    Returns:
+        UserRepository: Repository instance bound to the given session.
+    """
     return UserRepository(async_session)
 
 
 @pytest_asyncio.fixture
 async def register_use_case(user_repository) -> RegisterUserUseCase:
-    """建立 RegisterUserUseCase 實例"""
+    """
+    Create a RegisterUserUseCase instance bound to the provided user repository.
+    
+    Parameters:
+        user_repository: Repository used by the use case to persist and query user data.
+    
+    Returns:
+        RegisterUserUseCase: Instance configured to use the provided repository.
+    """
     return RegisterUserUseCase(user_repository)
 
 
@@ -110,7 +139,11 @@ class TestRegisterUserIntegration:
     async def test_register_user_success_full_flow(
         self, register_use_case, async_session
     ):
-        """測試完整的註冊流程"""
+        """
+        Validate the end-to-end user registration flow and persistence in PostgreSQL.
+        
+        Asserts the produced output DTO contains an id, username, email, active flag, and creation timestamp, and verifies a corresponding users row exists in the database with the same username and email.
+        """
         # Arrange
         input_dto = RegisterUserInputDTO(
             username="integration_test_user",
@@ -142,7 +175,11 @@ class TestRegisterUserIntegration:
     async def test_register_user_password_is_hashed_in_database(
         self, register_use_case, async_session
     ):
-        """測試密碼在資料庫中已加密儲存"""
+        """
+        Asserts that registering a user stores a bcrypt-hashed password in the database and that the stored hash verifies correct and rejects incorrect passwords.
+        
+        This test registers a user with a plain-text password, queries the stored `hashed_password` for that user, and checks that it is not the plain text, begins with the bcrypt prefix (`$2b$`), and passes verification for the original password but fails for a wrong password.
+        """
         # Arrange
         plain_password = "MySecretPassword123!"
         input_dto = RegisterUserInputDTO(
@@ -172,7 +209,11 @@ class TestRegisterUserIntegration:
     async def test_register_multiple_users_in_database(
         self, register_use_case, async_session
     ):
-        """測試註冊多個使用者到資料庫"""
+        """
+        Verifies that registering multiple users persists all records and returns correct user DTOs.
+        
+        Creates three distinct users via the register use case, asserts the users table contains three rows, and checks each returned output DTO's username and email match the input data.
+        """
         # Arrange
         users_data = [
             ("alice_db", "alice_db@example.com", "AlicePass123!"),
@@ -259,7 +300,11 @@ class TestRegisterUserIntegration:
     async def test_register_user_transaction_rollback_on_error(
         self, user_repository, async_session
     ):
-        """測試發生錯誤時事務回滾"""
+        """
+        Verifies that a failed user registration due to a duplicate email rolls back the database transaction.
+        
+        Attempts to register an initial user, then attempts a second registration with the same email (which triggers a DuplicateEmailError). Asserts the total user count in the database remains unchanged after the failed operation.
+        """
         # Arrange - 先建立一個使用者
         first_input = RegisterUserInputDTO(
             username="first_user",
@@ -295,7 +340,11 @@ class TestRegisterUserIntegration:
     async def test_postgresql_timestamps_with_timezone(
         self, register_use_case, async_session
     ):
-        """測試 PostgreSQL 的 TIMESTAMP WITH TIME ZONE"""
+        """
+        Verify that PostgreSQL records timezone-aware timestamps correctly for a newly registered user.
+        
+        Asserts that the user's `created_at` and `updated_at` timestamps exist and are identical immediately after creation, and queries the `created_at AT TIME ZONE 'UTC'` value to exercise timezone-aware timestamp behavior.
+        """
         # Arrange
         input_dto = RegisterUserInputDTO(
             username="timestamp_test",
@@ -327,7 +376,11 @@ class TestRegisterUserIntegration:
     async def test_postgresql_case_insensitive_email(
         self, register_use_case, async_session
     ):
-        """測試 PostgreSQL 的大小寫處理"""
+        """
+        Verify PostgreSQL's handling of email case for uniqueness constraints.
+        
+        Registers a user with a lowercase email, then attempts to register another user with the same email in uppercase to observe whether the database treats the two as distinct or duplicates. Notes that PostgreSQL is case-sensitive by default for string comparisons; making email uniqueness case-insensitive requires using the CITEXT type or a case-insensitive unique index.
+        """
         # Arrange - 先註冊小寫 email
         first_input = RegisterUserInputDTO(
             username="user1",
@@ -354,7 +407,11 @@ class TestUserRepositoryIntegration:
     """UserRepository 的整合測試（PostgreSQL）"""
 
     async def test_repository_create_user(self, user_repository, async_session):
-        """測試 Repository 的 create 方法"""
+        """
+        Verify that UserRepository.create persists a UserEntity and returns the persisted entity with generated fields.
+        
+        Asserts that the returned user has a non-null `id`, retains the provided `username`, and has a non-null `created_at` timestamp.
+        """
         from src.modules.auth.domain.entities import UserEntity
 
         # Arrange
@@ -409,4 +466,3 @@ class TestUserRepositoryIntegration:
         # Act & Assert
         assert await user_repository.exists_by_email("exists@example.com") is True
         assert await user_repository.exists_by_email("notexist@example.com") is False
-
