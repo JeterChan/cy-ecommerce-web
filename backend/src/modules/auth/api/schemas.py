@@ -62,12 +62,14 @@ class LoginRequest(BaseModel):
     """登入請求"""
     email: EmailStr = Field(..., description="使用者信箱")
     password: str = Field(..., min_length=8, description="密碼")
+    remember_me: bool = Field(False, description="remember me or not")
 
     model_config = ConfigDict(
         json_schema_extra={
             "example": {
                 "email": "user@example.com",
-                "password": "SecureP@ssw0rd"
+                "password": "SecureP@ssw0rd",
+                "remember_me": "true"
             }
         }
     )
@@ -113,3 +115,15 @@ class LoginResponse(TokenResponse):
     )
 
 
+# Refresh Token Schemas
+class RefreshTokenRequest(BaseModel):
+    """刷新 Token 請求"""
+    refresh_token: str = Field(..., description="Refresh Token")
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "example": {
+                "refresh_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+            }
+        }
+    )

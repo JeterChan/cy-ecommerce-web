@@ -9,14 +9,18 @@ from modules.auth.api.schemas import (
     RegisterResponse,
     LoginRequest,
     LoginResponse,
-    RegisterRequest
+    RegisterRequest,
+    TokenResponse,
+    RefreshTokenRequest
 )
 from modules.auth.infrastructure.repositories.user_repository import UserRepository
 from modules.auth.use_cases import (
     RegisterUserInputDTO,
     RegisterUserUseCase,
     LoginUserInputDTO,
-    LoginUserUseCase
+    LoginUserUseCase,
+    RefreshTokenInputDTO,
+    RefreshTokenUseCase
 )
 
 router = APIRouter(prefix="/api/v1/auth", tags=["Authentication"])
@@ -162,7 +166,8 @@ async def login_user(
     # 轉換為 InputDTO
     input_dto = LoginUserInputDTO(
         email=request.email,
-        password=request.password
+        password=request.password,
+        remember_me=request.remember_me
     )
 
     # 建立 Repository 和 Use Case
@@ -186,6 +191,63 @@ async def login_user(
                 created_at=output_dto.created_at,
                 updated_at=output_dto.updated_at,
             )
+        )
+    except InvalidCredentialsError as e:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail=str(e)
+        )
+
+
+@router.post(
+    "/refresh",
+    status_code=status.HTTP_200_OK,
+    response_model=TokenResponse
+)
+async def refresh_access_token(
+    request: RefreshTokenRequest,
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    使用 Refresh Token 刷新 Access Token
+
+    依賴注入流程：
+    1. FastAPI 驗證 RefreshTokenRequest
+    2. 轉換為 RefreshTokenInputDTO
+    3. 注入 AsyncSession
+    4. 建立 UserRepository
+    5. 建立 RefreshTokenUseCase
+    6. 執行 Refresh Token 驗證和 Access Token 生成
+    7. 返回 TokenResponse
+
+    Args:
+        request: 刷新 Token 請求（包含 refresh_token）
+        db: 資料庫 Session
+
+    Returns:
+        TokenResponse: 包含新的 access token
+
+    Raises:
+        HTTPException 401: Refresh Token 無效或過期
+    """
+    # 轉換為 InputDTO
+    input_dto = RefreshTokenInputDTO(
+        refresh_token=request.refresh_token
+    )
+
+    # 建立 Repository 和 Use Case
+    user_repo = UserRepository(db)
+    use_case = RefreshTokenUseCase(user_repo)
+
+    try:
+        # 執行 Use Case
+        output_dto = await use_case.execute(input_dto)
+
+        # Use Case Output DTO -> API Response
+        return TokenResponse(
+            access_token=output_dto.access_token,
+            token_type=output_dto.token_type,
+            refresh_token=None  # 不返回新的 refresh_token，保持原有的有效
         )
     except InvalidCredentialsError as e:
         raise HTTPException(
@@ -226,5 +288,3 @@ async def get_current_user_info(
         created_at=current_user.created_at,
         updated_at=current_user.updated_at,
     )
-
-

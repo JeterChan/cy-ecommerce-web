@@ -4,7 +4,7 @@ from modules.auth.use_cases.dtos import (
     LoginUserOutputDTO
 )
 from core.exceptions import InvalidCredentialsError
-from core.security import create_access_token
+from core.security import create_access_token, create_refresh_token
 
 
 class LoginUserUseCase:
@@ -35,13 +35,14 @@ class LoginUserUseCase:
         2. 驗證使用者是否存在
         3. 驗證密碼是否正確
         4. 生成 JWT Access Token
+        4.5. 根據 remember_me 決定是否生成 Refresh Token
         5. 轉換為 OutputDTO 並返回
 
         Args:
-            input_dto: 登入輸入資料
+            input_dto: 登入輸入資料（包含 email, password, remember_me）
 
         Returns:
-            LoginUserOutputDTO: 包含使用者資料和 access token
+            LoginUserOutputDTO: 包含使用者資料、access token 和 refresh token（如果 remember_me=True）
 
         Raises:
             InvalidCredentialsError: 當使用者不存在或密碼錯誤時拋出
@@ -68,6 +69,11 @@ class LoginUserUseCase:
         }
         access_token = create_access_token(data=token_data)
 
+        # Step 4.5: 根據 remember_me 決定是否生成 Refresh Token
+        refresh_token = None
+        if input_dto.remember_me:
+            refresh_token = create_refresh_token(data=token_data)
+
         # Step 5: 轉換為 OutputDTO
         return LoginUserOutputDTO(
             id=user.id,
@@ -78,6 +84,6 @@ class LoginUserUseCase:
             updated_at=user.updated_at,
             access_token=access_token,
             token_type="bearer",
-            refresh_token=None  # Phase 5 才會實作 Remember Me 功能
+            refresh_token=refresh_token if input_dto.remember_me else None,
         )
 
