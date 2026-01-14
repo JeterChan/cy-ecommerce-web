@@ -4,7 +4,7 @@ from datetime import datetime
 from sqlalchemy import DateTime, Uuid
 from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy.sql import func
-from src.infrastructure.database import Base
+from infrastructure.database import Base
 
 class BaseModel(Base):
     """Base model class with common fields"""
