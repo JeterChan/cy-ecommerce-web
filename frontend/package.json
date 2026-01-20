@@ -11,14 +11,19 @@
     "test:unit": "vitest run"
   },
   "dependencies": {
+    "@vee-validate/zod": "^4.15.1",
+    "axios": "^1.13.2",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "lucide-vue-next": "^0.555.0",
     "pinia": "^3.0.4",
     "radix-vue": "^1.9.17",
     "tailwind-merge": "^3.4.0",
+    "vee-validate": "^4.15.1",
     "vue": "^3.5.24",
-    "vue-router": "^4.6.3"
+    "vue-i18n": "^9.14.5",
+    "vue-router": "^4.6.3",
+    "zod": "^4.3.5"
   },
   "devDependencies": {
     "@types/node": "^24.10.1",

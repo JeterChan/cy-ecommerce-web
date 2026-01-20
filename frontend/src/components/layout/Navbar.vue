@@ -1,20 +1,27 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { RouterLink, useRouter } from 'vue-router'
-import { ShoppingCart, Menu, ChevronDown } from 'lucide-vue-next'
+import { ShoppingCart, Menu, ChevronDown, User } from 'lucide-vue-next'
+import { useI18n } from 'vue-i18n'
 import { Button } from '@/components/ui/button'
 import { useCartStore } from '@/stores/cart'
+import { useAuthStore } from '@/stores/auth'
 import { productService } from '@/services/productService'
+import { useToast } from '@/composables/useToast'
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
+  DropdownMenuSeparator,
 } from '@/components/ui/dropdown-menu'
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet'
 
 const cartStore = useCartStore()
+const authStore = useAuthStore()
 const router = useRouter()
+const { t } = useI18n()
+const { showSuccess } = useToast()
 const categories = ref<string[]>([])
 const isMobileMenuOpen = ref(false)
 
@@ -33,6 +40,12 @@ const navigateToCategory = (category: string) => {
     router.push({ name: 'home', query: { view: 'all' } })
   }
   isMobileMenuOpen.value = false
+}
+
+const handleLogout = () => {
+  authStore.logout()
+  showSuccess(t('auth.logoutSuccess'))
+  router.push('/login')
 }
 </script>
 
@@ -114,6 +127,62 @@ const navigateToCategory = (category: string) => {
 
       <!-- Right Side Actions -->
       <div class="flex flex-1 items-center justify-end space-x-2">
+        <!-- 未登入：顯示登入/註冊按鈕 -->
+        <template v-if="!authStore.isAuthenticated">
+          <Button variant="ghost" as-child class="hidden sm:flex">
+            <RouterLink to="/login">{{ t('auth.login') }}</RouterLink>
+          </Button>
+          <Button as-child>
+            <RouterLink to="/register">{{ t('auth.register') }}</RouterLink>
+          </Button>
+        </template>
+
+        <!-- 已登入：顯示使用者選單 -->
+        <template v-else>
+          <!-- 桌面版：顯示 username -->
+          <DropdownMenu>
+            <DropdownMenuTrigger as-child>
+              <Button variant="ghost" class="hidden md:flex gap-1">
+                {{ authStore.user?.username }}
+                <ChevronDown class="h-4 w-4 opacity-50" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem disabled :title="t('auth.comingSoon')">
+                {{ t('auth.profile') }}
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem @click="handleLogout" class="cursor-pointer">
+                {{ t('auth.logout') }}
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+
+          <!-- 移動版：顯示 User icon -->
+          <DropdownMenu>
+            <DropdownMenuTrigger as-child>
+              <Button variant="ghost" size="icon" class="flex md:hidden">
+                <User class="h-5 w-5" />
+                <span class="sr-only">使用者選單</span>
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <div class="md:hidden px-2 py-1.5 text-sm font-semibold">
+                {{ authStore.user?.username }}
+              </div>
+              <DropdownMenuSeparator class="md:hidden" />
+              <DropdownMenuItem disabled :title="t('auth.comingSoon')">
+                {{ t('auth.profile') }}
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem @click="handleLogout" class="cursor-pointer">
+                {{ t('auth.logout') }}
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </template>
+
+        <!-- 購物車 -->
         <Button variant="ghost" size="icon" as-child class="relative">
           <RouterLink to="/cart">
             <ShoppingCart class="h-6 w-6" />
