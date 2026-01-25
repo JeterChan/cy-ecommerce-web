@@ -20,33 +20,25 @@ class RefreshTokenUseCase:
 
     def __init__(self, user_repository: IUserRepository):
         """
-        初始化 Use Case
-
-        Args:
-            user_repository: User Repository 介面實例
+        Initialize the RefreshTokenUseCase with a user repository.
+        
+        Parameters:
+            user_repository (IUserRepository): Repository used to fetch and validate users required by the use case.
         """
         self.user_repository = user_repository
 
     async def execute(self, input_dto: RefreshTokenInputDTO) -> RefreshTokenOutputDTO:
         """
-        執行刷新 Token 流程
-
-        流程：
-        1. 驗證 Refresh Token 的有效性（格式、簽名、過期時間、類型）
-        2. 從 Token payload 中取得使用者識別資訊
-        3. 查詢使用者是否存在
-        4. 驗證使用者狀態（是否啟用）
-        5. 生成新的 Access Token
-        6. 返回 OutputDTO
-
-        Args:
-            input_dto: 刷新 Token 輸入資料（包含 refresh_token）
-
+        Refresh an access token using a valid refresh token.
+        
+        Parameters:
+            input_dto (RefreshTokenInputDTO): Input DTO containing the `refresh_token` to validate and exchange.
+        
         Returns:
-            RefreshTokenOutputDTO: 包含新的 access token
-
+            RefreshTokenOutputDTO: DTO containing the newly issued access token and its token type ("bearer").
+        
         Raises:
-            InvalidCredentialsError: 當 Token 無效、過期或使用者不存在/未啟用時拋出
+            InvalidCredentialsError: If the refresh token is invalid, missing required claims, expired, the referenced user does not exist or is not active, or the token's user_id does not match the stored user id.
         """
 
         # Step 1: 驗證 Refresh Token
@@ -87,4 +79,3 @@ class RefreshTokenUseCase:
             access_token=access_token,
             token_type="bearer"
         )
-

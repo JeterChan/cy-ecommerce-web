@@ -21,13 +21,13 @@ class IUserRepository(ABC):
     @abstractmethod
     async def create(self, user: UserEntity) -> UserEntity:
         """
-        Create New User
-
-        Args:
-            user: User Entity 實例
-
+        Create a new user in the repository.
+        
+        Parameters:
+            user (UserEntity): User entity to persist; may omit storage-generated fields (e.g., id).
+        
         Returns:
-            建立後的 User Entity (包含 ID 等資料庫生成欄位)
+            UserEntity: Persisted user entity including storage-generated fields (such as `id`).
         """
         pass
 
@@ -43,9 +43,13 @@ class IUserRepository(ABC):
     @abstractmethod
     async def get_by_email(self, email:str) -> Optional[UserEntity]:
         """
-        根據 email 查詢 User
-        :param email: 使用者 email
-        :return: User Entity or None
+        Retrieve a user by email.
+        
+        Parameters:
+            email (str): The user's email address to look up.
+        
+        Returns:
+            Optional[UserEntity]: UserEntity if a user with the given email exists, None otherwise.
         """
         pass
 
@@ -96,8 +100,9 @@ class IUserRepository(ABC):
     @abstractmethod
     async def exists_by_email(self, email:str) -> bool:
         """
-        檢查 email 是否存在
-        :param email: email
-        :return: True of False
+        Determine whether a user with the given email exists in the repository.
+        
+        Returns:
+            True if a user with the email exists, False otherwise.
         """
         pass

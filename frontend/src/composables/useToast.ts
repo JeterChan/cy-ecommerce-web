@@ -12,6 +12,16 @@ const toasts = ref<Toast[]>([])
 
 let toastIdCounter = 0
 
+/**
+ * Provides a toast notification API and the reactive list of active toasts.
+ *
+ * @returns An object containing:
+ * - `toasts`: a reactive array of `Toast` entries.
+ * - `showSuccess(message, title?)`: adds a success toast with the given message and optional title.
+ * - `showError(message, title?)`: adds an error toast with the given message and optional title.
+ *
+ * Added toasts open immediately, automatically set `open` to `false` after 3000 ms, and are removed from `toasts` 300 ms after closing.
+ */
 export function useToast() {
   const showSuccess = (message: string, title?: string) => {
     const id = `toast-${++toastIdCounter}`
@@ -71,4 +81,3 @@ export function useToast() {
     showError
   }
 }
-

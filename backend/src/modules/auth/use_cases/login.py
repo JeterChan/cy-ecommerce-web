@@ -28,24 +28,16 @@ class LoginUserUseCase:
 
     async def execute(self, input_dto: LoginUserInputDTO) -> LoginUserOutputDTO:
         """
-        執行登入流程
-
-        流程：
-        1. 根據 email 查詢使用者
-        2. 驗證使用者是否存在
-        3. 驗證密碼是否正確
-        4. 生成 JWT Access Token
-        4.5. 根據 remember_me 決定是否生成 Refresh Token
-        5. 轉換為 OutputDTO 並返回
-
-        Args:
-            input_dto: 登入輸入資料（包含 email, password, remember_me）
-
+        Authenticate a user, issue JWT tokens, and return the user data and tokens.
+        
+        Parameters:
+            input_dto (LoginUserInputDTO): Login input containing `email`, `password`, and `remember_me` flag.
+        
         Returns:
-            LoginUserOutputDTO: 包含使用者資料、access token 和 refresh token（如果 remember_me=True）
-
+            LoginUserOutputDTO: User fields (id, username, email, is_active, created_at, updated_at), an access token and token_type "bearer"; includes a refresh_token only when `remember_me` is true.
+        
         Raises:
-            InvalidCredentialsError: 當使用者不存在或密碼錯誤時拋出
+            InvalidCredentialsError: If the user does not exist or the provided password is incorrect.
         """
 
         # Step 1: 根據 email 查詢使用者
@@ -86,4 +78,3 @@ class LoginUserUseCase:
             token_type="bearer",
             refresh_token=refresh_token if input_dto.remember_me else None,
         )
-

@@ -15,6 +15,11 @@ let refreshTokenPromise: Promise<string> | null = null
 // 登出回調函數（由 main.ts 設定）
 let onTokenExpired: (() => void) | null = null
 
+/**
+ * Registers a callback to be invoked when authentication tokens expire or are cleared.
+ *
+ * @param callback - Function called with no arguments when tokens are removed due to refresh failure or expiry
+ */
 export function setTokenExpiredCallback(callback: () => void) {
   onTokenExpired = callback
 }
@@ -122,4 +127,3 @@ api.interceptors.response.use(
 )
 
 export default api
-
