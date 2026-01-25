@@ -1,6 +1,8 @@
 import type { Product, ProductListResponse, ProductSearchParams } from '@/models/Product'
+import { categoryService } from './categoryService'
 
 // Mock Data
+// Updated tags to match CategoryService names exactly
 const mockProducts: Product[] = [
   {
     id: '1',
@@ -8,8 +10,9 @@ const mockProducts: Product[] = [
     description: '最新的智慧型手機，擁有強大的處理器與相機。',
     price: 29900,
     imageUrl: 'https://placehold.co/300x200?text=Phone',
-    tags: ['3C', '手機'],
-    is_featured: true
+    tags: ['3C 數位', '手機'],
+    is_featured: true,
+    categoryId: 'c1-1'
   },
   {
     id: '2',
@@ -17,8 +20,9 @@ const mockProducts: Product[] = [
     description: '主動降噪，高音質無線耳機。',
     price: 5990,
     imageUrl: 'https://placehold.co/300x200?text=Headphone',
-    tags: ['3C', '耳機'],
-    is_featured: true
+    tags: ['3C 數位', '耳機'],
+    is_featured: true,
+    categoryId: 'c1-2'
   },
   {
     id: '3',
@@ -26,7 +30,8 @@ const mockProducts: Product[] = [
     description: '舒適透氣，百分之百純棉。',
     price: 490,
     imageUrl: 'https://placehold.co/300x200?text=T-Shirt',
-    tags: ['服飾', '男裝']
+    tags: ['流行服飾', '男裝'],
+    categoryId: 'c2-1'
   },
   {
     id: '4',
@@ -34,8 +39,9 @@ const mockProducts: Product[] = [
     description: '防水耐磨，適合旅行與日常使用。',
     price: 1290,
     imageUrl: 'https://placehold.co/300x200?text=Bag',
-    tags: ['服飾', '配件'],
-    is_featured: true
+    tags: ['流行服飾', '配件'],
+    is_featured: true,
+    categoryId: 'c2-2'
   },
   {
     id: '5',
@@ -43,7 +49,8 @@ const mockProducts: Product[] = [
     description: '青軸手感，RGB背光。',
     price: 2490,
     imageUrl: 'https://placehold.co/300x200?text=Keyboard',
-    tags: ['3C', '電腦周邊']
+    tags: ['3C 數位', '電腦周邊'], // Note: '電腦周邊' isn't in mockCategories (it has '電腦'), so this tag might need adjustment or is just an extra tag.
+    categoryId: 'c1-3'
   },
   {
     id: '6',
@@ -51,8 +58,9 @@ const mockProducts: Product[] = [
     description: '一鍵式操作，享受專業級咖啡。',
     price: 8990,
     imageUrl: 'https://placehold.co/300x200?text=CoffeeMachine',
-    tags: ['家電', '廚房'],
-    is_featured: true
+    tags: ['生活家電', '廚房家電'],
+    is_featured: true,
+    categoryId: 'c3-1'
   },
   {
     id: '7',
@@ -60,8 +68,9 @@ const mockProducts: Product[] = [
     description: '追蹤您的健康與運動數據。',
     price: 1590,
     imageUrl: 'https://placehold.co/300x200?text=SmartBand',
-    tags: ['3C', '穿戴裝置'],
-    is_featured: true
+    tags: ['3C 數位', '穿戴裝置'],
+    is_featured: true,
+    categoryId: 'c1-4'
   },
   {
     id: '8',
@@ -69,8 +78,9 @@ const mockProducts: Product[] = [
     description: '兼容多款手機，快速無線充電。',
     price: 790,
     imageUrl: 'https://placehold.co/300x200?text=WirelessCharger',
-    tags: ['3C', '手機配件'],
-    is_featured: true
+    tags: ['3C 數位', '手機配件'],
+    is_featured: true,
+    categoryId: 'c1'
   },
   {
     id: '9',
@@ -78,7 +88,8 @@ const mockProducts: Product[] = [
     description: '符合人體工學，享受放鬆時光。',
     price: 3500,
     imageUrl: 'https://placehold.co/300x200?text=Sofa',
-    tags: ['傢俱', '生活']
+    tags: ['家居生活', '生活家電'], // Adjusted '傢俱' -> '家居生活'
+    categoryId: 'c4'
   },
   {
     id: '10',
@@ -86,7 +97,8 @@ const mockProducts: Product[] = [
     description: '輕量透氣，提供卓越的支撐。',
     price: 2800,
     imageUrl: 'https://placehold.co/300x200?text=Sneakers',
-    tags: ['服飾', '運動']
+    tags: ['流行服飾', '運動服飾'], // Adjusted '運動' -> '運動服飾'
+    categoryId: 'c2-3'
   },
   {
     id: '11',
@@ -94,8 +106,9 @@ const mockProducts: Product[] = [
     description: '烘焙、燒烤一機搞定。',
     price: 4500,
     imageUrl: 'https://placehold.co/300x200?text=Oven',
-    tags: ['家電', '廚房'],
-    is_featured: true
+    tags: ['生活家電', '廚房家電'],
+    is_featured: true,
+    categoryId: 'c3-1'
   },
   {
     id: '12',
@@ -103,8 +116,9 @@ const mockProducts: Product[] = [
     description: '真皮材質，多卡位設計。',
     price: 1800,
     imageUrl: 'https://placehold.co/300x200?text=Wallet',
-    tags: ['服飾', '配件'],
-    is_featured: true
+    tags: ['流行服飾', '配件'],
+    is_featured: true,
+    categoryId: 'c2-2'
   },
   {
     id: '13',
@@ -112,7 +126,8 @@ const mockProducts: Product[] = [
     description: '強大效能，隨身攜帶。',
     price: 35900,
     imageUrl: 'https://placehold.co/300x200?text=Laptop',
-    tags: ['3C', '電腦']
+    tags: ['3C 數位', '電腦'],
+    categoryId: 'c1-3'
   },
   {
     id: '14',
@@ -120,7 +135,8 @@ const mockProducts: Product[] = [
     description: '高DPI，精準定位。',
     price: 1290,
     imageUrl: 'https://placehold.co/300x200?text=Mouse',
-    tags: ['3C', '電腦周邊']
+    tags: ['3C 數位', '電腦周邊'],
+    categoryId: 'c1-3'
   },
   {
     id: '15',
@@ -128,7 +144,8 @@ const mockProducts: Product[] = [
     description: '保護眼睛，減緩疲勞。',
     price: 990,
     imageUrl: 'https://placehold.co/300x200?text=Glasses',
-    tags: ['服飾', '配件']
+    tags: ['流行服飾', '配件'],
+    categoryId: 'c2-2'
   },
   {
     id: '16',
@@ -136,7 +153,8 @@ const mockProducts: Product[] = [
     description: '有效過濾PM2.5，還你清新空氣。',
     price: 4990,
     imageUrl: 'https://placehold.co/300x200?text=AirPurifier',
-    tags: ['家電', '生活']
+    tags: ['生活家電', '生活家電'], // Tag repetition intentional for matching
+    categoryId: 'c3-2'
   },
   {
     id: '17',
@@ -144,7 +162,8 @@ const mockProducts: Product[] = [
     description: '強大吸力，清潔無死角。',
     price: 6990,
     imageUrl: 'https://placehold.co/300x200?text=Vacuum',
-    tags: ['家電', '清潔']
+    tags: ['生活家電', '清潔'], // '清潔' not in categories but OK
+    categoryId: 'c3-2'
   },
   {
     id: '18',
@@ -152,7 +171,8 @@ const mockProducts: Product[] = [
     description: '加厚防滑，適合各種瑜珈動作。',
     price: 690,
     imageUrl: 'https://placehold.co/300x200?text=YogaMat',
-    tags: ['運動', '健身']
+    tags: ['戶外運動', '健身器材'],
+    categoryId: 'c5-1'
   },
   {
     id: '19',
@@ -160,7 +180,8 @@ const mockProducts: Product[] = [
     description: '大容量，耐摔材質。',
     price: 390,
     imageUrl: 'https://placehold.co/300x200?text=WaterBottle',
-    tags: ['運動', '配件']
+    tags: ['戶外運動', '配件'],
+    categoryId: 'c5-1'
   },
   {
     id: '20',
@@ -168,7 +189,8 @@ const mockProducts: Product[] = [
     description: '護眼燈光，可調節亮度。',
     price: 890,
     imageUrl: 'https://placehold.co/300x200?text=Lamp',
-    tags: ['傢俱', '燈具']
+    tags: ['家居生活', '燈具'],
+    categoryId: 'c4-1'
   },
   {
     id: '21',
@@ -176,7 +198,8 @@ const mockProducts: Product[] = [
     description: '久坐不累，保護脊椎。',
     price: 5990,
     imageUrl: 'https://placehold.co/300x200?text=Chair',
-    tags: ['傢俱', '辦公']
+    tags: ['家居生活', '辦公家具'],
+    categoryId: 'c4-2'
   },
   {
     id: '22',
@@ -184,7 +207,8 @@ const mockProducts: Product[] = [
     description: '經典款式，百搭耐用。',
     price: 790,
     imageUrl: 'https://placehold.co/300x200?text=Belt',
-    tags: ['服飾', '配件']
+    tags: ['流行服飾', '配件'],
+    categoryId: 'c2-2'
   },
   {
     id: '23',
@@ -192,7 +216,8 @@ const mockProducts: Product[] = [
     description: '舒適修身，適合各種場合。',
     price: 890,
     imageUrl: 'https://placehold.co/300x200?text=Pants',
-    tags: ['服飾', '男裝']
+    tags: ['流行服飾', '男裝'],
+    categoryId: 'c2-1'
   },
   {
     id: '24',
@@ -200,7 +225,8 @@ const mockProducts: Product[] = [
     description: '保暖時尚，秋冬必備。',
     price: 1590,
     imageUrl: 'https://placehold.co/300x200?text=Hoodie',
-    tags: ['服飾', '男裝']
+    tags: ['流行服飾', '男裝'],
+    categoryId: 'c2-1'
   },
   {
     id: '25',
@@ -208,7 +234,8 @@ const mockProducts: Product[] = [
     description: '360度環繞音效，防水設計。',
     price: 2290,
     imageUrl: 'https://placehold.co/300x200?text=Speaker',
-    tags: ['3C', '音響']
+    tags: ['3C 數位', '音響'],
+    categoryId: 'c1'
   },
   {
     id: '26',
@@ -216,7 +243,8 @@ const mockProducts: Product[] = [
     description: '即拍即得，紀錄美好時刻。',
     price: 2990,
     imageUrl: 'https://placehold.co/300x200?text=Camera',
-    tags: ['3C', '相機']
+    tags: ['3C 數位', '相機'],
+    categoryId: 'c1'
   },
   {
     id: '27',
@@ -224,7 +252,8 @@ const mockProducts: Product[] = [
     description: '快速加熱，方便實用。',
     price: 2500,
     imageUrl: 'https://placehold.co/300x200?text=Microwave',
-    tags: ['家電', '廚房']
+    tags: ['生活家電', '廚房家電'],
+    categoryId: 'c3-1'
   },
   {
     id: '28',
@@ -232,7 +261,8 @@ const mockProducts: Product[] = [
     description: '新鮮果汁，健康生活。',
     price: 1200,
     imageUrl: 'https://placehold.co/300x200?text=Juicer',
-    tags: ['家電', '廚房']
+    tags: ['生活家電', '廚房家電'],
+    categoryId: 'c3-1'
   },
   {
     id: '29',
@@ -240,7 +270,8 @@ const mockProducts: Product[] = [
     description: '防水透氣，抓地力強。',
     price: 3500,
     imageUrl: 'https://placehold.co/300x200?text=HikingShoes',
-    tags: ['服飾', '運動']
+    tags: ['流行服飾', '戶外運動'], // '運動' -> '戶外運動'
+    categoryId: 'c5-2'
   },
   {
     id: '30',
@@ -248,7 +279,8 @@ const mockProducts: Product[] = [
     description: '輕量化設計，快速搭建。',
     price: 4500,
     imageUrl: 'https://placehold.co/300x200?text=Tent',
-    tags: ['運動', '露營']
+    tags: ['戶外運動', '露營用品'],
+    categoryId: 'c5-2'
   },
   {
     id: '31',
@@ -256,7 +288,8 @@ const mockProducts: Product[] = [
     description: '大容量，支援快充。',
     price: 990,
     imageUrl: 'https://placehold.co/300x200?text=PowerBank',
-    tags: ['3C', '手機配件']
+    tags: ['3C 數位', '手機配件'],
+    categoryId: 'c1'
   },
   {
     id: '32',
@@ -264,7 +297,8 @@ const mockProducts: Product[] = [
     description: '輕薄便攜，影音娛樂首選。',
     price: 12900,
     imageUrl: 'https://placehold.co/300x200?text=Tablet',
-    tags: ['3C', '電腦']
+    tags: ['3C 數位', '電腦'],
+    categoryId: 'c1-3'
   }
 ]
 
@@ -287,8 +321,19 @@ export const productService = {
       // Filter products that have AT LEAST ONE of the selected tags
       filtered = filtered.filter(p => p.tags.some(t => params.tags!.includes(t)))
     } else if (params.tag) {
-      // Fallback for single tag legacy support
-      filtered = filtered.filter(p => p.tags.includes(params.tag!))
+      // Logic with hierarchy support
+      const allCategories = await categoryService.getTree()
+      const category = allCategories.find(c => c.name === params.tag)
+      
+      const searchTags = [params.tag]
+      if (category) {
+        // Find all children
+        const children = allCategories.filter(c => c.parentId === category.id)
+        children.forEach(c => searchTags.push(c.name))
+      }
+
+      // Filter products that have ANY of the related tags
+      filtered = filtered.filter(p => p.tags.some(t => searchTags.includes(t!)))
     }
 
     const total = filtered.length

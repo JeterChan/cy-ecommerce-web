@@ -1,3 +1,5 @@
+from typing import Optional
+
 from pydantic import BaseModel, EmailStr, Field, ConfigDict
 from uuid import UUID
 from datetime import datetime
@@ -34,7 +36,7 @@ class RegisterResponse(UserBase):
     id: UUID = Field(..., description="使用者ID")
     is_active: bool = Field(default=True, description="帳號啟用狀態")
     created_at: datetime = Field(..., description="建立時間")
-    updated_at: datetime = Field(None, description="更新時間")
+    updated_at: Optional[datetime] = Field(None, description="更新時間")
 
     model_config = ConfigDict(
         from_attributes=True, # 允許從 User Entity 讀取
@@ -60,12 +62,14 @@ class LoginRequest(BaseModel):
     """登入請求"""
     email: EmailStr = Field(..., description="使用者信箱")
     password: str = Field(..., min_length=8, description="密碼")
+    remember_me: bool = Field(False, description="remember me or not")
 
     model_config = ConfigDict(
         json_schema_extra={
             "example": {
                 "email": "user@example.com",
-                "password": "SecureP@ssw0rd"
+                "password": "SecureP@ssw0rd",
+                "remember_me": "true"
             }
         }
     )
@@ -111,3 +115,15 @@ class LoginResponse(TokenResponse):
     )
 
 
+# Refresh Token Schemas
+class RefreshTokenRequest(BaseModel):
+    """刷新 Token 請求"""
+    refresh_token: str = Field(..., description="Refresh Token")
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "example": {
+                "refresh_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+            }
+        }
+    )

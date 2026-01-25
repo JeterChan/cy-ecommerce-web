@@ -1,7 +1,6 @@
 from pydantic import BaseModel, EmailStr, Field, field_validator, UUID4
 from datetime import datetime
 from typing import Optional
-from modules.auth.domain.value_objects.password import Password
 
 # Use Case : register
 class RegisterUserInputDTO(BaseModel):
@@ -99,6 +98,10 @@ class LoginUserInputDTO(BaseModel):
         examples=["SecurePassword123!"]
     )
 
+    remember_me: bool = Field(
+        description="記住我"
+    )
+
     class Config:
         json_schema_extra = {
             "example": {
@@ -178,3 +181,41 @@ class RegisterUserOutputDTO(BaseModel):
                 "created_at": "2024-01-15T10:30:00Z"
             }
         }
+
+
+# Use Case: refresh token
+class RefreshTokenInputDTO(BaseModel):
+    """刷新 Token Use Case 的 Input"""
+    refresh_token: str = Field(
+        ...,
+        description="Refresh Token",
+        examples=["eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."]
+    )
+
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "refresh_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+            }
+        }
+
+
+class RefreshTokenOutputDTO(BaseModel):
+    """
+    刷新 Token Use Case 的 Output DTO
+    職責：
+    - 返回新的 Access Token
+    """
+
+    access_token: str = Field(..., description="新的 Access Token")
+    token_type: str = Field(default="bearer", description="Token 類型")
+
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+                "token_type": "bearer"
+            }
+        }
+
+
