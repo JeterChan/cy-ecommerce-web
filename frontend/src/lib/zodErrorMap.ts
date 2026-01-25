@@ -74,8 +74,9 @@ export const customZodErrorMap = ((issue: z.ZodIssueOptionalMessage, ctx: z.Erro
 }) satisfies z.ZodErrorMap
 
 /**
- * 設定全域 Zod 錯誤訊息對應
- * 在應用程式初始化時呼叫此函數
+ * Registers the custom Zod error map globally.
+ *
+ * Installs `customZodErrorMap` as Zod's global error map; call once during application initialization.
  */
 export function setupZodErrorMap() {
   z.setErrorMap(customZodErrorMap)
