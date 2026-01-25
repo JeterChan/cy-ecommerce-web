@@ -6,6 +6,7 @@ export interface Product {
   imageUrl: string;
   tags: string[];
   is_featured?: boolean;
+  categoryId?: string;
 }
 
 export interface ProductListResponse {

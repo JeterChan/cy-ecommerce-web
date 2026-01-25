@@ -7,9 +7,13 @@ import { i18n } from './i18n'
 import { useAuthStore } from './stores/auth'
 import { setTokenExpiredCallback } from './lib/api'
 import { useToast } from './composables/useToast'
+import { setupZodErrorMap } from './lib/zodErrorMap'
 
 const app = createApp(App)
 const pinia = createPinia()
+
+// 設定 Zod 錯誤訊息為正體中文
+setupZodErrorMap()
 
 app.use(pinia)
 app.use(router)

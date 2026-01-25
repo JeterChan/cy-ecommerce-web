@@ -26,8 +26,8 @@ const isLoading = ref(false)
 // Zod 驗證 Schema
 const loginSchema = toTypedSchema(
   z.object({
-    email: z.string().email(t('validation.emailInvalid')),
-    password: z.string().min(8, t('validation.passwordMinLength')),
+    email: z.string({ required_error: t('validation.required') }).min(1, t('validation.required')).email(t('validation.emailInvalid')),
+    password: z.string({ required_error: t('validation.required') }).min(1, t('validation.required')).min(8, t('validation.passwordMinLength')),
     rememberMe: z.boolean()
   })
 )

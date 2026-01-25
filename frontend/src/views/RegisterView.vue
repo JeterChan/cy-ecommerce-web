@@ -27,7 +27,8 @@ const isLoading = ref(false)
 const registerSchema = toTypedSchema(
   z.object({
     username: z
-      .string()
+      .string({ required_error: t('validation.required') })
+      .min(1, t('validation.required'))
       .min(3, t('validation.usernameMinLength'))
       .max(50, t('validation.usernameMaxLength'))
       .regex(/^[a-zA-Z0-9_-]+$/, t('validation.usernameInvalid'))
@@ -35,15 +36,16 @@ const registerSchema = toTypedSchema(
         (val) => !val.startsWith('_') && !val.startsWith('-') && !val.endsWith('_') && !val.endsWith('-'),
         { message: t('validation.usernameFormat') }
       ),
-    email: z.string().email(t('validation.emailInvalid')),
+    email: z.string({ required_error: t('validation.required') }).min(1, t('validation.required')).email(t('validation.emailInvalid')),
     password: z
-      .string()
+      .string({ required_error: t('validation.required') })
+      .min(1, t('validation.required'))
       .min(8, t('validation.passwordMinLength'))
       .regex(
         /^(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*]).+$/,
         t('validation.passwordStrength')
       ),
-    confirmPassword: z.string()
+    confirmPassword: z.string({ required_error: t('validation.required') }).min(1, t('validation.required'))
   }).refine((data) => data.password === data.confirmPassword, {
     message: t('validation.passwordMismatch'),
     path: ['confirmPassword']
