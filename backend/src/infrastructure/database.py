@@ -2,6 +2,7 @@ from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sess
 from sqlalchemy.orm import DeclarativeBase
 from typing import AsyncGenerator
 from infrastructure.config import settings
+from redis import asyncio as aioredis
 
 engine = create_async_engine(
     settings.database_url,
@@ -45,6 +46,40 @@ async def init_db() -> None:
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
     print("Database tables created successfully")
+
+# Redis config
+redis_client: aioredis.Redis | None = None
+
+async def init_redis() -> None:
+    global redis_client
+    redis_client = await aioredis.from_url(
+        f"redis://{settings.REDIS_HOST}:/{settings.REDIS_PORT}/{settings.REDIS_DB}",
+        password=settings.REDIS_PASSWORD if hasattr(settings, 'REDIS_PASSWORD') else None,
+        encodings="utf-8",
+        decode_responses=True,
+        max_connections=10,
+        socket_connect_timeout=5,
+        socket_keepalive=True,
+    ) # 應用程式啟用時初始化
+    print("Redis connection established successfully")
+
+async def close_redis() -> None:
+    """
+        Close Redis connection pool and release all resources.
+
+        Should be called during application shutdown to ensure graceful cleanup.
+        Closes all active connections in the pool.
+    """
+    global redis_client
+    if redis_client:
+        await redis_client.close()
+        redis_client = None
+        print("Redis connection closed successfully")
+
+async def get_redis() -> aioredis.Redis:
+    if redis_client is None:
+        raise RuntimeError("...")
+    return redis_client # 回傳共用實例
 
 async def drop_all() -> None:
     """

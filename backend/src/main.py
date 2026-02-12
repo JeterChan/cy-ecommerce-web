@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from infrastructure.database import recreate_all
+from infrastructure.database import recreate_all, init_redis, close_redis
 from contextlib import asynccontextmanager
 
 from shared.exceptions.base import DomainException
@@ -26,9 +26,24 @@ from modules.auth.api.router import router as auth_router
 
 @asynccontextmanager
 async def lifespan(application: FastAPI):
-    # 啟動時執行
-    await recreate_all()
-    yield
+    try:
+        # 啟動時執行
+
+        print("🚀 Application startup")
+        await recreate_all()
+        print("✅ Database tables created")
+
+        await init_redis()
+        print("✅ Redis connection established")
+
+        yield
+    except Exception as e:
+        print(f"❌ Startup failed: {e}")
+        raise
+    finally:
+        print("Application shutdown")
+        await close_redis()
+        print("Redis connection closed")
 app = FastAPI(
     title="CyWeb E-commerce Backend",
     description="Modular Monolith API",
