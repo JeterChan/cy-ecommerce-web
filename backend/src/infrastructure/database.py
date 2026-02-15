@@ -88,7 +88,7 @@ async def drop_all() -> None:
     This permanently removes all database tables. Intended for development use only.
     """
     async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.drop_all)
+        await conn.run_sync(Base.metadata.drop_all, checkfirst=True)
     print("All database tables dropped successfully")
 
 async def recreate_all() -> None:
