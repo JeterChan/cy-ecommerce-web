@@ -25,7 +25,7 @@ from core.exception_handlers import (
 
 from modules.auth.presentation.routes import router as auth_router
 from modules.product.presentation.routes import router as product_router
-# from modules.cart.presentation.routes import router as cart_router
+from modules.cart.presentation.routes import router as cart_router
 
 @asynccontextmanager
 async def lifespan(application: FastAPI):
@@ -82,7 +82,7 @@ app.add_exception_handler(DomainException, domain_exception_handler)
 # Router 註冊
 app.include_router(auth_router)
 app.include_router(product_router, prefix="/api/v1")
-# app.include_router(cart_router, prefix="/api/v1")
+app.include_router(cart_router, prefix="/api/v1")
 
 @app.get("/api")
 async def root():
