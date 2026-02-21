@@ -3,11 +3,12 @@ Auth API Routes
 
 定義 Auth 模組的 HTTP API 端點
 """
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Request
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.ext.asyncio import AsyncSession
+from redis.asyncio import Redis
 
-from infrastructure.database import get_db
+from infrastructure.database import get_db, get_redis
 from core.security import verify_token
 from core.exceptions import InvalidCredentialsError, DuplicateEmailError
 
@@ -26,6 +27,9 @@ from modules.auth.application.dtos import (
 )
 from modules.auth.infrastructure.repositories.user_repository import UserRepository
 from modules.auth.domain.entity import UserEntity
+
+from modules.cart.application.services import CartMergeService
+from modules.cart.domain.utils import get_guest_token_from_cookie
 
 
 router = APIRouter(prefix="/api/v1/auth", tags=["Authentication"])
@@ -133,7 +137,9 @@ async def register_user(
 )
 async def login_user(
     data: LoginRequestDTO,
-    db: AsyncSession = Depends(get_db)
+    request: Request,
+    db: AsyncSession = Depends(get_db),
+    redis: Redis = Depends(get_redis)
 ) -> LoginResponseDTO:
     """
     使用者登入
@@ -141,14 +147,41 @@ async def login_user(
     - **email**: 使用者信箱
     - **password**: 密碼
     - **remember_me**: 是否記住我（會生成 Refresh Token）
+
+    登入流程：
+    1. 驗證使用者帳號密碼
+    2. 生成 JWT Tokens
+    3. 自動合併訪客購物車（若有）
     """
     try:
-        # 建立 Repository 和 Use Case
+        # 1. 建立 Repository 和 Use Case
         user_repo = UserRepository(db)
         use_case = LoginUserUseCase(user_repo)
 
-        # 執行 Use Case
+        # 2. 執行登入 Use Case
         login_dto = await use_case.execute(data)
+
+        # 3. 購物車合併（訪客 → 會員）
+        try:
+            # 取得訪客 Token（從 Cookie）
+            guest_token = get_guest_token_from_cookie(request)
+
+            if guest_token:
+                # 執行合併
+                merge_service = CartMergeService(db, redis)
+                merge_result = await merge_service.merge_guest_to_member(
+                    guest_token=guest_token,
+                    user_id=login_dto.user.id
+                )
+
+                # 記錄合併結果（可選：加入 response 或 log）
+                if merge_result["success"] and merge_result["merged_items"] > 0:
+                    # 成功合併，可以記錄或通知使用者
+                    pass
+        except Exception as e:
+            # 購物車合併失敗不應影響登入
+            # 只記錄錯誤，不中斷登入流程
+            print(f"Cart merge failed: {str(e)}")
 
         return login_dto
 
