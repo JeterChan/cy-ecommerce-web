@@ -24,14 +24,19 @@ const formatPrice = (price: number) => {
   return new Intl.NumberFormat('zh-TW', { style: 'currency', currency: 'TWD', minimumFractionDigits: 0 }).format(price)
 }
 
-const handleAddToCart = () => {
+const handleAddToCart = async () => {
   if (product.value) {
-    cartStore.addToCart(product.value, quantity.value)
-    addedSuccess.value = true
-    // Reset success message after 2 seconds
-    setTimeout(() => {
-      addedSuccess.value = false
-    }, 2000)
+    try {
+      await cartStore.addToCart(product.value, quantity.value)
+      addedSuccess.value = true
+      // Reset success message after 2 seconds
+      setTimeout(() => {
+        addedSuccess.value = false
+      }, 2000)
+    } catch (error) {
+      console.error('加入購物車失敗:', error)
+      // 可以在這裡顯示錯誤訊息給使用者
+    }
   }
 }
 

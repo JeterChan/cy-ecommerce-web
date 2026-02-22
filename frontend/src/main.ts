@@ -5,6 +5,7 @@ import App from './App.vue'
 import router from './router'
 import { i18n } from './i18n'
 import { useAuthStore } from './stores/auth'
+import { useCartStore } from './stores/cart'
 import { setTokenExpiredCallback } from './lib/api'
 import { useToast } from './composables/useToast'
 import { setupZodErrorMap } from './lib/zodErrorMap'
@@ -29,8 +30,17 @@ setTokenExpiredCallback(() => {
   router.push('/login')
 })
 
-// 初始化 Auth Store（從 storage 恢復狀態）
+// 初始化 Auth Store 和 Cart Store
 const authStore = useAuthStore()
-authStore.initAuth().finally(() => {
+const cartStore = useCartStore()
+
+authStore.initAuth().then(() => {
+  // 認證完成後，同步購物車
+  cartStore.syncFromBackend().catch(err => {
+    console.warn('購物車同步失敗，使用本地資料:', err)
+  })
+}).finally(() => {
   app.mount('#app')
 })
+
+

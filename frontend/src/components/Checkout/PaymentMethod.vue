@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue'
-import { PaymentMethod, type PaymentInfo, PaymentStatus } from '@/types/orderInfo'
+import { PaymentMethod, type PaymentInfo } from '@/types/orderInfo'
 
 const props = defineProps<{
   modelValue: PaymentInfo

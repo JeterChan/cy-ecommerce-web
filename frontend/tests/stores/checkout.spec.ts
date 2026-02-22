@@ -1,12 +1,8 @@
 import { setActivePinia, createPinia } from 'pinia'
 import { useCheckoutStore } from '../../src/stores/useCheckoutStore'
-import { describe, it, expect, beforeEach, vi } from 'vitest'
-import { ShippingMethod, PaymentMethod, PaymentStatus } from '../../src/types/orderInfo'
+import { describe, it, expect, beforeEach } from 'vitest'
+import { ShippingMethod } from '../../src/types/orderInfo'
 
-// Mock the service to avoid waiting for 1.5s
-vi.mock('@/services/mockOrderService', () => ({
-  createOrder: vi.fn(() => Promise.resolve({ id: 'test-id' }))
-}))
 
 describe('Checkout Store', () => {
   beforeEach(() => {

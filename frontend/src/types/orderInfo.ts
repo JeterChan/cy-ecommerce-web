@@ -1,20 +1,23 @@
-export enum ShippingMethod {
-  HOME_DELIVERY = 'HOME_DELIVERY',
-  STORE_PICKUP_711 = 'STORE_PICKUP_711'
-}
+export const ShippingMethod = {
+  HOME_DELIVERY: 'HOME_DELIVERY',
+  STORE_PICKUP_711: 'STORE_PICKUP_711'
+} as const;
+export type ShippingMethod = (typeof ShippingMethod)[keyof typeof ShippingMethod];
 
-export enum PaymentMethod {
-  CREDIT_CARD = 'CREDIT_CARD',
-  COD = 'COD',
-  ATM = 'ATM'
-}
+export const PaymentMethod = {
+  CREDIT_CARD: 'CREDIT_CARD',
+  COD: 'COD',
+  ATM: 'ATM'
+} as const;
+export type PaymentMethod = (typeof PaymentMethod)[keyof typeof PaymentMethod];
 
-export enum PaymentStatus {
-  UNPAID = 'UNPAID',
-  PAID = 'PAID',
-  FAILED = 'FAILED',
-  REFUNDED = 'REFUNDED'
-}
+export const PaymentStatus = {
+  UNPAID: 'UNPAID',
+  PAID: 'PAID',
+  FAILED: 'FAILED',
+  REFUNDED: 'REFUNDED'
+} as const;
+export type PaymentStatus = (typeof PaymentStatus)[keyof typeof PaymentStatus];
 
 export interface ShippingInfo {
   recipient_name: string;
@@ -23,6 +26,7 @@ export interface ShippingInfo {
   address?: string;
   store_id?: string;
   store_name?: string;
+  tracking_number?: string;
 }
 
 export interface PurchaserInfo {

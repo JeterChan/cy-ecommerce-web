@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import { useRouter, RouterLink } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { useForm } from 'vee-validate'
@@ -23,8 +23,8 @@ const showPassword = ref(false)
 const showConfirmPassword = ref(false)
 const isLoading = ref(false)
 
-// Zod 驗證 Schema
-const registerSchema = toTypedSchema(
+// Zod 驗證 Schema - 使用 computed 讓翻譯可以響應式更新
+const registerSchema = computed(() => toTypedSchema(
   z.object({
     username: z
       .string({ required_error: t('validation.required') })
@@ -36,7 +36,10 @@ const registerSchema = toTypedSchema(
         (val) => !val.startsWith('_') && !val.startsWith('-') && !val.endsWith('_') && !val.endsWith('-'),
         { message: t('validation.usernameFormat') }
       ),
-    email: z.string({ required_error: t('validation.required') }).min(1, t('validation.required')).email(t('validation.emailInvalid')),
+    email: z
+      .string({ required_error: t('validation.required') })
+      .min(1, t('validation.required'))
+      .email(t('validation.emailInvalid')),
     password: z
       .string({ required_error: t('validation.required') })
       .min(1, t('validation.required'))
@@ -45,12 +48,14 @@ const registerSchema = toTypedSchema(
         /^(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*]).+$/,
         t('validation.passwordStrength')
       ),
-    confirmPassword: z.string({ required_error: t('validation.required') }).min(1, t('validation.required'))
+    confirmPassword: z
+      .string({ required_error: t('validation.required') })
+      .min(1, t('validation.required'))
   }).refine((data) => data.password === data.confirmPassword, {
     message: t('validation.passwordMismatch'),
     path: ['confirmPassword']
   })
-)
+))
 
 const { defineField, handleSubmit, errors } = useForm({
   validationSchema: registerSchema

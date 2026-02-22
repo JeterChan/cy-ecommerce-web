@@ -34,7 +34,7 @@ describe('Navbar', () => {
 
   it('loads categories into dropdown', async () => {
     setActivePinia(createPinia());
-    const wrapper = mount(Navbar, {
+    mount(Navbar, {
       global: {
         plugins: [router]
       }
