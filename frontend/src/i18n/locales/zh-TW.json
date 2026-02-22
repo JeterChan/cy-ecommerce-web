@@ -27,7 +27,7 @@
     "emailRequired": "請輸入電子郵件",
     "passwordRequired": "請輸入密碼",
     "passwordMinLength": "密碼長度至少需要 8 碼",
-    "passwordStrength": "密碼必須至少8碼且包含1個大寫字母、1個數字、1個特殊字元（!@#$%^&*）",
+    "passwordStrength": "密碼必須至少8碼且包含1個大寫字母、1個數字、1個特殊字元",
     "passwordMismatch": "兩次輸入的密碼不一致",
     "usernameRequired": "請輸入使用者名稱",
     "usernameMinLength": "使用者名稱至少需要 3 個字元",
