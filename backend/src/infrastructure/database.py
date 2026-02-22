@@ -1,8 +1,10 @@
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
 from sqlalchemy.orm import DeclarativeBase
-from typing import AsyncGenerator
+from typing import AsyncGenerator, TYPE_CHECKING
 from infrastructure.config import settings
-from redis import asyncio as aioredis
+
+if TYPE_CHECKING:
+    import redis.asyncio as aioredis
 
 engine = create_async_engine(
     settings.database_url,
@@ -48,19 +50,36 @@ async def init_db() -> None:
     print("Database tables created successfully")
 
 # Redis config
-redis_client: aioredis.Redis | None = None
+redis_client: "aioredis.Redis | None" = None
 
 async def init_redis() -> None:
+    import redis.asyncio as aioredis
     global redis_client
-    redis_client = await aioredis.from_url(
-        f"redis://{settings.REDIS_HOST}:/{settings.REDIS_PORT}/{settings.REDIS_DB}",
-        password=settings.REDIS_PASSWORD if hasattr(settings, 'REDIS_PASSWORD') else None,
-        encodings="utf-8",
-        decode_responses=True,
-        max_connections=10,
-        socket_connect_timeout=5,
-        socket_keepalive=True,
-    ) # 應用程式啟用時初始化
+
+    # 只有在密碼存在且不為空時才傳遞 password 參數
+    redis_password = getattr(settings, 'REDIS_PASSWORD', None)
+    if redis_password and redis_password.strip():
+        # 有密碼的情況
+        redis_client = await aioredis.from_url(
+            f"redis://{settings.REDIS_HOST}:{settings.REDIS_PORT}/{settings.REDIS_DB}",
+            password=redis_password,
+            encoding="utf-8",
+            decode_responses=True,
+            max_connections=10,
+            socket_connect_timeout=5,
+            socket_keepalive=True,
+        )
+    else:
+        # 無密碼的情況（不傳遞 password 參數）
+        redis_client = await aioredis.from_url(
+            f"redis://{settings.REDIS_HOST}:{settings.REDIS_PORT}/{settings.REDIS_DB}",
+            encoding="utf-8",
+            decode_responses=True,
+            max_connections=10,
+            socket_connect_timeout=5,
+            socket_keepalive=True,
+        )
+
     print("Redis connection established successfully")
 
 async def close_redis() -> None:
@@ -76,7 +95,7 @@ async def close_redis() -> None:
         redis_client = None
         print("Redis connection closed successfully")
 
-async def get_redis() -> aioredis.Redis:
+async def get_redis() -> "aioredis.Redis":
     if redis_client is None:
         raise RuntimeError("...")
     return redis_client # 回傳共用實例

@@ -20,6 +20,11 @@ class InvalidCredentialsError(DomainException):
     def __init__(self):
         super().__init__("帳號或密碼錯誤")
 
+class UserNotRegisteredError(DomainException):
+    """當使用者信箱未註冊時拋出"""
+    def __init__(self, email: str):
+        super().__init__(f"信箱 {email} 尚未註冊")
+
 class ValidationError(DomainException):
     """當資料驗證失敗時拋出"""
     def __init__(self, message: str):

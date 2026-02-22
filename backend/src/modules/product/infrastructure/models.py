@@ -1,19 +1,25 @@
-from sqlalchemy import Integer, String, Numeric, Boolean, Table, ForeignKey, DateTime, Column, func
+from sqlalchemy import Integer, String, Numeric, Boolean, Table, ForeignKey, DateTime, Column, func, UUID
 from sqlalchemy.orm import relationship, Mapped, mapped_column
 from datetime import datetime
 from infrastructure.database import Base
+import uuid
 
 association_table = Table(
     'product_categories',
     Base.metadata,
-    Column('product_id', Integer, ForeignKey('products.id'), primary_key=True),
+    Column('product_id', UUID(as_uuid=True), ForeignKey('products.id'), primary_key=True),
     Column('category_id', Integer, ForeignKey('categories.id'), primary_key=True)
 )
 
 class ProductModel(Base):
     __tablename__ = "products"
 
-    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        primary_key=True,
+        default=uuid.uuid4,
+        comment="商品 UUID"
+    )
 
     name: Mapped[str] = mapped_column(String(255), nullable=False)
     description: Mapped[str | None] = mapped_column(String(1000), nullable=True)

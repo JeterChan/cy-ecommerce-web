@@ -3,7 +3,7 @@ from modules.auth.use_cases.dtos import (
     LoginUserInputDTO,
     LoginUserOutputDTO
 )
-from core.exceptions import InvalidCredentialsError
+from core.exceptions import InvalidCredentialsError, UserNotRegisteredError
 from core.security import create_access_token, create_refresh_token
 
 
@@ -37,7 +37,8 @@ class LoginUserUseCase:
             LoginUserOutputDTO: User fields (id, username, email, is_active, created_at, updated_at), an access token and token_type "bearer"; includes a refresh_token only when `remember_me` is true.
         
         Raises:
-            InvalidCredentialsError: If the user does not exist or the provided password is incorrect.
+            UserNotRegisteredError: If the user with the provided email does not exist.
+            InvalidCredentialsError: If the provided password is incorrect.
         """
 
         # Step 1: 根據 email 查詢使用者
@@ -46,8 +47,8 @@ class LoginUserUseCase:
 
         # Step 2: 驗證使用者是否存在
         if user is None:
-            # 使用通用錯誤訊息，不洩漏使用者是否存在的資訊
-            raise InvalidCredentialsError()
+            # 明確告知使用者信箱未註冊
+            raise UserNotRegisteredError(email)
 
         # Step 3: 驗證密碼是否正確
         if not user.verify_password(input_dto.password):

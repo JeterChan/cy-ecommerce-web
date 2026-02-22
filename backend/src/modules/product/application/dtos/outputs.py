@@ -7,6 +7,7 @@ from pydantic import BaseModel, Field, ConfigDict, field_validator
 from decimal import Decimal
 from typing import Optional, List
 from datetime import datetime
+from uuid import UUID
 
 
 class ProductResponseDTO(BaseModel):
@@ -16,7 +17,7 @@ class ProductResponseDTO(BaseModel):
     用於 GET /products/{id} 和 POST /products 的回應
     包含所有商品資訊及系統欄位
     """
-    id: int = Field(..., description="商品 ID")
+    id: UUID = Field(..., description="商品 UUID")
     name: str = Field(..., description="商品名稱")
     description: Optional[str] = Field(None, description="商品描述")
     price: Decimal = Field(..., description="商品價格")
@@ -31,7 +32,7 @@ class ProductResponseDTO(BaseModel):
         from_attributes=True,
         json_schema_extra={
             "example": {
-                "id": 1,
+                "id": "a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d",
                 "name": "iPhone 15 Pro Max",
                 "description": "Apple 最新旗艦手機，搭載 A17 Pro 晶片，6.7 吋 Super Retina XDR 顯示器",
                 "price": 39900.00,

@@ -10,7 +10,7 @@ from redis.asyncio import Redis
 
 from infrastructure.database import get_db, get_redis
 from core.security import verify_token
-from core.exceptions import InvalidCredentialsError, DuplicateEmailError
+from core.exceptions import InvalidCredentialsError, DuplicateEmailError, UserNotRegisteredError
 
 from modules.auth.application.use_cases import (
     RegisterUserUseCase,
@@ -78,16 +78,23 @@ async def get_current_user(
             headers={"WWW-Authenticate": "Bearer"},
         )
 
+    print(f"[Auth] 從 token 獲取的 email: {email}")
+    print(f"[Auth] Token payload: {payload}")
+
     # 查詢使用者
     user_repo = UserRepository(db)
     user = await user_repo.get_by_email(email)
 
+    print(f"[Auth] 資料庫查詢結果: {user}")
+
     if user is None:
+        print(f"[Auth] ❌ 使用者不存在! Email: {email}")
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="使用者不存在"
+            detail=f"使用者不存在 (email: {email})"
         )
 
+    print(f"[Auth] ✅ 使用者查詢成功: {user.email}")
     return user
 
 
@@ -185,6 +192,11 @@ async def login_user(
 
         return login_dto
 
+    except UserNotRegisteredError as e:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=str(e)
+        )
     except InvalidCredentialsError as e:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,

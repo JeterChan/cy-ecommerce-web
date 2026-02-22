@@ -4,9 +4,10 @@ Product Command Use Cases
 處理修改資料的業務邏輯（Commands）
 """
 from sqlalchemy.ext.asyncio import AsyncSession
+from uuid import UUID
 from modules.product.domain.entities import Product
-from modules.product.infrastructure.repositories import SqlAlchemyProductRepository
 from modules.product.application.dtos import ProductCreateDTO, ProductUpdateDTO
+from modules.product.infrastructure.repositories import SqlAlchemyProductRepository
 
 
 class CreateProductUseCase:
@@ -52,12 +53,12 @@ class UpdateProductUseCase:
     def __init__(self, db: AsyncSession):
         self.repo = SqlAlchemyProductRepository(db)
 
-    async def execute(self, product_id: int, data: ProductUpdateDTO) -> Product:
+    async def execute(self, product_id: UUID, data: ProductUpdateDTO) -> Product:
         """
         執行更新商品（部分更新）
 
         Args:
-            product_id: 商品 ID
+            product_id: 商品 UUID
             data: 更新商品的 Input DTO
 
         Returns:
@@ -69,7 +70,7 @@ class UpdateProductUseCase:
         # 取得現有商品
         existing = await self.repo.get_by_id(product_id)
         if not existing:
-            raise ValueError(f"商品 ID {product_id} 不存在")
+            raise ValueError(f"商品 UUID {product_id} 不存在")
 
         # 只更新提供的欄位
         update_data = data.model_dump(exclude_unset=True)
@@ -89,12 +90,12 @@ class DeleteProductUseCase:
     def __init__(self, db: AsyncSession):
         self.repo = SqlAlchemyProductRepository(db)
 
-    async def execute(self, product_id: int) -> bool:
+    async def execute(self, product_id: UUID) -> bool:
         """
         執行刪除商品
 
         Args:
-            product_id: 商品 ID
+            product_id: 商品 UUID
 
         Returns:
             是否刪除成功
@@ -104,7 +105,7 @@ class DeleteProductUseCase:
         """
         success = await self.repo.delete(product_id)
         if not success:
-            raise ValueError(f"商品 ID {product_id} 不存在")
+            raise ValueError(f"商品 UUID {product_id} 不存在")
         return success
 
 
@@ -114,12 +115,12 @@ class ToggleProductActiveUseCase:
     def __init__(self, db: AsyncSession):
         self.repo = SqlAlchemyProductRepository(db)
 
-    async def execute(self, product_id: int) -> Product:
+    async def execute(self, product_id: UUID) -> Product:
         """
         執行切換商品上下架狀態
 
         Args:
-            product_id: 商品 ID
+            product_id: 商品 UUID
 
         Returns:
             更新後的商品 Entity
@@ -129,7 +130,7 @@ class ToggleProductActiveUseCase:
         """
         product = await self.repo.get_by_id(product_id)
         if not product:
-            raise ValueError(f"商品 ID {product_id} 不存在")
+            raise ValueError(f"商品 UUID {product_id} 不存在")
 
         # 使用 Domain Entity 的業務方法
         if product.is_active:
@@ -146,12 +147,12 @@ class AdjustProductStockUseCase:
     def __init__(self, db: AsyncSession):
         self.repo = SqlAlchemyProductRepository(db)
 
-    async def execute(self, product_id: int, quantity_change: int) -> Product:
+    async def execute(self, product_id: UUID, quantity_change: int) -> Product:
         """
         執行調整商品庫存
 
         Args:
-            product_id: 商品 ID
+            product_id: 商品 UUID
             quantity_change: 庫存變化量（正數增加，負數減少）
 
         Returns:
@@ -162,7 +163,7 @@ class AdjustProductStockUseCase:
         """
         product = await self.repo.get_by_id(product_id)
         if not product:
-            raise ValueError(f"商品 ID {product_id} 不存在")
+            raise ValueError(f"商品 UUID {product_id} 不存在")
 
         # 使用 Domain Entity 的業務方法
         product.update_stock(quantity_change)

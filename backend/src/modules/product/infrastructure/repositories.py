@@ -1,6 +1,7 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from typing import List, Optional
+from uuid import UUID
 from modules.product.domain.repository import ProductRepository
 from modules.product.domain.entities import Product
 from modules.product.infrastructure.models import ProductModel
@@ -20,7 +21,7 @@ class SqlAlchemyProductRepository(ProductRepository):
         # 轉換 SQLAlchemy Model -> Domain Entity
         return self._to_entity(model)
 
-    async def get_by_id(self, product_id: int) -> Optional[Product]:
+    async def get_by_id(self, product_id: UUID) -> Optional[Product]:
         stmt = select(ProductModel).where(ProductModel.id == product_id)
         result = await self.db.execute(stmt)
         model = result.scalar_one_or_none()
@@ -51,7 +52,7 @@ class SqlAlchemyProductRepository(ProductRepository):
         await self.db.refresh(model)
         return self._to_entity(model)
 
-    async def delete(self, product_id: int) -> bool:
+    async def delete(self, product_id: UUID) -> bool:
         stmt = select(ProductModel).where(ProductModel.id == product_id)
         result = await self.db.execute(stmt)
         model = result.scalar_one_or_none()

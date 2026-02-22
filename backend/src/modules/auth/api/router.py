@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from core.exceptions import InvalidCredentialsError
+from core.exceptions import InvalidCredentialsError, UserNotRegisteredError
 from core.security import verify_token
 from infrastructure.database import get_db
 from modules.auth.api.schemas import (
@@ -71,16 +71,23 @@ async def get_current_user(
             headers={"WWW-Authenticate": "Bearer"},
         )
 
+    print(f"[Auth] 從 token 獲取的 email: {email}")
+    print(f"[Auth] Token payload: {payload}")
+
     # 查詢使用者
     user_repo = UserRepository(db)
     user = await user_repo.get_by_email(email)
 
+    print(f"[Auth] 資料庫查詢結果: {user}")
+
     if user is None:
+        print(f"[Auth] ❌ 使用者不存在! Email: {email}")
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="使用者不存在"
+            detail=f"使用者不存在 (email: {email})"
         )
 
+    print(f"[Auth] ✅ 使用者查詢成功: {user.email}")
     return user
 
 
@@ -179,6 +186,11 @@ async def login_user(
                 created_at=output_dto.created_at,
                 updated_at=output_dto.updated_at,
             )
+        )
+    except UserNotRegisteredError as e:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=str(e)
         )
     except InvalidCredentialsError as e:
         raise HTTPException(
