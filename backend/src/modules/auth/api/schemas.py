@@ -127,3 +127,58 @@ class RefreshTokenRequest(BaseModel):
             }
         }
     )
+
+
+# Profile Update Schemas
+class ProfileUpdateRequest(BaseModel):
+    """個人檔案更新請求"""
+    phone: Optional[str] = Field(None, max_length=20, description="聯絡電話")
+    address: Optional[str] = Field(None, max_length=500, description="郵寄地址")
+    carrier_type: Optional[str] = Field(None, max_length=50, description="載具類型")
+    carrier_number: Optional[str] = Field(None, max_length=100, description="載具號碼")
+    tax_id: Optional[str] = Field(None, max_length=20, description="統一編號")
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "example": {
+                "phone": "0912345678",
+                "address": "台北市信義區信義路五段7號",
+                "carrier_type": "MOBILE",
+                "carrier_number": "/ABC1234",
+                "tax_id": "12345678"
+            }
+        }
+    )
+
+
+class UserProfileResponse(RegisterResponse):
+    """使用者完整檔案回應（包含個人資訊）"""
+    phone: Optional[str] = Field(None, description="聯絡電話")
+    address: Optional[str] = Field(None, description="郵寄地址")
+    carrier_type: Optional[str] = Field(None, description="載具類型")
+    carrier_number: Optional[str] = Field(None, description="載具號碼")
+    tax_id: Optional[str] = Field(None, description="統一編號")
+
+    model_config = ConfigDict(
+        from_attributes=True,
+        json_encoders={
+            UUID: str,
+            datetime: lambda v: v.isoformat() if v else None,
+        },
+        json_schema_extra={
+            "example": {
+                "id": "550e8400-e29b-41d4-a716-446655440000",
+                "email": "user@example.com",
+                "username": "john_doe",
+                "is_active": True,
+                "created_at": "2024-01-15T10:30:00Z",
+                "updated_at": "2024-01-15T10:30:00Z",
+                "phone": "0912345678",
+                "address": "台北市信義區信義路五段7號",
+                "carrier_type": "MOBILE",
+                "carrier_number": "/ABC1234",
+                "tax_id": "12345678"
+            }
+        }
+    )
+

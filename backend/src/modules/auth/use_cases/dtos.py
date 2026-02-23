@@ -219,3 +219,58 @@ class RefreshTokenOutputDTO(BaseModel):
         }
 
 
+# Use Case: update profile
+class UpdateProfileInputDTO(BaseModel):
+    """更新個人檔案 Use Case 的 Input"""
+    phone: Optional[str] = Field(None, max_length=20, description="聯絡電話")
+    address: Optional[str] = Field(None, max_length=500, description="郵寄地址")
+    carrier_type: Optional[str] = Field(None, max_length=50, description="載具類型")
+    carrier_number: Optional[str] = Field(None, max_length=100, description="載具號碼")
+    tax_id: Optional[str] = Field(None, max_length=20, description="統一編號")
+
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "phone": "0912345678",
+                "address": "台北市信義區信義路五段7號",
+                "carrier_type": "MOBILE",
+                "carrier_number": "/ABC1234",
+                "tax_id": "12345678"
+            }
+        }
+
+
+class UpdateProfileOutputDTO(BaseModel):
+    """更新個人檔案 Use Case 的 Output DTO"""
+    id: UUID4 = Field(..., description="使用者 ID")
+    username: str = Field(..., description="使用者名稱")
+    email: EmailStr = Field(..., description="電子郵件")
+    is_active: bool = Field(..., description="是否啟用")
+    created_at: Optional[datetime] = Field(None, description="建立時間")
+    updated_at: Optional[datetime] = Field(None, description="更新時間")
+    phone: Optional[str] = Field(None, description="聯絡電話")
+    address: Optional[str] = Field(None, description="郵寄地址")
+    carrier_type: Optional[str] = Field(None, description="載具類型")
+    carrier_number: Optional[str] = Field(None, description="載具號碼")
+    tax_id: Optional[str] = Field(None, description="統一編號")
+
+    class Config:
+        from_attributes = True
+        json_encoders = {
+            datetime: lambda v: v.isoformat(),
+        }
+        json_schema_extra = {
+            "example": {
+                "id": "550e8400-e29b-41d4-a716-446655440000",
+                "username": "john_doe",
+                "email": "john@example.com",
+                "is_active": True,
+                "created_at": "2024-01-15T10:30:00Z",
+                "updated_at": "2024-01-15T10:30:00Z",
+                "phone": "0912345678",
+                "address": "台北市信義區信義路五段7號",
+                "carrier_type": "MOBILE",
+                "carrier_number": "/ABC1234",
+                "tax_id": "12345678"
+            }
+        }

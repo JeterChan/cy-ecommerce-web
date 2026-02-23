@@ -11,7 +11,9 @@ from modules.auth.api.schemas import (
     LoginResponse,
     RegisterRequest,
     TokenResponse,
-    RefreshTokenRequest
+    RefreshTokenRequest,
+    ProfileUpdateRequest,
+    UserProfileResponse,
 )
 from modules.auth.infrastructure.repositories.user_repository import UserRepository
 from modules.auth.use_cases import (
@@ -20,7 +22,9 @@ from modules.auth.use_cases import (
     LoginUserInputDTO,
     LoginUserUseCase,
     RefreshTokenInputDTO,
-    RefreshTokenUseCase
+    RefreshTokenUseCase,
+    UpdateProfileInputDTO,
+    UpdateProfileUseCase,
 )
 
 router = APIRouter(prefix="/api/v1/auth", tags=["Authentication"])
@@ -247,26 +251,81 @@ async def refresh_access_token(
 
 
 @router.get(
-    "/users/me",
+    "/me",
     status_code=status.HTTP_200_OK,
-    response_model=RegisterResponse
+    response_model=UserProfileResponse
 )
 async def get_current_user_info(
     current_user = Depends(get_current_user)
 ):
     """
-    Return the currently authenticated user's public profile.
-    
-    Converts the injected authenticated user entity into a RegisterResponse containing the user's id, username, email, active status, creation time, and last update time.
-    
+    Return the currently authenticated user's full profile including personal information.
+
     Returns:
-        RegisterResponse: The user's id, username, email, is_active, created_at, and updated_at.
+        UserProfileResponse: The user's complete profile including phone, address, carrier, and tax_id.
     """
-    return RegisterResponse(
+    return UserProfileResponse(
         id=current_user.id,
         username=current_user.username,
         email=current_user.email,
-        is_active=current_user.is_active,  # Entity 使用 is_active
+        is_active=current_user.is_active,
         created_at=current_user.created_at,
         updated_at=current_user.updated_at,
+        phone=current_user.phone,
+        address=current_user.address,
+        carrier_type=current_user.carrier_type,
+        carrier_number=current_user.carrier_number,
+        tax_id=current_user.tax_id,
     )
+
+
+@router.patch(
+    "/me",
+    status_code=status.HTTP_200_OK,
+    response_model=UserProfileResponse
+)
+async def update_current_user_profile(
+    request: ProfileUpdateRequest,
+    current_user = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Update the currently authenticated user's profile information.
+
+    Parameters:
+        request (ProfileUpdateRequest): Profile data to update (phone, address, carrier info, tax_id).
+
+    Returns:
+        UserProfileResponse: Updated user profile.
+    """
+    # 轉換為 InputDTO
+    input_dto = UpdateProfileInputDTO(
+        phone=request.phone,
+        address=request.address,
+        carrier_type=request.carrier_type,
+        carrier_number=request.carrier_number,
+        tax_id=request.tax_id,
+    )
+
+    # 建立 Repository 和 Use Case
+    user_repo = UserRepository(db)
+    use_case = UpdateProfileUseCase(user_repo)
+
+    # 執行 Use Case
+    output_dto = await use_case.execute(current_user.id, input_dto)
+
+    # 轉換為 API Response
+    return UserProfileResponse(
+        id=output_dto.id,
+        username=output_dto.username,
+        email=output_dto.email,
+        is_active=output_dto.is_active,
+        created_at=output_dto.created_at,
+        updated_at=output_dto.updated_at,
+        phone=output_dto.phone,
+        address=output_dto.address,
+        carrier_type=output_dto.carrier_type,
+        carrier_number=output_dto.carrier_number,
+        tax_id=output_dto.tax_id,
+    )
+
