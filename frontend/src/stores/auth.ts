@@ -1,7 +1,8 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import api from '@/lib/api'
-import type { User, LoginResponse, RegisterResponse } from '@/types/auth'
+import type { User, LoginResponse, RegisterResponse, ProfileUpdateRequest } from '@/types/auth'
+import { authService } from '@/services/authService'
 
 export const useAuthStore = defineStore('auth', () => {
   // State
@@ -116,11 +117,19 @@ export const useAuthStore = defineStore('auth', () => {
 
   const getCurrentUser = async (): Promise<void> => {
     try {
-      const response = await api.get<User>('/api/v1/auth/me')
-      user.value = response.data
+      user.value = await authService.getCurrentUser()
     } catch (error: any) {
       // 不在這裡自動登出，讓調用方決定
       // 如果是 401，API 攔截器會處理 token 刷新
+      return Promise.reject(error)
+    }
+  }
+
+  const updateProfile = async (data: ProfileUpdateRequest): Promise<void> => {
+    try {
+      user.value = await authService.updateProfile(data)
+      return Promise.resolve()
+    } catch (error: any) {
       return Promise.reject(error)
     }
   }
@@ -213,6 +222,7 @@ export const useAuthStore = defineStore('auth', () => {
     logout,
     refreshAccessToken,
     getCurrentUser,
+    updateProfile,
     initAuth,
     waitForInit  // 導出等待方法
   }
