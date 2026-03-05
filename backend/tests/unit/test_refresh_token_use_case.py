@@ -16,7 +16,7 @@ from modules.auth.use_cases.dtos import (
     RefreshTokenInputDTO,
     RefreshTokenOutputDTO,
 )
-from modules.auth.domain.entity import UserEntity
+from modules.auth.domain.entities.UserEntity import UserEntity
 from modules.auth.domain.repositories.i_user_repository import IUserRepository
 from core.exceptions import InvalidCredentialsError
 from core.security import get_password_hash, verify_token, create_refresh_token
@@ -45,6 +45,18 @@ class MockUserRepository(IUserRepository):
     async def get_by_email(self, email: str) -> UserEntity | None:
         """根據 email 查詢使用者"""
         return next((u for u in self.users if u.email.lower() == email.lower()), None)
+
+    async def get_by_id(self, user_id) -> UserEntity | None:
+        """根據 ID 查詢使用者"""
+        return next((u for u in self.users if str(u.id) == str(user_id)), None)
+
+    async def update(self, user: UserEntity) -> UserEntity:
+        """模擬更新使用者"""
+        for i, u in enumerate(self.users):
+            if str(u.id) == str(user.id):
+                self.users[i] = user
+                return user
+        return user
 
     async def exists_by_email(self, email: str) -> bool:
         """檢查 email 是否存在"""
@@ -93,7 +105,7 @@ class TestRefreshTokenUseCase:
             email="inactive@example.com",
             username="inactive_user",
             password_hash=hashed_password,
-            is_activate=False,  # 未啟用
+            is_active=False,  # 未啟用
         )
 
         created_user = await mock_repository.create(user)
