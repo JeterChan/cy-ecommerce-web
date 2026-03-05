@@ -21,6 +21,11 @@ export interface ProfileUpdateRequest {
   tax_id?: string
 }
 
+export interface EmailChangeRequest {
+  new_email: string
+  password: string
+}
+
 export interface LoginRequest {
   email: string
   password: string

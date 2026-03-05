@@ -3,6 +3,7 @@ import { ref, onMounted } from 'vue'
 import { useAuthStore } from '@/stores/auth'
 import { useToast } from '@/composables/useToast'
 import type { User } from '@/types/auth'
+import { authService } from '@/services/authService'
 import Navbar from '@/components/layout/Navbar.vue'
 import Footer from '@/components/layout/Footer.vue'
 import { Button } from '@/components/ui/button'
@@ -22,7 +23,8 @@ import {
   FileText,
   Save,
   X,
-  Edit
+  Edit,
+  CheckCircle2
 } from 'lucide-vue-next'
 
 const authStore = useAuthStore()
@@ -30,6 +32,14 @@ const { showSuccess, showError } = useToast()
 
 const loading = ref(false)
 const isEditing = ref(false)
+
+// 變更電子郵件
+const isChangingEmail = ref(false)
+const newEmail = ref('')
+const changeEmailPassword = ref('')
+const changeEmailLoading = ref(false)
+const changeEmailSuccess = ref(false)
+const changeEmailError = ref('')
 
 // 基本資訊（唯讀）
 const username = ref('')
@@ -92,6 +102,37 @@ const formatDate = (dateString: string) => {
     month: 'long',
     day: 'numeric'
   })
+}
+
+const handleCancelEmailChange = () => {
+  isChangingEmail.value = false
+  newEmail.value = ''
+  changeEmailPassword.value = ''
+  changeEmailError.value = ''
+  changeEmailSuccess.value = false
+}
+
+const handleRequestEmailChange = async () => {
+  changeEmailError.value = ''
+  if (!newEmail.value || !changeEmailPassword.value) {
+    changeEmailError.value = '請填寫新電子郵件和目前密碼'
+    return
+  }
+  try {
+    changeEmailLoading.value = true
+    await authService.requestEmailChange({
+      new_email: newEmail.value,
+      password: changeEmailPassword.value,
+    })
+    changeEmailSuccess.value = true
+    newEmail.value = ''
+    changeEmailPassword.value = ''
+  } catch (err: any) {
+    const detail = err?.response?.data?.detail
+    changeEmailError.value = detail || '請求失敗，請確認密碼是否正確'
+  } finally {
+    changeEmailLoading.value = false
+  }
 }
 
 const handleEditToggle = () => {
@@ -169,6 +210,73 @@ const handleSaveProfile = async () => {
                 電子郵件
               </Label>
               <Input :value="email" disabled class="bg-muted" />
+              <!-- 變更電子郵件區塊 -->
+              <div v-if="!changeEmailSuccess">
+                <button
+                  v-if="!isChangingEmail"
+                  type="button"
+                  class="text-sm text-blue-600 hover:underline mt-1"
+                  @click="isChangingEmail = true"
+                >
+                  變更電子郵件
+                </button>
+                <div v-else class="mt-3 space-y-3 rounded-md border p-4 bg-muted/40">
+                  <p class="text-sm text-muted-foreground">
+                    輸入新電子郵件後，系統將寄送驗證信至舊信箱與新信箱，兩端確認後完成變更。
+                  </p>
+                  <div class="space-y-1">
+                    <Label>新電子郵件</Label>
+                    <Input
+                      v-model="newEmail"
+                      type="email"
+                      placeholder="new@example.com"
+                      :disabled="changeEmailLoading"
+                    />
+                  </div>
+                  <div class="space-y-1">
+                    <Label>目前密碼</Label>
+                    <Input
+                      v-model="changeEmailPassword"
+                      type="password"
+                      placeholder="請輸入目前密碼"
+                      :disabled="changeEmailLoading"
+                    />
+                  </div>
+                  <p v-if="changeEmailError" class="text-sm text-red-500">{{ changeEmailError }}</p>
+                  <div class="flex gap-2">
+                    <Button
+                      size="sm"
+                      :disabled="changeEmailLoading"
+                      @click="handleRequestEmailChange"
+                    >
+                      <Loader2 v-if="changeEmailLoading" class="h-4 w-4 animate-spin mr-1" />
+                      送出請求
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      :disabled="changeEmailLoading"
+                      @click="handleCancelEmailChange"
+                    >
+                      取消
+                    </Button>
+                  </div>
+                </div>
+              </div>
+              <!-- 成功提示 -->
+              <Alert v-else class="mt-2 border-green-300 bg-green-50">
+                <CheckCircle2 class="h-4 w-4 text-green-600" />
+                <AlertDescription class="text-green-800">
+                  驗證信已發送至舊信箱與新信箱，請分別點擊信件中的連結以完成電子郵件變更。
+                  <button
+                    type="button"
+                    class="ml-2 text-sm underline text-green-700"
+                    @click="handleCancelEmailChange"
+                  >
+                    收起
+                  </button>
+                </AlertDescription>
+              </Alert>
             </div>
 
             <div class="space-y-2">
