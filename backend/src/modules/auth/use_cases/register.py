@@ -1,5 +1,5 @@
 from modules.auth.domain.repositories.i_user_repository import IUserRepository
-from modules.auth.domain.entity import UserEntity
+from modules.auth.domain.entities.UserEntity import UserEntity
 from modules.auth.use_cases.dtos import (
     RegisterUserInputDTO,
     RegisterUserOutputDTO

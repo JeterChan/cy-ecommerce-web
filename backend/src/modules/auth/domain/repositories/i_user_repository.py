@@ -1,8 +1,7 @@
 from abc import ABC, abstractmethod
-from typing import Optional, List
+from typing import Optional
 
-from pydantic import UUID4
-from modules.auth.domain.entity import UserEntity
+from modules.auth.domain.entities.UserEntity import UserEntity
 
 class IUserRepository(ABC):
     """
@@ -31,14 +30,18 @@ class IUserRepository(ABC):
         """
         pass
 
-    # @abstractmethod
-    # async def get_by_id(self, user_id: int) -> Optional[UserEntity]:
-    #     """
-    #     根據 ID 查詢 User
-    #     :param user_id: 使用者 ID
-    #     :return: User Entity or None
-    #     """
-    #     pass
+    @abstractmethod
+    async def get_by_id(self, user_id) -> Optional[UserEntity]:
+        """
+        根據 ID 查詢 User
+
+        Parameters:
+            user_id: 使用者 ID (UUID)
+
+        Returns:
+            Optional[UserEntity]: User Entity or None
+        """
+        pass
 
     @abstractmethod
     async def get_by_email(self, email:str) -> Optional[UserEntity]:
@@ -76,18 +79,22 @@ class IUserRepository(ABC):
     #     """
     #     pass
     #
-    # @abstractmethod
-    # async def update(self, user_id:int, user_data:dict) -> UserEntity:
-    #     """
-    #     update user data
-    #     :param user_id: user id
-    #     :param user_data: 要更新的欄位字典
-    #     :return: 更新後的 User Entity
-    #     Raises:
-    #         UserNotFoundError: 當使用者不存在時拋出
-    #     """
-    #     pass
-    #
+    @abstractmethod
+    async def update(self, user: UserEntity) -> UserEntity:
+        """
+        更新使用者資料
+
+        Parameters:
+            user: 要更新的使用者 Entity
+
+        Returns:
+            UserEntity: 更新後的 User Entity
+
+        Raises:
+            UserNotFoundError: 當使用者不存在時拋出
+        """
+        pass
+
     # @abstractmethod
     # async def delete(self, user_id:int) -> bool:
     #     """

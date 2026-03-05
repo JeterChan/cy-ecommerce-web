@@ -1,9 +1,10 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.exceptions import RequestValidationError
+from contextlib import asynccontextmanager
 
 from infrastructure.database import recreate_all, init_redis, close_redis
 from infrastructure import models
-from contextlib import asynccontextmanager
 
 from shared.exceptions.base import DomainException
 from shared.exceptions.common import (
@@ -20,7 +21,8 @@ from core.exception_handlers import (
     business_rule_violation_exception_handler,
     domain_exception_handler,
     invalid_credentials_exception_handler,
-    validation_exception_handler
+    validation_exception_handler,
+    pydantic_validation_exception_handler,
 )
 
 from modules.auth.presentation.routes import router as auth_router
@@ -70,6 +72,9 @@ app.add_middleware(
     allow_methods=["*"],  # 允許所有 HTTP 方法
     allow_headers=["*"],  # 允許所有 headers
 )
+
+# Pydantic 驗證例外（422）
+app.add_exception_handler(RequestValidationError, pydantic_validation_exception_handler)
 
 # 特定領域異常
 app.add_exception_handler(InvalidCredentialsError, invalid_credentials_exception_handler)

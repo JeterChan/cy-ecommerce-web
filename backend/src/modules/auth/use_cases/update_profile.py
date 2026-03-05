@@ -1,8 +1,6 @@
 """更新使用者個人檔案 Use Case"""
-from typing import Optional
 from uuid import UUID
 
-from modules.auth.domain.entity import UserEntity
 from modules.auth.infrastructure.repositories.user_repository import UserRepository
 from modules.auth.use_cases.dtos import UpdateProfileInputDTO, UpdateProfileOutputDTO
 

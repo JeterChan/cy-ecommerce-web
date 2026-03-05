@@ -4,7 +4,7 @@ Auth Command Use Cases
 處理修改資料的業務邏輯（Commands）
 """
 from modules.auth.domain.repositories.i_user_repository import IUserRepository
-from modules.auth.domain.entity import UserEntity
+from modules.auth.domain.entities.UserEntity import UserEntity
 from modules.auth.application.dtos import (
     RegisterRequestDTO,
     LoginRequestDTO,

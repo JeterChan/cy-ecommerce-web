@@ -7,11 +7,17 @@ from .inputs import (
     RegisterRequestDTO,
     LoginRequestDTO,
     RefreshTokenRequestDTO,
+    UpdateProfileRequest,
+    EmailChangeRequest,
+    VerifyEmailChangeRequest,
+    EmailVerifyType,
 )
 from .outputs import (
     UserResponseDTO,
     TokenResponseDTO,
     LoginResponseDTO,
+    UserProfileResponse,
+    UpdateProfileResponse,
 )
 
 __all__ = [
@@ -19,10 +25,16 @@ __all__ = [
     "RegisterRequestDTO",
     "LoginRequestDTO",
     "RefreshTokenRequestDTO",
+    "UpdateProfileRequest",
+    "EmailChangeRequest",
+    "VerifyEmailChangeRequest",
+    "EmailVerifyType",
 
     # Output DTOs
     "UserResponseDTO",
     "TokenResponseDTO",
     "LoginResponseDTO",
+    "UserProfileResponse",
+    "UpdateProfileResponse",
 ]
 

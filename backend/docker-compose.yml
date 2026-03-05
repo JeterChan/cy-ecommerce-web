@@ -41,12 +41,57 @@ services:
       - postgres_data:/var/lib/postgresql/data
     restart: always
 
+  # Celery Worker — 處理非同步任務（Email 寄送等）
+  celery-worker:
+    build: .
+    container_name: ecommerce_celery_worker
+    command: celery -A infrastructure.celery_app worker -l info -c 2
+    working_dir: /app/src
+    volumes:
+      - ./src:/app/src
+    env_file:
+      - .env
+    depends_on:
+      - redis
+      - db
+    restart: always
+
+  # Celery Beat — 定期排程任務（帳號清理等）
+  celery-beat:
+    build: .
+    container_name: ecommerce_celery_beat
+    command: celery -A infrastructure.celery_app beat -l info
+    working_dir: /app/src
+    volumes:
+      - ./src:/app/src
+    env_file:
+      - .env
+    depends_on:
+      - redis
+      - db
+    restart: always
+
   # Redis
   redis:
     image: redis:7-alpine
     container_name: ecommerce_redis
     ports:
       - "6379:6379" # Map port 6379 of the container to port 6379 on the host
+    restart: always
+
+  # Frontend (Vue 3 / Vite dev server)
+  frontend:
+    image: node:20-alpine
+    container_name: ecommerce_frontend
+    working_dir: /app
+    command: sh -c "npm install && npm run dev"
+    ports:
+      - "5173:5173"
+    volumes:
+      - ../frontend:/app
+      - /app/node_modules
+    environment:
+      - VITE_API_BASE_URL=http://localhost:8000
     restart: always
 
 volumes:
