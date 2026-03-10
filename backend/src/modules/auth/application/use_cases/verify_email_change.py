@@ -1,6 +1,6 @@
 """驗證電子郵件變更 Use Case"""
 from modules.auth.infrastructure.repositories.user_repository import UserRepository
-from modules.auth.application.dtos.inputs import VerifyEmailChangeRequest
+from modules.auth.application.dtos import VerifyEmailChangeRequest
 from infrastructure.redis.token_manager import RedisTokenManager
 from core.exceptions import ValidationError
 

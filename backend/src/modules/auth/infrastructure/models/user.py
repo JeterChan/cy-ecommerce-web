@@ -16,6 +16,7 @@ class UserModel(BaseModel):
     username: Mapped[str] = mapped_column(String(255), unique=True)
     password_hash: Mapped[str] = mapped_column(String(255))
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+    is_verified: Mapped[bool] = mapped_column(Boolean, default=False)
 
     # 個人檔案欄位
     phone: Mapped[str | None] = mapped_column(String(20), nullable=True)

@@ -2,7 +2,7 @@
 from uuid import UUID
 
 from modules.auth.infrastructure.repositories.user_repository import UserRepository
-from modules.auth.application.dtos.inputs import EmailChangeRequest
+from modules.auth.application.dtos import EmailChangeRequest
 from infrastructure.redis.token_manager import RedisTokenManager
 from infrastructure.config import settings
 from core.exceptions import UserNotFoundError, InvalidCredentialsError, ValidationError

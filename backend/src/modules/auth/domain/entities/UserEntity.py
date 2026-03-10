@@ -9,6 +9,7 @@ class UserEntity(BaseEntity):
     username: str
     password_hash: str
     is_active: bool = True
+    is_verified: bool = False
 
     # 個人檔案欄位 (spec-defined)
     display_name: str | None = None

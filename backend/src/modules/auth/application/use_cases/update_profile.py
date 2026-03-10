@@ -1,16 +1,16 @@
 """更新使用者個人檔案 Use Case"""
 from uuid import UUID
+from modules.auth.domain.repositories.i_user_repository import IUserRepository
+from modules.auth.application.dtos import UpdateProfileRequest, UpdateProfileResponse
+from core.exceptions import UserNotFoundError, ValidationError
+import logging
 
-from modules.auth.infrastructure.repositories.user_repository import UserRepository
-from modules.auth.application.dtos.inputs import UpdateProfileRequest
-from modules.auth.application.dtos.outputs import UpdateProfileResponse
-from core.exceptions import UserNotFoundError
-
+logger = logging.getLogger(__name__)
 
 class UpdateProfileUseCase:
     """更新使用者個人檔案 Use Case"""
 
-    def __init__(self, user_repository: UserRepository):
+    def __init__(self, user_repository: IUserRepository):
         self.user_repository = user_repository
 
     async def execute(
@@ -18,24 +18,20 @@ class UpdateProfileUseCase:
     ) -> UpdateProfileResponse:
         """
         執行更新個人檔案
-
-        只更新請求中有明確提供（非 None）的欄位。
-
-        Args:
-            user_id: 使用者 ID
-            request: 更新個人檔案請求 DTO
-
-        Returns:
-            UpdateProfileResponse: 更新後的使用者個人檔案
-
-        Raises:
-            UserNotFoundError: 使用者不存在
         """
         user = await self.user_repository.get_by_id(user_id)
         if user is None:
             raise UserNotFoundError(f"使用者不存在 (id: {user_id})")
 
-        # 只更新有提供的欄位（Partial Update）
+        # 處理使用者名稱變更
+        if request.username is not None and request.username != user.username:
+            if await self.user_repository.exists_by_username(request.username):
+                logger.warning(f"更新個人檔案失敗：使用者名稱已存在 (username: {request.username})")
+                raise ValidationError("使用者名稱已存在")
+            user.username = request.username
+            logger.info(f"使用者名稱已變更 (id: {user_id}, new_username: {request.username})")
+
+        # 更新其他欄位 (Partial Update)
         if request.phone is not None:
             user.phone = request.phone
         if request.address is not None:
@@ -48,5 +44,6 @@ class UpdateProfileUseCase:
             user.tax_id = request.tax_id
 
         updated_user = await self.user_repository.update(user)
+        logger.info(f"使用者個人檔案已更新 (id: {user_id})")
 
         return UpdateProfileResponse.from_entity(updated_user)

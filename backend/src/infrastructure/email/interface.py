@@ -11,17 +11,23 @@ class IEmailService(Protocol):
         verification_url: str,
         email_type: str  # "old" 或 "new"
     ) -> None:
-        """
-        發送電子郵件驗證信
-
-        Args:
-            to_email: 收件人電子郵件地址
-            username: 使用者名稱
-            verification_url: 驗證連結 URL
-            email_type: 電子郵件類型 ("old" 表示舊信箱驗證, "new" 表示新信箱驗證)
-
-        Raises:
-            EmailSendError: 當郵件發送失敗時
-        """
+        """發送電子郵件變更驗證信 (Existing)"""
         ...
 
+    async def send_registration_verification(
+        self,
+        to_email: str,
+        username: str,
+        verification_url: str
+    ) -> None:
+        """發送註冊信箱驗證信"""
+        ...
+
+    async def send_password_reset(
+        self,
+        to_email: str,
+        username: str,
+        reset_url: str
+    ) -> None:
+        """發送密碼重設信"""
+        ...

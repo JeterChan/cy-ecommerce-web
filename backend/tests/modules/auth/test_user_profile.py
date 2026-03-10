@@ -25,7 +25,7 @@ import os
 from infrastructure.database import Base
 from modules.auth.infrastructure.repositories.user_repository import UserRepository
 from modules.auth.application.use_cases.get_profile import GetProfileUseCase
-from modules.auth.application.dtos.outputs import UserProfileResponse
+from modules.auth.application.dtos import UserProfileResponse
 from modules.auth.domain.entities.UserEntity import UserEntity
 from core.exceptions import UserNotFoundError
 from core.security import get_password_hash

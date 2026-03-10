@@ -2,7 +2,7 @@
 from uuid import UUID
 
 from modules.auth.infrastructure.repositories.user_repository import UserRepository
-from modules.auth.application.dtos.outputs import UserProfileResponse
+from modules.auth.application.dtos import UserProfileResponse
 from core.exceptions import UserNotFoundError
 
 
