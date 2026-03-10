@@ -5,6 +5,7 @@ Product Query Use Cases
 """
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import List, Optional
+from uuid import UUID
 from modules.product.domain.entities import Product
 from modules.product.infrastructure.repositories import SqlAlchemyProductRepository
 
@@ -15,12 +16,12 @@ class GetProductUseCase:
     def __init__(self, db: AsyncSession):
         self.repo = SqlAlchemyProductRepository(db)
 
-    async def execute(self, product_id: int) -> Product:
+    async def execute(self, product_id: UUID) -> Product:
         """
         執行取得單一商品
 
         Args:
-            product_id: 商品 ID
+            product_id: 商品 UUID
 
         Returns:
             商品 Entity
@@ -30,7 +31,7 @@ class GetProductUseCase:
         """
         product = await self.repo.get_by_id(product_id)
         if not product:
-            raise ValueError(f"商品 ID {product_id} 不存在")
+            raise ValueError(f"商品 UUID {product_id} 不存在")
         return product
 
 

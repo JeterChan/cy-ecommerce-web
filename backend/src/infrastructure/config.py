@@ -45,7 +45,8 @@ class Settings(BaseSettings):
         # 優先讀取 .env 檔案，如果沒有則讀取系統環境變數
         "env_file": ".env",
         "env_file_encoding": "utf-8",
-        "case_sensitive": True
+        "case_sensitive": True,
+        "extra": "ignore"  # 忽略額外的環境變數（不報錯）
     }
 
 # 實例化

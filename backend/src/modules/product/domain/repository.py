@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
 from typing import List, Optional
+from uuid import UUID
 from modules.product.domain.entities import Product
 
 class ProductRepository(ABC):
@@ -8,7 +9,7 @@ class ProductRepository(ABC):
         pass
 
     @abstractmethod
-    def get_by_id(self, product_id: int) -> Optional[Product]:
+    def get_by_id(self, product_id: UUID) -> Optional[Product]:
         pass
 
     @abstractmethod
@@ -20,5 +21,5 @@ class ProductRepository(ABC):
         pass
 
     @abstractmethod
-    def delete(self, product_id: int) -> bool:
+    def delete(self, product_id: UUID) -> bool:
         pass

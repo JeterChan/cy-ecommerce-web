@@ -11,7 +11,7 @@ from modules.auth.application.dtos import (
     UserResponseDTO,
     LoginResponseDTO,
 )
-from core.exceptions import DuplicateEmailError, InvalidCredentialsError
+from core.exceptions import DuplicateEmailError, InvalidCredentialsError, UserNotRegisteredError
 from core.security import get_password_hash, create_access_token, create_refresh_token
 
 
@@ -106,7 +106,8 @@ class LoginUserUseCase:
             LoginResponseDTO: 包含使用者資料和 Token
 
         Raises:
-            InvalidCredentialsError: 憑證錯誤
+            UserNotRegisteredError: 信箱未註冊
+            InvalidCredentialsError: 密碼錯誤
         """
         # Step 1: 根據 Email 查詢使用者
         email = str(data.email)
@@ -114,7 +115,7 @@ class LoginUserUseCase:
 
         # Step 2: 驗證使用者是否存在
         if user is None:
-            raise InvalidCredentialsError()
+            raise UserNotRegisteredError(email)
 
         # Step 3: 驗證密碼是否正確
         if not user.verify_password(data.password):

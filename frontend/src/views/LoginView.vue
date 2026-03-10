@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import { useRouter, useRoute, RouterLink } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { useForm } from 'vee-validate'
@@ -12,25 +12,27 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter }
 import Navbar from '@/components/layout/Navbar.vue'
 import Footer from '@/components/layout/Footer.vue'
 import { useAuthStore } from '@/stores/auth'
+import { useCartStore } from '@/stores/cart'
 import { useToast } from '@/composables/useToast'
 
 const router = useRouter()
 const route = useRoute()
 const { t } = useI18n()
 const authStore = useAuthStore()
+const cartStore = useCartStore()
 const { showSuccess, showError } = useToast()
 
 const showPassword = ref(false)
 const isLoading = ref(false)
 
-// Zod 驗證 Schema
-const loginSchema = toTypedSchema(
+// Zod 驗證 Schema - 使用 computed 讓翻譯可以響應式更新
+const loginSchema = computed(() => toTypedSchema(
   z.object({
     email: z.string({ required_error: t('validation.required') }).min(1, t('validation.required')).email(t('validation.emailInvalid')),
     password: z.string({ required_error: t('validation.required') }).min(1, t('validation.required')).min(8, t('validation.passwordMinLength')),
     rememberMe: z.boolean()
   })
-)
+))
 
 const { defineField, handleSubmit, errors } = useForm({
   validationSchema: loginSchema,
@@ -49,6 +51,15 @@ const onSubmit = handleSubmit(async (values) => {
   try {
     await authStore.login(values.email, values.password, values.rememberMe)
     showSuccess(t('auth.loginSuccess'))
+
+    // 🔄 登入成功後，同步購物車
+    console.log('🔄 [Login] 登入成功，開始同步購物車...')
+    try {
+      await cartStore.syncFromBackend()
+      console.log('✅ [Login] 購物車同步完成')
+    } catch (cartError) {
+      console.warn('⚠️ [Login] 購物車同步失敗，但不影響登入:', cartError)
+    }
 
     // 導向 redirect 參數指定的路徑，或預設首頁
     const redirectPath = (route.query.redirect as string) || '/'

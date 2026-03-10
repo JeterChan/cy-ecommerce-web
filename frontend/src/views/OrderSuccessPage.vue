@@ -1,10 +1,20 @@
 <script setup lang="ts">
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import Navbar from '@/components/layout/Navbar.vue'
 import Footer from '@/components/layout/Footer.vue'
+import { Button } from '@/components/ui/button'
 
 const route = useRoute()
+const router = useRouter()
 const orderId = route.query.orderId as string
+
+const viewOrderDetail = () => {
+  if (orderId) {
+    router.push(`/orders/${orderId}`)
+  } else {
+    router.push('/orders')
+  }
+}
 </script>
 
 <template>
@@ -26,12 +36,13 @@ const orderId = route.query.orderId as string
         <p class="font-mono font-medium text-lg">{{ orderId || 'Loading...' }}</p>
       </div>
       
-      <div class="flex justify-center space-x-4">
-              <button @click="$router.push('/')" class="px-6 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors">
-                回到首頁
-              </button>        <button class="px-6 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
-          查看訂單
-        </button>
+      <div class="flex flex-col sm:flex-row justify-center gap-4">
+        <Button variant="outline" @click="router.push('/')">
+          繼續購物
+        </Button>
+        <Button @click="viewOrderDetail">
+          查看訂單詳情
+        </Button>
       </div>
     </main>
     <Footer />

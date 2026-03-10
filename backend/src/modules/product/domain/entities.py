@@ -2,6 +2,7 @@ from dataclasses import dataclass, field
 from decimal import Decimal
 from typing import Optional, List
 from datetime import datetime
+from uuid import UUID
 
 @dataclass
 class Product:
@@ -10,7 +11,7 @@ class Product:
     description: Optional[str]
     price: Decimal
     stock_quantity: int
-    id: Optional[int] = None
+    id: Optional[UUID] = None
     is_active: bool = True
     category_ids: List[int] = field(default_factory=list)
     image_url: Optional[str] = None

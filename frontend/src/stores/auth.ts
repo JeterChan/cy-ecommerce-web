@@ -8,10 +8,16 @@ export const useAuthStore = defineStore('auth', () => {
   const user = ref<User | null>(null)
   const accessToken = ref<string | null>(null)
   const refreshToken = ref<string | null>(null)
+  const isInitialized = ref(false)
+
+  // 初始化 Promise，用於等待初始化完成
+  let initPromise: Promise<void> | null = null
 
   // Computed
   const isAuthenticated = computed(() => {
-    return !!(accessToken.value && user.value)
+    // 只要有 accessToken 就認為已認證
+    // user 資訊可能還在載入中或暫時獲取失敗
+    return !!accessToken.value
   })
 
   // Actions
@@ -110,32 +116,87 @@ export const useAuthStore = defineStore('auth', () => {
 
   const getCurrentUser = async (): Promise<void> => {
     try {
-      const response = await api.get<User>('/api/v1/auth/users/me')
+      const response = await api.get<User>('/api/v1/auth/me')
       user.value = response.data
     } catch (error: any) {
-      // 如果取得使用者失敗，清除狀態
-      logout()
+      // 不在這裡自動登出，讓調用方決定
+      // 如果是 401，API 攔截器會處理 token 刷新
       return Promise.reject(error)
     }
   }
 
   // 初始化：從 storage 恢復狀態
   const initAuth = async (): Promise<void> => {
-    const token = localStorage.getItem('accessToken') || sessionStorage.getItem('accessToken')
-    const refresh = localStorage.getItem('refreshToken') || sessionStorage.getItem('refreshToken')
-
-    if (token) {
-      accessToken.value = token
-      refreshToken.value = refresh
-
-      // 嘗試取得使用者資訊
-      try {
-        await getCurrentUser()
-      } catch (error) {
-        // 如果取得失敗，清除狀態
-        logout()
-      }
+    // 如果已經在初始化，返回現有的 Promise
+    if (initPromise) {
+      return initPromise
     }
+
+    initPromise = (async () => {
+      console.log('[Auth] 開始初始化認證狀態...')
+
+      const token = localStorage.getItem('accessToken') || sessionStorage.getItem('accessToken')
+      const refresh = localStorage.getItem('refreshToken') || sessionStorage.getItem('refreshToken')
+
+      if (token) {
+        console.log('[Auth] 從 storage 恢復 token')
+        accessToken.value = token
+        refreshToken.value = refresh
+
+        // 嘗試取得使用者資訊
+        try {
+          console.log('[Auth] 獲取使用者資訊...')
+          await getCurrentUser()
+          console.log('[Auth] 使用者資訊獲取成功:', user.value?.username)
+        } catch (error: any) {
+          console.warn('[Auth] 初始化時獲取使用者資訊失敗:', error.message)
+
+          // 檢查錯誤類型
+          if (error.response) {
+            const status = error.response.status
+            console.log('[Auth] API 錯誤狀態碼:', status)
+
+            // 401/403 表示 token 完全無效（refresh 也失敗了）
+            if (status === 401 || status === 403) {
+              console.log('[Auth] Token 無效，清除認證狀態')
+              logout()
+            } else {
+              // 其他 HTTP 錯誤（如 500）
+              console.warn('[Auth] 伺服器錯誤，保留 token 等待重試')
+            }
+          } else if (error.request) {
+            // 網絡錯誤（無法連接到伺服器）
+            console.warn('[Auth] 網絡錯誤，保留 token')
+            // 保留 token 和 accessToken.value
+            // 但 user.value 保持為 null
+            // isAuthenticated 仍會是 true（因為有 token）
+          } else {
+            // 其他錯誤
+            console.warn('[Auth] 未知錯誤，保留 token')
+          }
+        }
+      } else {
+        console.log('[Auth] 沒有找到已儲存的 token')
+      }
+
+      // 標記初始化完成
+      isInitialized.value = true
+      console.log('[Auth] 初始化完成，isAuthenticated:', isAuthenticated.value)
+    })()
+
+    return initPromise
+  }
+
+  // 等待初始化完成的輔助方法
+  const waitForInit = async (): Promise<void> => {
+    if (isInitialized.value) {
+      return Promise.resolve()
+    }
+    if (initPromise) {
+      return initPromise
+    }
+    // 如果還沒開始初始化，開始初始化
+    return initAuth()
   }
 
   return {
@@ -143,6 +204,7 @@ export const useAuthStore = defineStore('auth', () => {
     user,
     accessToken,
     refreshToken,
+    isInitialized,
     // Computed
     isAuthenticated,
     // Actions
@@ -151,7 +213,8 @@ export const useAuthStore = defineStore('auth', () => {
     logout,
     refreshAccessToken,
     getCurrentUser,
-    initAuth
+    initAuth,
+    waitForInit  // 導出等待方法
   }
 })
 

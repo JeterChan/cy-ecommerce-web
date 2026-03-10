@@ -31,6 +31,17 @@ onMounted(async () => {
   } catch (e) {
     console.error('Failed to load categories:', e)
   }
+
+  // 如果有 token 但沒有 user，嘗試重新獲取
+  if (authStore.accessToken && !authStore.user) {
+    console.log('[Navbar] 偵測到有 token 但缺少 user，嘗試獲取...')
+    try {
+      await authStore.getCurrentUser()
+      console.log('[Navbar] User 資訊獲取成功')
+    } catch (error) {
+      console.warn('[Navbar] User 資訊獲取失敗:', error)
+    }
+  }
 })
 
 const navigateToCategory = (category: string) => {
@@ -173,6 +184,9 @@ const handleLogout = () => {
               <DropdownMenuSeparator class="md:hidden" />
               <DropdownMenuItem disabled :title="t('auth.comingSoon')">
                 {{ t('auth.profile') }}
+              </DropdownMenuItem>
+              <DropdownMenuItem as-child class="cursor-pointer">
+                <RouterLink to="/orders">我的訂單</RouterLink>
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem @click="handleLogout" class="cursor-pointer">
