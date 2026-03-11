@@ -47,6 +47,11 @@ api.interceptors.response.use(
   async (error: AxiosError) => {
     const originalRequest = error.config as InternalAxiosRequestConfig & { _retry?: boolean }
 
+    // 排除登入端點，登入失敗的 401 應由頁面自行處理
+    if (originalRequest.url?.includes('/api/v1/auth/login')) {
+      return Promise.reject(error)
+    }
+
     // 處理 401 錯誤（Token 過期）
     if (error.response?.status === 401 && originalRequest && !originalRequest._retry) {
       // 避免對 /auth/refresh 端點本身進行刷新

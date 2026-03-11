@@ -65,8 +65,12 @@ const onSubmit = handleSubmit(async (values) => {
     const redirectPath = (route.query.redirect as string) || '/'
     router.push(redirectPath)
   } catch (error: any) {
-    // 統一顯示：登入失敗，帳號或密碼輸入錯誤
-    showError('登入失敗，帳號或密碼輸入錯誤')
+    const status = error.response?.status
+    if (status === 403) {
+      showError(t('error.emailNotVerified'))
+    } else {
+      showError(t('error.invalidCredentials'))
+    }
   } finally {
     isLoading.value = false
   }
@@ -152,7 +156,7 @@ const onSubmit = handleSubmit(async (values) => {
                 {{ t('auth.rememberMe') }}
               </label>
             </div>
-            <RouterLink to="/forgot-password" class="text-sm text-primary hover:underline">
+            <RouterLink to="/auth/forgot-password" class="text-sm text-primary hover:underline">
               {{ t('auth.forgotPassword') }}
             </RouterLink>
           </div>
