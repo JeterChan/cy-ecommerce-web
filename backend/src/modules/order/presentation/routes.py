@@ -13,14 +13,14 @@ from infrastructure.database import get_db, get_redis
 from redis.asyncio import Redis
 from core.security import verify_token
 
-from modules.order.application.dtos.inputs import CreateOrderRequest, UpdateOrderStatusRequest
-from modules.order.application.dtos.outputs import OrderResponse, OrderListResponse, OrderItemResponse
+from modules.order.application.dtos import CreateOrderRequest, UpdateOrderStatusRequest
+from modules.order.application.dtos import OrderResponse, OrderListResponse, OrderItemResponse
 from modules.order.application.use_cases.create_order import CreateOrderUseCase
 from modules.order.application.use_cases.update_order import UpdateOrderStatusUseCase
 from modules.order.infrastructure.repositories.postgres_order_repository import PostgresOrderRepository
 from modules.order.infrastructure.repositories.redis_cart_repository import OrderCartAdapter
-from modules.cart.infrastructure.redis_repository import RedisCartRepository
-from modules.product.infrastructure.repositories import SqlAlchemyProductRepository
+from modules.cart.infrastructure.repositories.redis_repository import RedisCartRepository
+from modules.product.infrastructure.repository import SqlAlchemyProductRepository
 from shared.exceptions import BusinessRuleViolationException, ResourceNotFoundException
 
 

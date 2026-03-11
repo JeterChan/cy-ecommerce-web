@@ -43,8 +43,3 @@ class UserEntity(BaseEntity):
     def is_deleted(self) -> bool:
         """檢查使用者是否已被軟刪除"""
         return self.deleted_at is not None
-
-    def verify_password(self, plain_password: str) -> bool:
-        """驗證密碼"""
-        from core.security import verify_password
-        return verify_password(plain_password, self.password_hash)

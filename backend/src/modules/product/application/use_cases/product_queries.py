@@ -3,18 +3,17 @@ Product Query Use Cases
 
 處理查詢資料的業務邏輯（Queries）
 """
-from sqlalchemy.ext.asyncio import AsyncSession
 from typing import List, Optional
 from uuid import UUID
 from modules.product.domain.entities import Product
-from modules.product.infrastructure.repositories import SqlAlchemyProductRepository
+from modules.product.domain.repository import IProductRepository
 
 
 class GetProductUseCase:
     """取得單一商品的業務邏輯"""
 
-    def __init__(self, db: AsyncSession):
-        self.repo = SqlAlchemyProductRepository(db)
+    def __init__(self, repo: IProductRepository):
+        self.repo = repo
 
     async def execute(self, product_id: UUID) -> Product:
         """
@@ -38,8 +37,8 @@ class GetProductUseCase:
 class ListProductsUseCase:
     """列出商品清單的業務邏輯"""
 
-    def __init__(self, db: AsyncSession):
-        self.repo = SqlAlchemyProductRepository(db)
+    def __init__(self, repo: IProductRepository):
+        self.repo = repo
 
     async def execute(
         self,

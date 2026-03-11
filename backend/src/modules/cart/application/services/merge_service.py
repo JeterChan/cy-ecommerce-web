@@ -14,9 +14,9 @@ import uuid
 from sqlalchemy.ext.asyncio import AsyncSession
 from redis.asyncio import Redis
 
-from modules.cart.infrastructure.redis_repository import RedisCartRepository
-from modules.cart.infrastructure.sql_repository import SQLCartRepository
-from modules.cart.domain.schemas import CartItemCreate
+from modules.cart.infrastructure.repositories.redis_repository import RedisCartRepository
+from modules.cart.infrastructure.repositories.sql_repository import SQLCartRepository
+from modules.cart.domain.entities import CartItemCreate
 
 
 class CartMergeService:

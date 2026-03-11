@@ -13,9 +13,9 @@ from infrastructure.database import get_redis, get_db
 from redis.asyncio import Redis
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from modules.cart.infrastructure.redis_repository import RedisCartRepository
-from modules.cart.infrastructure.sql_repository import SQLCartRepository
-from modules.cart.domain.repository import CartRepository
+from modules.cart.infrastructure.repositories.redis_repository import RedisCartRepository
+from modules.cart.infrastructure.repositories.sql_repository import SQLCartRepository
+from modules.cart.domain.repository import ICartRepository
 from modules.cart.application.use_cases import (
     AddToCartUseCase,
     UpdateCartItemQuantityUseCase,
@@ -25,15 +25,15 @@ from modules.cart.application.use_cases import (
     GetCartItemUseCase,
     GetCartSummaryUseCase,
 )
-from modules.cart.domain.schemas import CartItemResponse, CartItemCreate, CartItemUpdate
-from modules.cart.domain.utils import (
+from modules.cart.domain.entities import CartItemResponse, CartItemCreate, CartItemUpdate
+from modules.cart.infrastructure.utils import (
     generate_guest_token,
     set_guest_token_cookie,
     get_guest_token_from_cookie,
     validate_guest_token
 )
 from core.security import verify_token
-from modules.auth.infrastructure.repositories.user_repository import UserRepository
+from modules.auth.infrastructure.repository import UserRepository
 
 
 router = APIRouter(prefix="/cart", tags=["Cart"])
@@ -86,7 +86,7 @@ async def get_cart_repository(
     redis: Redis = Depends(get_redis),
     db: AsyncSession = Depends(get_db),
     user = Depends(get_current_user_optional)
-) -> Tuple[CartRepository, str]:
+) -> Tuple[ICartRepository, str]:
     """
     根據使用者狀態選擇 Repository
 
@@ -95,7 +95,7 @@ async def get_cart_repository(
     - 若未登入（user 為 None）→ 使用 RedisCartRepository，owner_id = guest_token
 
     Returns:
-        Tuple[CartRepository, str]: (repository, owner_id)
+        Tuple[ICartRepository, str]: (repository, owner_id)
     """
     if user:
         # 會員：使用 SQL Repository
@@ -128,7 +128,7 @@ async def get_cart_repository(
 )
 async def add_to_cart(
     item: CartItemCreate,
-    repo_and_id: Tuple[CartRepository, str] = Depends(get_cart_repository)
+    repo_and_id: Tuple[ICartRepository, str] = Depends(get_cart_repository)
 ) -> CartItemResponse:
     """
     新增商品到購物車
@@ -167,7 +167,7 @@ async def add_to_cart(
     description="取得購物車所有商品（支援訪客與會員）"
 )
 async def get_cart(
-    repo_and_id: Tuple[CartRepository, str] = Depends(get_cart_repository)
+    repo_and_id: Tuple[ICartRepository, str] = Depends(get_cart_repository)
 ) -> List[CartItemResponse]:
     """
     取得購物車所有商品
@@ -189,7 +189,7 @@ async def get_cart(
 )
 async def get_cart_item(
     product_id: uuid.UUID,
-    repo_and_id: Tuple[CartRepository, str] = Depends(get_cart_repository)
+    repo_and_id: Tuple[ICartRepository, str] = Depends(get_cart_repository)
 ) -> CartItemResponse:
     """
     查詢購物車中的單一商品
@@ -221,7 +221,7 @@ async def get_cart_item(
 async def update_cart_item(
     product_id: uuid.UUID,
     item_update: CartItemUpdate,
-    repo_and_id: Tuple[CartRepository, str] = Depends(get_cart_repository)
+    repo_and_id: Tuple[ICartRepository, str] = Depends(get_cart_repository)
 ) -> CartItemResponse:
     """
     更新購物車商品數量
@@ -254,7 +254,7 @@ async def update_cart_item(
 )
 async def remove_cart_item(
     product_id: uuid.UUID,
-    repo_and_id: Tuple[CartRepository, str] = Depends(get_cart_repository)
+    repo_and_id: Tuple[ICartRepository, str] = Depends(get_cart_repository)
 ) -> None:
     """
     從購物車移除商品
@@ -276,7 +276,7 @@ async def remove_cart_item(
     description="清空購物車所有商品"
 )
 async def clear_cart(
-    repo_and_id: Tuple[CartRepository, str] = Depends(get_cart_repository)
+    repo_and_id: Tuple[ICartRepository, str] = Depends(get_cart_repository)
 ) -> None:
     """
     清空購物車所有商品
@@ -292,7 +292,7 @@ async def clear_cart(
     description="取得購物車商品總數量和商品種類數"
 )
 async def get_cart_summary(
-    repo_and_id: Tuple[CartRepository, str] = Depends(get_cart_repository)
+    repo_and_id: Tuple[ICartRepository, str] = Depends(get_cart_repository)
 ):
     """
     取得購物車摘要

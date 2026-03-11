@@ -7,19 +7,19 @@ Cart Query Use Cases
 import uuid
 from typing import List, Optional
 
-from modules.cart.domain.repository import CartRepository
-from modules.cart.domain.schemas import CartItemResponse
+from modules.cart.domain.repository import ICartRepository
+from modules.cart.domain.entities import CartItemResponse
 
 
 class GetCartUseCase:
     """取得購物車的業務邏輯"""
 
-    def __init__(self, repository: CartRepository):
+    def __init__(self, repository: ICartRepository):
         """
         初始化 Use Case
 
         Args:
-            repository: CartRepository 實作（RedisCartRepository 或 SQLCartRepository）
+            repository: ICartRepository 實作（RedisCartRepository 或 SQLCartRepository）
         """
         self.repository = repository
 
@@ -39,7 +39,7 @@ class GetCartUseCase:
 class GetCartItemUseCase:
     """查詢購物車中單一商品的業務邏輯"""
 
-    def __init__(self, repository: CartRepository):
+    def __init__(self, repository: ICartRepository):
         self.repository = repository
 
     async def execute(
@@ -63,7 +63,7 @@ class GetCartItemUseCase:
 class GetCartSummaryUseCase:
     """計算購物車摘要的業務邏輯"""
 
-    def __init__(self, repository: CartRepository):
+    def __init__(self, repository: ICartRepository):
         self.repository = repository
 
     async def execute(self, owner_id: str) -> dict:

@@ -1,6 +1,7 @@
 """變更密碼 Use Case (登入狀態下)"""
 from uuid import UUID
-from modules.auth.domain.repositories.i_user_repository import IUserRepository
+from modules.auth.domain.repository import IUserRepository
+from modules.auth.domain.services.password_hasher import IPasswordHasher
 from core.security import get_password_hash
 from core.exceptions import UserNotFoundError, InvalidCredentialsError
 import logging
@@ -10,8 +11,9 @@ logger = logging.getLogger(__name__)
 class ChangePasswordUseCase:
     """變更密碼 Use Case"""
 
-    def __init__(self, user_repository: IUserRepository):
+    def __init__(self, user_repository: IUserRepository, password_hasher: IPasswordHasher):
         self.user_repository = user_repository
+        self.password_hasher = password_hasher
 
     async def execute(self, user_id: UUID, old_password: str, new_password: str) -> bool:
         """
@@ -34,7 +36,7 @@ class ChangePasswordUseCase:
             raise UserNotFoundError(f"使用者不存在 (id: {user_id})")
 
         # 驗證舊密碼
-        if not user.verify_password(old_password):
+        if not self.password_hasher.verify(old_password, user.password_hash):
             logger.warning(f"變更密碼失敗：舊密碼不正確 (id: {user_id})")
             raise InvalidCredentialsError("舊密碼不正確")
 

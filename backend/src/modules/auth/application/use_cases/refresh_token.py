@@ -1,4 +1,4 @@
-from modules.auth.domain.repositories.i_user_repository import IUserRepository
+from modules.auth.domain.repository import IUserRepository
 from modules.auth.application.dtos import RefreshTokenRequestDTO, TokenResponseDTO
 from core.exceptions import InvalidCredentialsError
 from core.security import verify_token, create_access_token

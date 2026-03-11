@@ -45,11 +45,12 @@ from modules.auth.application.dtos import (
     VerifyEmailChangeRequest,
     EmailVerifyType,
 )
-from modules.auth.infrastructure.repositories.user_repository import UserRepository
-from modules.auth.domain.entities.UserEntity import UserEntity
+from modules.auth.infrastructure.repository import UserRepository
+from modules.auth.infrastructure.password_hasher import BcryptPasswordHasher
+from modules.auth.domain.entities import UserEntity
 
 from modules.cart.application.services import CartMergeService
-from modules.cart.domain.utils import get_guest_token_from_cookie
+from modules.cart.infrastructure.utils import get_guest_token_from_cookie
 
 
 router = APIRouter(prefix="/api/v1/auth", tags=["Authentication"])
@@ -202,7 +203,7 @@ async def change_password(
 ) -> dict:
     try:
         user_repo = UserRepository(db)
-        use_case = ChangePasswordUseCase(user_repo)
+        use_case = ChangePasswordUseCase(user_repo, BcryptPasswordHasher())
         await use_case.execute(current_user.id, data.old_password, data.new_password)
         return {"message": "密碼已成功變更"}
     except InvalidCredentialsError as e:
@@ -226,7 +227,7 @@ async def login_user(
 ) -> LoginResponseDTO:
     try:
         user_repo = UserRepository(db)
-        use_case = LoginUserUseCase(user_repo)
+        use_case = LoginUserUseCase(user_repo, BcryptPasswordHasher())
         login_dto = await use_case.execute(data)
 
         # 購物車合併邏輯
@@ -345,7 +346,7 @@ async def request_email_change(
     try:
         user_repo = UserRepository(db)
         token_manager = RedisTokenManager(redis)
-        use_case = RequestEmailChangeUseCase(user_repo, token_manager)
+        use_case = RequestEmailChangeUseCase(user_repo, token_manager, BcryptPasswordHasher())
         await use_case.execute(current_user.id, data)
         return {"message": "驗證信已發送至新舊 Email，請分別點擊連結完成驗證"}
     except UserNotFoundError as e:
@@ -393,7 +394,7 @@ async def delete_account(
     from modules.auth.application.use_cases.delete_account import DeleteAccountUseCase
     try:
         user_repo = UserRepository(db)
-        use_case = DeleteAccountUseCase(user_repo)
+        use_case = DeleteAccountUseCase(user_repo, BcryptPasswordHasher())
         await use_case.execute(current_user.id, data.password)
         return {"message": "帳戶已成功軟刪除，您的 Email 已釋出"}
     except InvalidCredentialsError as e:

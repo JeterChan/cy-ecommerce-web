@@ -9,10 +9,9 @@ from typing import List
 from uuid import UUID
 from modules.order.domain.entities import Order, OrderItem
 from modules.order.domain.value_objects import OrderStatus
-from modules.order.domain.repository import IOrderRepository
-from modules.order.infrastructure.repositories.redis_cart_repository import OrderCartAdapter
-from modules.product.domain.repository import ProductRepository
-from modules.cart.domain.schemas import CartItemResponse
+from modules.order.domain.repository import IOrderRepository, ICartAdapter
+from modules.product.domain.repository import IProductRepository
+from modules.cart.domain.entities import CartItemResponse
 from shared.exceptions import BusinessRuleViolationException, ResourceNotFoundException
 
 
@@ -29,8 +28,8 @@ class CreateOrderUseCase:
     def __init__(
         self,
         order_repository: IOrderRepository,
-        cart_adapter: OrderCartAdapter,
-        product_repository: ProductRepository
+        cart_adapter: ICartAdapter,
+        product_repository: IProductRepository
     ):
         """
         初始化用例

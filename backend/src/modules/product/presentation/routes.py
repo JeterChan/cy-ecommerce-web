@@ -9,6 +9,7 @@ from typing import List, Optional
 from uuid import UUID
 
 from infrastructure.database import get_db
+from modules.product.infrastructure.repository import SqlAlchemyProductRepository
 from modules.product.application.use_cases import (
     CreateProductUseCase,
     GetProductUseCase,
@@ -50,7 +51,7 @@ async def create_product(
     - **stock_quantity**: 庫存數量 (必填，≥ 0)
     """
     try:
-        use_case = CreateProductUseCase(db)
+        use_case = CreateProductUseCase(SqlAlchemyProductRepository(db))
         product = await use_case.execute(data)
         return ProductResponseDTO.model_validate(product)
     except ValueError as e:
@@ -72,7 +73,7 @@ async def get_product(
 ) -> ProductResponseDTO:
     """取得指定 UUID 的商品詳細資訊"""
     try:
-        use_case = GetProductUseCase(db)
+        use_case = GetProductUseCase(SqlAlchemyProductRepository(db))
         product = await use_case.execute(product_id)
         return ProductResponseDTO.model_validate(product)
     except ValueError as e:
@@ -101,7 +102,7 @@ async def list_products(
     - **limit**: 取得的筆數上限 (最大 1000)
     - **is_active**: 篩選上架狀態 (null=全部, true=上架, false=下架)
     """
-    use_case = ListProductsUseCase(db)
+    use_case = ListProductsUseCase(SqlAlchemyProductRepository(db))
     products = await use_case.execute(skip=skip, limit=limit, is_active=is_active)
     return [ProductResponseDTO.model_validate(p) for p in products]
 
@@ -119,7 +120,7 @@ async def update_product(
 ) -> ProductResponseDTO:
     """更新商品資訊 (部分更新)"""
     try:
-        use_case = UpdateProductUseCase(db)
+        use_case = UpdateProductUseCase(SqlAlchemyProductRepository(db))
         product = await use_case.execute(product_id, data)
         return ProductResponseDTO.model_validate(product)
     except ValueError as e:
@@ -143,7 +144,7 @@ async def delete_product(
 ) -> None:
     """刪除指定 UUID 的商品"""
     try:
-        use_case = DeleteProductUseCase(db)
+        use_case = DeleteProductUseCase(SqlAlchemyProductRepository(db))
         await use_case.execute(product_id)
     except ValueError as e:
         raise HTTPException(
@@ -166,7 +167,7 @@ async def toggle_product_active(
 ) -> ProductResponseDTO:
     """切換商品的上架/下架狀態"""
     try:
-        use_case = ToggleProductActiveUseCase(db)
+        use_case = ToggleProductActiveUseCase(SqlAlchemyProductRepository(db))
         product = await use_case.execute(product_id)
         return ProductResponseDTO.model_validate(product)
     except ValueError as e:
@@ -194,7 +195,7 @@ async def adjust_product_stock(
     - **reason**: 調整原因 (選填)
     """
     try:
-        use_case = AdjustProductStockUseCase(db)
+        use_case = AdjustProductStockUseCase(SqlAlchemyProductRepository(db))
         product = await use_case.execute(product_id, data.quantity_change)
         return ProductResponseDTO.model_validate(product)
     except ValueError as e:

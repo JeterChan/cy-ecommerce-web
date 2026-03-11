@@ -7,14 +7,14 @@ Cart Command Use Cases
 import uuid
 from typing import List
 
-from modules.cart.domain.repository import CartRepository
-from modules.cart.domain.schemas import CartItemResponse, CartItemCreate
+from modules.cart.domain.repository import ICartRepository
+from modules.cart.domain.entities import CartItemResponse, CartItemCreate
 
 
 class AddToCartUseCase:
     """新增商品到購物車的業務邏輯"""
 
-    def __init__(self, repository: CartRepository):
+    def __init__(self, repository: ICartRepository):
         """
         初始化 Use Case
 
@@ -60,7 +60,7 @@ class AddToCartUseCase:
 class UpdateCartItemQuantityUseCase:
     """更新購物車商品數量的業務邏輯"""
 
-    def __init__(self, repository: CartRepository):
+    def __init__(self, repository: ICartRepository):
         self.repository = repository
 
     async def execute(
@@ -94,7 +94,7 @@ class UpdateCartItemQuantityUseCase:
 class RemoveFromCartUseCase:
     """從購物車移除商品的業務邏輯"""
 
-    def __init__(self, repository: CartRepository):
+    def __init__(self, repository: ICartRepository):
         self.repository = repository
 
     async def execute(
@@ -115,7 +115,7 @@ class RemoveFromCartUseCase:
 class ClearCartUseCase:
     """清空購物車的業務邏輯"""
 
-    def __init__(self, repository: CartRepository):
+    def __init__(self, repository: ICartRepository):
         self.repository = repository
 
     async def execute(self, owner_id: str) -> None:
@@ -131,7 +131,7 @@ class ClearCartUseCase:
 class BatchAddToCartUseCase:
     """批量新增商品到購物車的業務邏輯"""
 
-    def __init__(self, repository: CartRepository):
+    def __init__(self, repository: ICartRepository):
         self.repository = repository
 
     async def execute(

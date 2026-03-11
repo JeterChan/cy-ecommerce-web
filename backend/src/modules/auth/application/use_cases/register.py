@@ -1,5 +1,5 @@
-from modules.auth.domain.repositories.i_user_repository import IUserRepository
-from modules.auth.domain.entities.UserEntity import UserEntity
+from modules.auth.domain.repository import IUserRepository
+from modules.auth.domain.entities import UserEntity
 from modules.auth.application.dtos import RegisterRequestDTO, UserResponseDTO
 from infrastructure.redis.token_manager import RedisTokenManager
 from infrastructure.tasks.email_tasks import send_registration_verification

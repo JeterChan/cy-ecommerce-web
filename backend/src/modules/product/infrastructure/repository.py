@@ -2,11 +2,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from typing import List, Optional
 from uuid import UUID
-from modules.product.domain.repository import ProductRepository
+from modules.product.domain.repository import IProductRepository
 from modules.product.domain.entities import Product
 from modules.product.infrastructure.models import ProductModel
 
-class SqlAlchemyProductRepository(ProductRepository):
+class SqlAlchemyProductRepository(IProductRepository):
     def __init__(self, db: AsyncSession):
         self.db = db
 

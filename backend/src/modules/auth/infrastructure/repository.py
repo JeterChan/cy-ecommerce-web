@@ -3,9 +3,9 @@ from sqlalchemy import select, and_
 from typing import Optional
 from sqlalchemy.exc import IntegrityError
 
-from modules.auth.domain.repositories.i_user_repository import IUserRepository
-from modules.auth.domain.entities.UserEntity import UserEntity
-from modules.auth.infrastructure.models.user import UserModel
+from modules.auth.domain.repository import IUserRepository
+from modules.auth.domain.entities import UserEntity
+from modules.auth.infrastructure.models import UserModel
 from core.exceptions import DuplicateEmailError, UserNotFoundError
 
 class UserRepository(IUserRepository):

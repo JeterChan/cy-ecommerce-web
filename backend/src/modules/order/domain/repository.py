@@ -84,3 +84,19 @@ class IOrderRepository(ABC):
         """
         pass
 
+
+class ICartAdapter(ABC):
+    """購物車適配器抽象介面"""
+
+    @abstractmethod
+    async def get_cart_items(self, owner_id: str):
+        pass
+
+    @abstractmethod
+    async def clear_cart(self, owner_id: str) -> None:
+        pass
+
+    @abstractmethod
+    async def is_cart_empty(self, owner_id: str) -> bool:
+        pass
+

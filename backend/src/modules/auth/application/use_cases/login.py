@@ -1,4 +1,5 @@
-from modules.auth.domain.repositories.i_user_repository import IUserRepository
+from modules.auth.domain.repository import IUserRepository
+from modules.auth.domain.services.password_hasher import IPasswordHasher
 from modules.auth.application.dtos import LoginRequestDTO, LoginResponseDTO, UserResponseDTO
 from core.exceptions import InvalidCredentialsError, EmailNotVerifiedError, UserNotRegisteredError
 from core.security import create_access_token, create_refresh_token
@@ -11,8 +12,9 @@ class LoginUserUseCase:
     使用者登入 Use Case
     """
 
-    def __init__(self, user_repository: IUserRepository):
+    def __init__(self, user_repository: IUserRepository, password_hasher: IPasswordHasher):
         self.user_repository = user_repository
+        self.password_hasher = password_hasher
 
     async def execute(self, data: LoginRequestDTO) -> LoginResponseDTO:
         # Step 1: 查詢使用者
@@ -25,7 +27,7 @@ class LoginUserUseCase:
             raise UserNotRegisteredError(email)
 
         # Step 3: 驗證密碼
-        if not user.verify_password(data.password):
+        if not self.password_hasher.verify(data.password, user.password_hash):
             logger.warning(f"登入失敗：密碼錯誤 (email: {email})")
             raise InvalidCredentialsError()
 

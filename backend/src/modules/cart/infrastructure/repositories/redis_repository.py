@@ -17,11 +17,11 @@ import uuid
 from datetime import datetime, timedelta, timezone
 from redis.asyncio import Redis
 
-from modules.cart.domain.repository import CartRepository
-from modules.cart.domain.schemas import CartItemResponse, CartItemCreate
+from modules.cart.domain.repository import ICartRepository
+from modules.cart.domain.entities import CartItemResponse, CartItemCreate
 
 
-class RedisCartRepository(CartRepository):
+class RedisCartRepository(ICartRepository):
     """訪客購物車的 Redis 實作"""
 
     def __init__(self, redis_client: Redis):

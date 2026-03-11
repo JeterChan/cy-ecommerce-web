@@ -17,12 +17,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, delete
 from sqlalchemy.orm import selectinload
 
-from modules.cart.domain.repository import CartRepository
-from modules.cart.domain.schemas import CartItemResponse, CartItemCreate
+from modules.cart.domain.repository import ICartRepository
+from modules.cart.domain.entities import CartItemResponse, CartItemCreate
 from modules.cart.infrastructure.models import CartModel, CartItemModel
 
 
-class SQLCartRepository(CartRepository):
+class SQLCartRepository(ICartRepository):
     """會員購物車的 PostgreSQL 實作"""
 
     def __init__(self, db: AsyncSession):

@@ -1,7 +1,8 @@
 """請求變更電子郵件 Use Case"""
 from uuid import UUID
 
-from modules.auth.infrastructure.repositories.user_repository import UserRepository
+from modules.auth.domain.repository import IUserRepository
+from modules.auth.domain.services.password_hasher import IPasswordHasher
 from modules.auth.application.dtos import EmailChangeRequest
 from infrastructure.redis.token_manager import RedisTokenManager
 from infrastructure.config import settings
@@ -21,11 +22,13 @@ class RequestEmailChangeUseCase:
 
     def __init__(
         self,
-        user_repository: UserRepository,
+        user_repository: IUserRepository,
         redis_token_manager: RedisTokenManager,
+        password_hasher: IPasswordHasher,
     ):
         self.user_repository = user_repository
         self.redis_token_manager = redis_token_manager
+        self.password_hasher = password_hasher
 
     async def execute(self, user_id: UUID, request: EmailChangeRequest) -> None:
         """
@@ -46,7 +49,7 @@ class RequestEmailChangeUseCase:
             raise UserNotFoundError(f"使用者不存在 (id: {user_id})")
 
         # 2. 驗證目前密碼
-        if not user.verify_password(str(request.password)):
+        if not self.password_hasher.verify(str(request.password), user.password_hash):
             raise InvalidCredentialsError()
 
         new_email = str(request.new_email)

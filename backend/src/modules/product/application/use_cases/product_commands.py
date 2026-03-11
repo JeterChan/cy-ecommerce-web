@@ -3,18 +3,17 @@ Product Command Use Cases
 
 處理修改資料的業務邏輯（Commands）
 """
-from sqlalchemy.ext.asyncio import AsyncSession
 from uuid import UUID
 from modules.product.domain.entities import Product
 from modules.product.application.dtos import ProductCreateDTO, ProductUpdateDTO
-from modules.product.infrastructure.repositories import SqlAlchemyProductRepository
+from modules.product.domain.repository import IProductRepository
 
 
 class CreateProductUseCase:
     """建立商品的業務邏輯"""
 
-    def __init__(self, db: AsyncSession):
-        self.repo = SqlAlchemyProductRepository(db)
+    def __init__(self, repo: IProductRepository):
+        self.repo = repo
 
     async def execute(self, data: ProductCreateDTO) -> Product:
         """
@@ -50,8 +49,8 @@ class CreateProductUseCase:
 class UpdateProductUseCase:
     """更新商品的業務邏輯"""
 
-    def __init__(self, db: AsyncSession):
-        self.repo = SqlAlchemyProductRepository(db)
+    def __init__(self, repo: IProductRepository):
+        self.repo = repo
 
     async def execute(self, product_id: UUID, data: ProductUpdateDTO) -> Product:
         """
@@ -87,8 +86,8 @@ class UpdateProductUseCase:
 class DeleteProductUseCase:
     """刪除商品的業務邏輯"""
 
-    def __init__(self, db: AsyncSession):
-        self.repo = SqlAlchemyProductRepository(db)
+    def __init__(self, repo: IProductRepository):
+        self.repo = repo
 
     async def execute(self, product_id: UUID) -> bool:
         """
@@ -112,8 +111,8 @@ class DeleteProductUseCase:
 class ToggleProductActiveUseCase:
     """切換商品上下架狀態的業務邏輯"""
 
-    def __init__(self, db: AsyncSession):
-        self.repo = SqlAlchemyProductRepository(db)
+    def __init__(self, repo: IProductRepository):
+        self.repo = repo
 
     async def execute(self, product_id: UUID) -> Product:
         """
@@ -144,8 +143,8 @@ class ToggleProductActiveUseCase:
 class AdjustProductStockUseCase:
     """調整商品庫存的業務邏輯"""
 
-    def __init__(self, db: AsyncSession):
-        self.repo = SqlAlchemyProductRepository(db)
+    def __init__(self, repo: IProductRepository):
+        self.repo = repo
 
     async def execute(self, product_id: UUID, quantity_change: int) -> Product:
         """
