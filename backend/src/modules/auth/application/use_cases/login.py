@@ -1,6 +1,6 @@
 from modules.auth.domain.repositories.i_user_repository import IUserRepository
 from modules.auth.application.dtos import LoginRequestDTO, LoginResponseDTO, UserResponseDTO
-from core.exceptions import InvalidCredentialsError, UserNotRegisteredError
+from core.exceptions import InvalidCredentialsError, EmailNotVerifiedError, UserNotRegisteredError
 from core.security import create_access_token, create_refresh_token
 import logging
 
@@ -32,7 +32,7 @@ class LoginUserUseCase:
         # Step 3.5: 驗證信箱
         if not user.is_verified:
             logger.warning(f"登入失敗：信箱未驗證 (email: {email})")
-            raise InvalidCredentialsError("請先完成信箱驗證")
+            raise EmailNotVerifiedError()
 
         # Step 4: 生成 JWT Tokens
         token_data = {

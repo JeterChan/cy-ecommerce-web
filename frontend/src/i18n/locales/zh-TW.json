@@ -34,18 +34,66 @@
     "usernameMinLength": "使用者名稱至少需要 3 個字元",
     "usernameMaxLength": "使用者名稱不可超過 50 個字元",
     "usernameInvalid": "使用者名稱只能包含字母、數字、底線和連字號",
-    "usernameFormat": "使用者名稱不可以底線或連字號開頭或結尾"
+    "usernameFormat": "使用者名稱不可以底線或連字號開頭或結尾",
+    "nicknameRequired": "請輸入暱稱",
+    "nicknameMinLength": "暱稱至少需要 2 個字元",
+    "phoneInvalid": "請輸入有效的手機號碼 (例如 09xxxxxxxx)",
+    "taxIdInvalid": "請輸入有效的 8 碼統一編號"
   },
   "error": {
     "generic": "發生錯誤，請稍後再試",
     "networkError": "網路連線錯誤",
     "invalidCredentials": "帳號或密碼錯誤",
+    "emailNotVerified": "電子郵件尚未驗證，請至信箱收取驗證信",
     "duplicateEmail": "此電子郵件已被註冊",
-    "serverError": "伺服器錯誤，請稍後再試"
+    "userNotRegistered": "此電子郵件並未註冊",
+    "serverError": "伺服器錯誤，請稍後再試",
+    "unauthorized": "授權失敗，請重新登入"
   },
   "forgotPassword": {
     "title": "忘記密碼",
-    "developmentMessage": "此功能開發中，敬請期待"
+    "description": "請輸入您的註冊電子郵件，我們將發送重設密碼連結給您。",
+    "sendEmail": "發送重設連結",
+    "sendSuccess": "重設連結已發送，請檢查您的信箱"
+  },
+  "resetPassword": {
+    "title": "重設密碼",
+    "description": "請輸入您的新密碼",
+    "newPassword": "新密碼",
+    "confirmNewPassword": "確認新密碼",
+    "submit": "重設密碼",
+    "success": "密碼重設成功，請使用新密碼登入",
+    "invalidToken": "無效或已過期的重設連結"
+  },
+  "verifyEmail": {
+    "title": "電子郵件驗證",
+    "verifying": "正在驗證您的電子郵件...",
+    "success": "電子郵件驗證成功！",
+    "changeSuccess": "電子郵件已成功變更！",
+    "pending": "此電子郵件已驗證，請至另一電子郵件信箱完成最後驗證步驟。",
+    "failed": "驗證失敗，連結可能已過期或無效。",
+    "alreadyVerified": "此帳號已完成驗證。"
+  },
+  "profile": {
+    "title": "個人檔案",
+    "nickname": "暱稱",
+    "phone": "電話",
+    "email": "電子郵件",
+    "joinedAt": "加入時間",
+    "editProfile": "編輯資料",
+    "saveChanges": "儲存變更",
+    "cancel": "取消",
+    "updateSuccess": "個人資料更新成功",
+    "deleteAccount": "刪除帳號",
+    "deleteAccountConfirmTitle": "確定要刪除帳號嗎？",
+    "deleteAccountConfirmDesc": "刪除帳號後將無法復原您的所有資料，請問確定要繼續嗎？",
+    "confirmDelete": "確定刪除",
+    "deleteSuccess": "帳號已成功刪除",
+    "securitySettings": "安全設定",
+    "changePassword": "修改密碼",
+    "oldPassword": "目前密碼",
+    "newPassword": "新密碼",
+    "confirmNewPassword": "確認新密碼",
+    "changePasswordSuccess": "密碼已成功修改"
   }
 }
-

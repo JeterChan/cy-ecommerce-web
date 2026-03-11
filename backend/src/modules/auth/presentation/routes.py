@@ -11,7 +11,7 @@ from redis.asyncio import Redis
 from infrastructure.database import get_db, get_redis
 from infrastructure.redis.token_manager import RedisTokenManager
 from core.security import verify_token
-from core.exceptions import InvalidCredentialsError, DuplicateEmailError, UserNotRegisteredError, UserNotFoundError
+from core.exceptions import InvalidCredentialsError, EmailNotVerifiedError, DuplicateEmailError, UserNotRegisteredError, UserNotFoundError
 
 from modules.auth.application.use_cases import (
     RegisterUserUseCase,
@@ -156,11 +156,14 @@ async def forgot_password(
     db: AsyncSession = Depends(get_db),
     redis: Redis = Depends(get_redis)
 ) -> dict:
-    user_repo = UserRepository(db)
-    token_manager = RedisTokenManager(redis)
-    use_case = ForgotPasswordUseCase(user_repo, token_manager)
-    await use_case.execute(data.email)
-    return {"message": "若此信箱已註冊，重設郵件將在幾分鐘內發送"}
+    try:
+        user_repo = UserRepository(db)
+        token_manager = RedisTokenManager(redis)
+        use_case = ForgotPasswordUseCase(user_repo, token_manager)
+        await use_case.execute(data.email)
+        return {"message": "重設郵件已發送，請檢查您的信箱"}
+    except UserNotRegisteredError as e:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
 
 
 @router.post(
@@ -203,7 +206,7 @@ async def change_password(
         await use_case.execute(current_user.id, data.old_password, data.new_password)
         return {"message": "密碼已成功變更"}
     except InvalidCredentialsError as e:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=str(e))
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
     except UserNotFoundError as e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
 
@@ -242,6 +245,8 @@ async def login_user(
 
     except UserNotRegisteredError as e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
+    except EmailNotVerifiedError as e:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(e))
     except InvalidCredentialsError as e:
         # InvalidCredentialsError 在 Use Case 中可能包含 "請先完成信箱驗證"
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=str(e))
@@ -346,7 +351,7 @@ async def request_email_change(
     except UserNotFoundError as e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
     except InvalidCredentialsError as e:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=str(e))
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
     except DomainValidationError as e:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(e))
 
