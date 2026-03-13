@@ -320,7 +320,7 @@ export const productService = {
       }
     }
 
-    // Mock 數據邏輯
+    // Mock 數據邏輯 (保持原有邏輯作為備援)
     console.log('📦 [ProductService] 使用 mock 數據')
     await new Promise(resolve => setTimeout(resolve, 300))
 
@@ -334,24 +334,18 @@ export const productService = {
       )
     }
 
+    if (params.categoryId) {
+      const categoryIdStr = params.categoryId.toString()
+      filtered = filtered.filter(p => p.categoryId === categoryIdStr)
+    }
+
     if (params.tags && params.tags.length > 0) {
       filtered = filtered.filter(p => p.tags.some(t => params.tags!.includes(t)))
-    } else if (params.tag) {
-      const allCategories = await categoryService.getTree()
-      const category = allCategories.find(c => c.name === params.tag)
-      
-      const searchTags = [params.tag]
-      if (category) {
-        const children = allCategories.filter(c => c.parentId === category.id)
-        children.forEach(c => searchTags.push(c.name))
-      }
-
-      filtered = filtered.filter(p => p.tags.some(t => searchTags.includes(t!)))
     }
 
     const total = filtered.length
     const page = params.page || 1
-    const limit = params.limit || 10
+    const limit = params.limit || 12
     const start = (page - 1) * limit
     const end = start + limit
     
@@ -361,7 +355,8 @@ export const productService = {
       products,
       total,
       page,
-      limit
+      limit,
+      pages: Math.ceil(total / limit)
     }
   },
 
@@ -409,8 +404,7 @@ export const productService = {
     }
 
     console.log('📦 [ProductService] 使用 mock 標籤')
-    const tags = new Set<string>()
-    mockProducts.forEach(p => p.tags.forEach(t => tags.add(t)))
-    return Array.from(tags)
+    const categories = await categoryService.getCategories()
+    return categories.map(c => c.name)
   }
 }

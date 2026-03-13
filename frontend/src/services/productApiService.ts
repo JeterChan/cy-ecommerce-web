@@ -22,13 +22,17 @@ export const productApiService = {
       queryParams.append('limit', params.limit.toString())
     }
 
+    // 分類篩選
+    if (params.categoryId) {
+      queryParams.append('category_id', params.categoryId.toString())
+    }
+
     // 只獲取上架商品
     queryParams.append('is_active', 'true')
 
     const url = `/api/v1/products?${queryParams.toString()}`
     console.log('📡 [Product API] GET', url)
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const response = await api.get<any[]>(url)
 
     // 轉換後端格式為前端格式
@@ -38,14 +42,16 @@ export const productApiService = {
       description: p.description || '',
       price: Number(p.price),
       imageUrl: p.image_url || 'https://placehold.co/300x200?text=Product',
-      tags: [], // TODO: 從 category_ids 轉換
-      is_featured: false // TODO: 從後端獲取
+      tags: p.category_names || [],
+      stockQuantity: p.stock_quantity,
+      isLowStock: p.is_low_stock,
+      is_featured: false,
+      categoryIds: p.category_ids || [],
+      categoryNames: p.category_names || []
     }))
 
-    // 應用前端過濾
+    // 應用前端搜尋過濾 (如果後端尚未支援 query)
     let filtered = transformed
-
-    // 搜尋過濾
     if (params.query) {
       const q = params.query.toLowerCase()
       filtered = filtered.filter(p =>
@@ -54,16 +60,12 @@ export const productApiService = {
       )
     }
 
-    // 標籤過濾（目前無法實現，需要後端支援）
-    // if (params.tag || params.tags) {
-    //   // 等待後端實現 tag 過濾
-    // }
-
     return {
       products: filtered,
       total: filtered.length,
       page: params.page || 1,
-      limit: params.limit || filtered.length
+      limit: params.limit || filtered.length,
+      pages: Math.ceil(filtered.length / (params.limit || 10))
     }
   },
 
@@ -73,7 +75,6 @@ export const productApiService = {
   async getProductById(id: string): Promise<Product | undefined> {
     try {
       console.log('📡 [Product API] GET /api/v1/products/' + id)
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const response = await api.get<any>(`/api/v1/products/${id}`)
 
       return {
@@ -82,8 +83,10 @@ export const productApiService = {
         description: response.data.description || '',
         price: Number(response.data.price),
         imageUrl: response.data.image_url || 'https://placehold.co/300x200?text=Product',
-        tags: [],
-        is_featured: false
+        tags: response.data.category_names || [],
+        is_featured: false,
+        categoryIds: response.data.category_ids || [],
+        categoryNames: response.data.category_names || []
       }
     } catch (error) {
       console.error('❌ [Product API] 獲取產品失敗:', error)
@@ -100,11 +103,12 @@ export const productApiService = {
   },
 
   /**
-   * 獲取所有標籤（暫時返回空陣列，等待後端實現）
+   * 獲取所有標籤（從分類獲取）
    */
   async getTags(): Promise<string[]> {
-    // TODO: 實現從後端獲取分類/標籤
-    return ['3C 數位', '流行服飾', '生活家電', '家居生活', '戶外運動']
+    const { categoryService } = await import('./categoryService')
+    const categories = await categoryService.getCategories()
+    return categories.map(c => c.name)
   }
 }
 
