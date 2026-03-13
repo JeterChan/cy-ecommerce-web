@@ -45,7 +45,7 @@ const registerSchema = computed(() => toTypedSchema(
       .min(1, t('validation.required'))
       .min(8, t('validation.passwordMinLength'))
       .regex(
-        /^(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*]).+$/,
+        /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^a-zA-Z\d\s]).{8,}$/,
         t('validation.passwordStrength')
       ),
     confirmPassword: z

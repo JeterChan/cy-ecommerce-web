@@ -14,6 +14,7 @@ export interface User {
 }
 
 export interface ProfileUpdateRequest {
+  username?: string
   phone?: string
   address?: string
   carrier_type?: string
@@ -53,4 +54,3 @@ export interface RegisterResponse {
   created_at: string
   updated_at?: string
 }
-

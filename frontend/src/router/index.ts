@@ -54,13 +54,30 @@ const router = createRouter({
     },
     {
       path: '/forgot-password',
+      redirect: '/auth/forgot-password'
+    },
+    {
+      path: '/reset-password',
+      redirect: '/auth/reset-password'
+    },
+    {
+      path: '/email-verify',
+      redirect: '/email/verify'
+    },
+    {
+      path: '/auth/forgot-password',
       name: 'forgot-password',
-      component: () => import('@/views/ForgotPasswordView.vue')
+      component: () => import('@/views/auth/ForgotPasswordView.vue')
+    },
+    {
+      path: '/auth/reset-password',
+      name: 'reset-password',
+      component: () => import('@/views/auth/ResetPasswordView.vue')
     },
     {
       path: '/email/verify',
       name: 'email-verify',
-      component: () => import('@/views/EmailVerifyView.vue')
+      component: () => import('@/views/auth/VerifyEmailView.vue')
     },
     {
       path: '/profile',

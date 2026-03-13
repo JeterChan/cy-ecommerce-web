@@ -14,7 +14,7 @@ from modules.auth.application.use_cases import (
 )
 from modules.auth.application.dtos import RegisterRequestDTO, LoginRequestDTO
 from modules.auth.domain.entities.UserEntity import UserEntity
-from core.exceptions import DuplicateEmailError, InvalidCredentialsError
+from core.exceptions import DuplicateEmailError, InvalidCredentialsError, UserNotRegisteredError, EmailNotVerifiedError
 
 @pytest.fixture
 def user_repo():
@@ -64,7 +64,7 @@ async def test_login_user_use_case_unverified(user_repo):
     data = LoginRequestDTO(email="test@example.com", password="password123")
 
     # Act & Assert
-    with pytest.raises(InvalidCredentialsError) as exc:
+    with pytest.raises(EmailNotVerifiedError) as exc:
         await use_case.execute(data)
     assert "請先完成信箱驗證" in str(exc.value)
 
@@ -110,6 +110,16 @@ async def test_forgot_password_use_case_success(user_repo, token_manager):
     # Assert
     assert result is True
     token_manager.store_reset_token.assert_called_once()
+
+@pytest.mark.asyncio
+async def test_forgot_password_use_case_not_found(user_repo, token_manager):
+    # Arrange
+    user_repo.get_by_email.return_value = None
+    use_case = ForgotPasswordUseCase(user_repo, token_manager)
+
+    # Act & Assert
+    with pytest.raises(UserNotRegisteredError):
+        await use_case.execute("nonexistent@example.com")
 
 @pytest.mark.asyncio
 async def test_change_password_use_case_wrong_password(user_repo):

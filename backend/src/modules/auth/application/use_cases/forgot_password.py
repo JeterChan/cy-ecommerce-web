@@ -3,6 +3,7 @@ from modules.auth.domain.repositories.i_user_repository import IUserRepository
 from infrastructure.redis.token_manager import RedisTokenManager
 from infrastructure.tasks.email_tasks import send_password_reset
 from infrastructure.config import settings
+from core.exceptions import UserNotRegisteredError
 import logging
 
 logger = logging.getLogger(__name__)
@@ -26,14 +27,17 @@ class ForgotPasswordUseCase:
             email: 使用者 Email
 
         Returns:
-            bool: 請求已受理返回 True (不論 Email 是否存在)
+            bool: 請求成功返回 True
+
+        Raises:
+            UserNotRegisteredError: 當 Email 未註冊時拋出
         """
         user = await self.user_repository.get_by_email(email)
         
-        # 為了安全，即使 Email 不存在也返回成功（不洩漏資訊）
+        # 如果 Email 不存在則拋出異常
         if not user:
-            logger.info(f"忘記密碼請求：Email 未註冊 (email: {email})")
-            return True
+            logger.info(f"忘記密碼請求失敗：Email 未註冊 (email: {email})")
+            raise UserNotRegisteredError(email)
 
         # 生成 Token 並存入 Redis
         token = self.token_manager.generate_token()
