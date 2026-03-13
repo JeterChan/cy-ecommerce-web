@@ -16,9 +16,9 @@ from modules.auth.use_cases.dtos import (
     LoginUserInputDTO,
     LoginUserOutputDTO,
 )
-from modules.auth.domain.entity import UserEntity
+from modules.auth.domain.entities.UserEntity import UserEntity
 from modules.auth.domain.repositories.i_user_repository import IUserRepository
-from core.exceptions import InvalidCredentialsError
+from core.exceptions import InvalidCredentialsError, UserNotRegisteredError
 from core.security import get_password_hash, verify_token
 
 
@@ -46,15 +46,21 @@ class MockUserRepository(IUserRepository):
         """根據 email 查詢使用者"""
         return next((u for u in self.users if u.email.lower() == email.lower()), None)
 
+    async def get_by_id(self, user_id) -> UserEntity | None:
+        """根據 ID 查詢使用者"""
+        return next((u for u in self.users if str(u.id) == str(user_id)), None)
+
+    async def update(self, user: UserEntity) -> UserEntity:
+        """模擬更新使用者"""
+        for i, u in enumerate(self.users):
+            if str(u.id) == str(user.id):
+                self.users[i] = user
+                return user
+        return user
+
     async def exists_by_email(self, email: str) -> bool:
         """檢查 email 是否存在"""
         return any(u.email.lower() == email.lower() for u in self.users)
-
-
-# ==================== Test Cases ====================
-
-@pytest.mark.asyncio
-class TestLoginUserUseCase:
     """LoginUserUseCase 的單元測試"""
 
     @pytest.fixture
@@ -145,10 +151,10 @@ class TestLoginUserUseCase:
         )
 
         # Act & Assert
-        with pytest.raises(InvalidCredentialsError) as exc_info:
+        with pytest.raises(UserNotRegisteredError) as exc_info:
             await use_case.execute(input_dto)
 
-        assert "帳號或密碼錯誤" in str(exc_info.value)
+        assert "尚未註冊" in str(exc_info.value)
 
     async def test_login_wrong_password(self, use_case, registered_user):
         """測試密碼錯誤時登入失敗"""

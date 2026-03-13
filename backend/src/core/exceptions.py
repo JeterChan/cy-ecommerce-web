@@ -17,8 +17,8 @@ class UserNotFoundError(ResourceNotFoundException):
 
 class InvalidCredentialsError(DomainException):
     """當登入憑證無效時拋出"""
-    def __init__(self):
-        super().__init__("帳號或密碼錯誤")
+    def __init__(self, message: str = "帳號或密碼錯誤"):
+        super().__init__(message)
 
 class UserNotRegisteredError(DomainException):
     """當使用者信箱未註冊時拋出"""

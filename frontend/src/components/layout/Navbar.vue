@@ -159,8 +159,11 @@ const handleLogout = () => {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuItem disabled :title="t('auth.comingSoon')">
-                {{ t('auth.profile') }}
+              <DropdownMenuItem as-child class="cursor-pointer">
+                <RouterLink to="/profile">{{ t('auth.profile') }}</RouterLink>
+              </DropdownMenuItem>
+              <DropdownMenuItem as-child class="cursor-pointer">
+                <RouterLink to="/orders">{{ t('auth.orders') }}</RouterLink>
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem @click="handleLogout" class="cursor-pointer">
@@ -182,11 +185,11 @@ const handleLogout = () => {
                 {{ authStore.user?.username }}
               </div>
               <DropdownMenuSeparator class="md:hidden" />
-              <DropdownMenuItem disabled :title="t('auth.comingSoon')">
-                {{ t('auth.profile') }}
+              <DropdownMenuItem as-child class="cursor-pointer">
+                <RouterLink to="/profile">{{ t('auth.profile') }}</RouterLink>
               </DropdownMenuItem>
               <DropdownMenuItem as-child class="cursor-pointer">
-                <RouterLink to="/orders">我的訂單</RouterLink>
+                <RouterLink to="/orders">{{ t('auth.orders') }}</RouterLink>
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem @click="handleLogout" class="cursor-pointer">

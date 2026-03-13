@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime
 from pydantic import BaseModel, Field
-from src.shared.utils.time_utils import now_utc
+from shared.utils.time_utils import now_utc
 
 
 class DomainEvent(BaseModel):

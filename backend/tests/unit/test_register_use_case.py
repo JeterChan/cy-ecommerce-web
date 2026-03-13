@@ -12,14 +12,14 @@ from datetime import datetime
 from unittest.mock import AsyncMock
 import uuid
 
-from src.modules.auth.use_cases.register import RegisterUserUseCase
-from src.modules.auth.use_cases.dtos import (
+from modules.auth.use_cases.register import RegisterUserUseCase
+from modules.auth.use_cases.dtos import (
     RegisterUserInputDTO,
     RegisterUserOutputDTO,
 )
-from src.modules.auth.domain.entities import UserEntity
-from src.modules.auth.domain.repositories.i_user_repository import IUserRepository
-from src.core.exceptions import DuplicateEmailError
+from modules.auth.domain.entities.UserEntity import UserEntity
+from modules.auth.domain.repositories.i_user_repository import IUserRepository
+from core.exceptions import DuplicateEmailError
 
 
 # ==================== Mock Repository ====================
@@ -281,7 +281,7 @@ class TestRegisterUserUseCase:
             await use_case.execute(second_input)
 
         assert email in str(exc_info.value)
-        assert "already registered" in str(exc_info.value)
+        assert "已被使用" in str(exc_info.value)
 
         # 驗證只建立了一個使用者
         assert len(mock_repository.users) == 1

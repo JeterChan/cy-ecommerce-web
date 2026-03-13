@@ -18,6 +18,7 @@
     "logoutSuccess": "已成功登出",
     "sessionExpired": "登入已過期，請重新登入",
     "profile": "個人檔案",
+    "orders": "訂單紀錄",
     "comingSoon": "即將推出",
     "backToLogin": "返回登入"
   },

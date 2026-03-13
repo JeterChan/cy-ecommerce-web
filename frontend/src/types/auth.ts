@@ -5,6 +5,25 @@ export interface User {
   is_active: boolean
   created_at: string
   updated_at?: string
+  // 個人檔案欄位
+  phone?: string
+  address?: string
+  carrier_type?: string
+  carrier_number?: string
+  tax_id?: string
+}
+
+export interface ProfileUpdateRequest {
+  phone?: string
+  address?: string
+  carrier_type?: string
+  carrier_number?: string
+  tax_id?: string
+}
+
+export interface EmailChangeRequest {
+  new_email: string
+  password: string
 }
 
 export interface LoginRequest {

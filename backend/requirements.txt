@@ -5,7 +5,7 @@ uvicorn[standard]>=0.23.0
 # Database & ORM
 sqlalchemy>=2.0.0
 alembic>=1.11.0
-asyncpg>=0.28.0
+asyncpg>=0.29.0
 greenlet==3.0.1
 psycopg2-binary==2.9.9
 
@@ -17,8 +17,8 @@ email-validator>=2.0.0  # Required for EmailStr validation
 pydantic[email]>=2.11.0
 
 # Background Tasks & Cache
-redis>=5.0.0
-celery>=5.3.0
+redis>=5.2.0
+celery[redis]>=5.3.0
 
 # Utilities
 bcrypt==4.0.1  # Password hashing (版本 5.x 有相容性問題)
