@@ -195,16 +195,16 @@ async def add_to_cart(
     - **quantity**: 數量 (必填，大於 0)
 
     行為:
-    - 若商品已存在，則累加數量
+    - 檢查資料庫庫存 (FOR SHARE 鎖定)
+    - 若商品已存在，則累加數量並驗證不超過總庫存
     - 若商品不存在，則新增項目
-    - 自動識別訪客/會員（透過 Authorization header 或 Cookie）
-    - 訪客：儲存在 Redis
-    - 會員：儲存在 PostgreSQL
+    - 訪客儲存在 Redis，會員儲存在 PostgreSQL
     """
     repository, owner_id = repo_and_id
+    product_repo = SqlAlchemyProductRepository(db)
 
     try:
-        use_case = AddToCartUseCase(repository)
+        use_case = AddToCartUseCase(repository, product_repo)
         result = await use_case.execute(
             owner_id=owner_id,
             product_id=item.product_id,
@@ -309,9 +309,10 @@ async def update_cart_item(
     - **quantity**: 新數量 (必填，大於 0)
     """
     repository, owner_id = repo_and_id
+    product_repo = SqlAlchemyProductRepository(db)
 
     try:
-        use_case = UpdateCartItemQuantityUseCase(repository)
+        use_case = UpdateCartItemQuantityUseCase(repository, product_repo)
         result = await use_case.execute(
             owner_id=owner_id,
             product_id=product_id,
