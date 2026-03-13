@@ -3,6 +3,7 @@ import { ref, computed } from 'vue'
 import api from '@/lib/api'
 import type { User, LoginResponse, RegisterResponse, ProfileUpdateRequest } from '@/types/auth'
 import { authService } from '@/services/authService'
+import { useCartStore } from './cart'
 
 export const useAuthStore = defineStore('auth', () => {
   // State
@@ -82,6 +83,10 @@ export const useAuthStore = defineStore('auth', () => {
     user.value = null
     accessToken.value = null
     refreshToken.value = null
+
+    // 重置購物車同步狀態
+    const cartStore = useCartStore()
+    cartStore.resetSync()
   }
 
   const refreshAccessToken = async (): Promise<string> => {

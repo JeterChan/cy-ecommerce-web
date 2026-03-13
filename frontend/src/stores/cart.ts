@@ -213,8 +213,20 @@ export const useCartStore = defineStore('cart', () => {
     try {
       console.log('🗑️ [Cart] 清空購物車...')
 
-      // 先同步到後端
-      await cartApiService.clearCart()
+      const authStore = useAuthStore()
+      
+      // 只有認證用戶才需要調用後端 API
+      if (authStore.isAuthenticated) {
+        try {
+          await cartApiService.clearCart()
+          console.log('✅ [Cart] 後端購物車清空成功')
+        } catch (error) {
+          console.warn('⚠️ [Cart] 後端購物車清空失敗:', error)
+          // 後端失敗不影響本地清空
+        }
+      } else {
+        console.log('👤 [Cart] 訪客用戶，只清空本地購物車')
+      }
 
       // 更新本地狀態
       items.value = []
@@ -222,11 +234,16 @@ export const useCartStore = defineStore('cart', () => {
       console.log('✅ [Cart] 清空購物車成功')
     } catch (error) {
       console.error('❌ [Cart] 清空購物車失敗:', error)
-      // 即使後端失敗，也清空本地購物車
+      // 即使出錯，也清空本地購物車
       items.value = []
     } finally {
       isLoading.value = false
     }
+  }
+
+  const resetSync = (): void => {
+    console.log('🔄 [Cart] 重置同步標記')
+    isSynced.value = false
   }
 
   return {
@@ -238,6 +255,7 @@ export const useCartStore = defineStore('cart', () => {
     removeFromCart,
     updateQuantity,
     clearCart,
-    syncFromBackend
+    syncFromBackend,
+    resetSync
   }
 })

@@ -34,10 +34,66 @@ from modules.cart.infrastructure.utils import (
 )
 from core.security import verify_token
 from modules.auth.infrastructure.repository import UserRepository
+from modules.product.infrastructure.repository import SqlAlchemyProductRepository
 
 
 router = APIRouter(prefix="/cart", tags=["Cart"])
 security = HTTPBearer(auto_error=False)  # auto_error=False 使其成為可選
+
+
+# ==================== Helper Functions ====================
+
+async def enrich_cart_items_with_product_info(
+    items: List["CartItemResponse"],
+    db: AsyncSession
+) -> List["CartItemResponse"]:
+    """
+    將購物車項目與商品信息結合
+    
+    Args:
+        items: 購物車項目列表
+        db: 資料庫連接
+        
+    Returns:
+        List[CartItemResponse]: 富化後的購物車項目列表
+    """
+    if not items:
+        return items
+    
+    product_repo = SqlAlchemyProductRepository(db)
+    enriched_items = []
+    
+    for item in items:
+        try:
+            # 查詢商品信息
+            product = await product_repo.get_by_id(item.product_id)
+            
+            if product:
+                # 計算小計
+                product_price = float(product.price)
+                subtotal = product_price * item.quantity
+                
+                # 取得第一張圖片 URL
+                image_url = None
+                if product.images:
+                    primary_image = next((img for img in product.images if img.is_primary), None)
+                    image_url = (primary_image or product.images[0]).url if (primary_image or product.images) else None
+                
+                # 更新項目字段
+                item.product_name = product.name
+                item.unit_price = product_price
+                item.subtotal = subtotal
+                item.image_url = image_url
+        except Exception as e:
+            # 商品查詢失敗時，使用預設值
+            print(f"Failed to enrich product info for {item.product_id}: {e}")
+            item.product_name = item.product_name or f"Unknown Product ({item.product_id})"
+            item.unit_price = item.unit_price or 0.0
+            item.subtotal = item.subtotal or 0.0
+        
+        enriched_items.append(item)
+    
+    return enriched_items
 
 
 # ==================== Dependency Injection ====================
@@ -128,7 +184,8 @@ async def get_cart_repository(
 )
 async def add_to_cart(
     item: CartItemCreate,
-    repo_and_id: Tuple[ICartRepository, str] = Depends(get_cart_repository)
+    repo_and_id: Tuple[ICartRepository, str] = Depends(get_cart_repository),
+    db: AsyncSession = Depends(get_db)
 ) -> CartItemResponse:
     """
     新增商品到購物車
@@ -152,6 +209,13 @@ async def add_to_cart(
             product_id=item.product_id,
             quantity=item.quantity
         )
+        
+        # 若為 Redis Repository（訪客），進行富化
+        if isinstance(repository, RedisCartRepository):
+            items = await enrich_cart_items_with_product_info([result], db)
+            if items:
+                result = items[0]
+        
         return result
     except ValueError as e:
         raise HTTPException(
@@ -167,7 +231,8 @@ async def add_to_cart(
     description="取得購物車所有商品（支援訪客與會員）"
 )
 async def get_cart(
-    repo_and_id: Tuple[ICartRepository, str] = Depends(get_cart_repository)
+    repo_and_id: Tuple[ICartRepository, str] = Depends(get_cart_repository),
+    db: AsyncSession = Depends(get_db)
 ) -> List[CartItemResponse]:
     """
     取得購物車所有商品
@@ -178,6 +243,11 @@ async def get_cart(
     repository, owner_id = repo_and_id
     use_case = GetCartUseCase(repository)
     items = await use_case.execute(owner_id=owner_id)
+    
+    # 若為 Redis Repository（訪客），進行富化
+    if isinstance(repository, RedisCartRepository):
+        items = await enrich_cart_items_with_product_info(items, db)
+    
     return items
 
 
@@ -189,7 +259,8 @@ async def get_cart(
 )
 async def get_cart_item(
     product_id: uuid.UUID,
-    repo_and_id: Tuple[ICartRepository, str] = Depends(get_cart_repository)
+    repo_and_id: Tuple[ICartRepository, str] = Depends(get_cart_repository),
+    db: AsyncSession = Depends(get_db)
 ) -> CartItemResponse:
     """
     查詢購物車中的單一商品
@@ -209,10 +280,16 @@ async def get_cart_item(
             detail=f"Product {product_id} not found in cart"
         )
 
+    # 若為 Redis Repository（訪客），進行富化
+    if isinstance(repository, RedisCartRepository):
+        items = await enrich_cart_items_with_product_info([item], db)
+        if items:
+            item = items[0]
+    
     return item
 
 
-@router.put(
+@router.patch(
     "/items/{product_id}",
     response_model=CartItemResponse,
     summary="更新商品數量",
@@ -221,7 +298,8 @@ async def get_cart_item(
 async def update_cart_item(
     product_id: uuid.UUID,
     item_update: CartItemUpdate,
-    repo_and_id: Tuple[ICartRepository, str] = Depends(get_cart_repository)
+    repo_and_id: Tuple[ICartRepository, str] = Depends(get_cart_repository),
+    db: AsyncSession = Depends(get_db)
 ) -> CartItemResponse:
     """
     更新購物車商品數量
@@ -238,6 +316,13 @@ async def update_cart_item(
             product_id=product_id,
             quantity=item_update.quantity
         )
+        
+        # 若為 Redis Repository（訪客），進行富化
+        if isinstance(repository, RedisCartRepository):
+            items = await enrich_cart_items_with_product_info([result], db)
+            if items:
+                result = items[0]
+        
         return result
     except ValueError as e:
         raise HTTPException(

@@ -26,6 +26,10 @@ class CartItemResponse(BaseModel):
     cart_id: uuid.UUID = Field(..., description="購物車 UUID")
     product_id: uuid.UUID = Field(..., description="商品 UUID")
     quantity: int = Field(..., description="數量")
+    product_name: Optional[str] = Field(None, description="商品名稱")
+    unit_price: float = Field(default=0.0, description="單位價格")
+    subtotal: float = Field(default=0.0, description="小計（單價 × 數量）")
+    image_url: Optional[str] = Field(None, description="商品圖片 URL")
     created_at: datetime
     updated_at: datetime
 

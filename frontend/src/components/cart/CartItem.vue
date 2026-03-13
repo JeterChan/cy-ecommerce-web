@@ -13,7 +13,15 @@ const emit = defineEmits<{
   (e: 'remove', id: string): void
 }>()
 
-const subtotal = computed(() => props.item.price * props.item.quantity)
+const isValidPrice = computed(() => props.item.price >= 0)
+const isValidQuantity = computed(() => props.item.quantity > 0)
+const subtotal = computed(() => {
+  // 驗證價格和數量
+  if (!isValidPrice.value || !isValidQuantity.value) {
+    return 0
+  }
+  return props.item.price * props.item.quantity
+})
 
 const formatPrice = (price: number) => {
   return new Intl.NumberFormat('zh-TW', { style: 'currency', currency: 'TWD', minimumFractionDigits: 0 }).format(price)

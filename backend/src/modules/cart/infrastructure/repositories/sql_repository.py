@@ -16,10 +16,12 @@ import uuid
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, delete
 from sqlalchemy.orm import selectinload
+from decimal import Decimal
 
 from modules.cart.domain.repository import ICartRepository
 from modules.cart.domain.entities import CartItemResponse, CartItemCreate
 from modules.cart.infrastructure.models import CartModel, CartItemModel
+from modules.product.infrastructure.repository import SqlAlchemyProductRepository
 
 
 class SQLCartRepository(ICartRepository):
@@ -79,9 +81,9 @@ class SQLCartRepository(ICartRepository):
         result = await self.db.execute(stmt)
         return result.scalar_one_or_none()
 
-    def _to_response(self, item: CartItemModel) -> CartItemResponse:
+    async def _to_response(self, item: CartItemModel) -> CartItemResponse:
         """
-        將 CartItemModel 轉換為 CartItemResponse
+        將 CartItemModel 轉換為 CartItemResponse，並包含商品信息
 
         Args:
             item: CartItemModel 實體
@@ -89,11 +91,29 @@ class SQLCartRepository(ICartRepository):
         Returns:
             CartItemResponse: Pydantic response schema
         """
+        # 查詢商品信息
+        product_repo = SqlAlchemyProductRepository(self.db)
+        product = await product_repo.get_by_id(item.product_id)
+        
+        # 計算小計
+        product_price = float(product.price) if product else 0.0
+        subtotal = product_price * item.quantity
+        
+        # 取得第一張圖片 URL
+        image_url = None
+        if product and product.images:
+            primary_image = next((img for img in product.images if img.is_primary), None)
+            image_url = (primary_image or product.images[0]).url if (primary_image or product.images) else None
+        
         return CartItemResponse(
             id=item.id,
             cart_id=item.cart_id,
             product_id=item.product_id,
             quantity=item.quantity,
+            product_name=product.name if product else f"Unknown Product ({item.product_id})",
+            unit_price=product_price,
+            subtotal=subtotal,
+            image_url=image_url,
             created_at=item.created_at,
             updated_at=item.updated_at
         )
@@ -134,7 +154,7 @@ class SQLCartRepository(ICartRepository):
             existing_item.quantity += quantity
             await self.db.flush()
             await self.db.refresh(existing_item)
-            return self._to_response(existing_item)
+            return await self._to_response(existing_item)
         else:
             # 新增商品
             new_item = CartItemModel(
@@ -145,7 +165,7 @@ class SQLCartRepository(ICartRepository):
             self.db.add(new_item)
             await self.db.flush()
             await self.db.refresh(new_item)
-            return self._to_response(new_item)
+            return await self._to_response(new_item)
 
     async def update_quantity(
         self,
@@ -185,7 +205,7 @@ class SQLCartRepository(ICartRepository):
         await self.db.flush()
         await self.db.refresh(item)
 
-        return self._to_response(item)
+        return await self._to_response(item)
 
     async def get_cart(
         self,
@@ -215,7 +235,7 @@ class SQLCartRepository(ICartRepository):
             return []
 
         # 轉換為 Response
-        return [self._to_response(item) for item in cart.items]
+        return [await self._to_response(item) for item in cart.items]
 
     async def get_item(
         self,
@@ -240,7 +260,7 @@ class SQLCartRepository(ICartRepository):
         # 查詢商品
         item = await self._find_item(cart.id, product_id)
 
-        return self._to_response(item) if item else None
+        return await self._to_response(item) if item else None
 
     async def remove_item(
         self,
