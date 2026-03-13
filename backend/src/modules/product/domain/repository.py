@@ -1,7 +1,8 @@
 from abc import ABC, abstractmethod
-from typing import List, Optional
+from typing import List, Optional, Tuple
 from uuid import UUID
 from modules.product.domain.entities import Product
+
 
 class IProductRepository(ABC):
     @abstractmethod
@@ -13,7 +14,24 @@ class IProductRepository(ABC):
         pass
 
     @abstractmethod
-    async def list(self, skip: int = 0, limit: int = 100) -> List[Product]:
+    async def list(
+        self,
+        skip: int = 0,
+        limit: int = 100,
+        category_id: Optional[int] = None,
+        is_active: Optional[bool] = None,
+    ) -> List[Product]:
+        pass
+
+    @abstractmethod
+    async def list_admin(
+        self,
+        page: int = 1,
+        limit: int = 10,
+        search: Optional[str] = None,
+        category_id: Optional[int] = None,
+        sort: str = "created_desc",
+    ) -> Tuple[List[Product], int]:
         pass
 
     @abstractmethod

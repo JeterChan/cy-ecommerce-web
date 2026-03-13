@@ -18,6 +18,7 @@ from infrastructure.database import Base
 from modules.auth.infrastructure.models import UserModel
 from modules.product.infrastructure.models import ProductModel, CategoryModel
 from modules.cart.infrastructure.models import CartModel, CartItemModel
+from modules.order.infrastructure.models import OrderModel, OrderItemModel
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.

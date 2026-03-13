@@ -27,7 +27,6 @@ class ProductModel(Base):
     stock_quantity: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     category: Mapped[str | None] = mapped_column(String(100), nullable=True)
     is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
-    image_url: Mapped[str | None] = mapped_column(String(255), nullable=True)
 
     # ✅ 使用 SQLAlchemy 的 func.now() 在資料庫層面處理時間戳
     # 避免 Python datetime.utcnow() 的過時警告
@@ -47,8 +46,35 @@ class ProductModel(Base):
     categories: Mapped[list["CategoryModel"]] = relationship(
         "CategoryModel",
         secondary=association_table,
-        back_populates="products"
+        back_populates="products",
+        lazy="selectin"
     )
+
+    images: Mapped[list["ProductImageModel"]] = relationship(
+        "ProductImageModel",
+        back_populates="product",
+        cascade="all, delete-orphan",
+        lazy="selectin"
+    )
+
+class ProductImageModel(Base):
+    __tablename__ = "product_images"
+
+    id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        primary_key=True,
+        default=uuid.uuid4
+    )
+    product_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("products.id", ondelete="CASCADE"),
+        nullable=False
+    )
+    url: Mapped[str] = mapped_column(String(500), nullable=False)
+    alt_text: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    is_primary: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+
+    product: Mapped["ProductModel"] = relationship("ProductModel", back_populates="images")
 
 class CategoryModel(Base):
     __tablename__ = "categories"

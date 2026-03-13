@@ -99,6 +99,18 @@ async def get_current_user(
     return user
 
 
+async def require_admin(
+    current_user: UserEntity = Depends(get_current_user)
+) -> UserEntity:
+    """驗證當前使用者是否為管理員"""
+    if current_user.role != "admin":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="權限不足，僅限管理員操作"
+        )
+    return current_user
+
+
 # ==================== API Endpoints ====================
 
 @router.post(
@@ -284,6 +296,7 @@ async def get_me(
         id=current_user.id,
         username=current_user.username,
         email=current_user.email,
+        role=current_user.role,
         is_active=current_user.is_active,
         created_at=current_user.created_at,
         updated_at=current_user.updated_at,

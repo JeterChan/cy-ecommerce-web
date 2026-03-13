@@ -8,6 +8,7 @@ class UserEntity(BaseEntity):
     email: EmailStr
     username: str
     password_hash: str
+    role: str = "user"  # 新增：user, admin
     is_active: bool = True
     is_verified: bool = False
 

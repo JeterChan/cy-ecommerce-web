@@ -19,15 +19,34 @@ from modules.product.application.use_cases import (
     ToggleProductActiveUseCase,
     AdjustProductStockUseCase,
 )
+from modules.product.infrastructure.category_repository import SqlAlchemyCategoryRepository
 from modules.product.application.dtos import (
     ProductCreateDTO,
     ProductUpdateDTO,
     ProductResponseDTO,
     ProductStockAdjustDTO,
+    CategoryResponseDTO,
 )
 
 
 router = APIRouter(prefix="/products", tags=["Products"])
+
+
+# ==================== 分類操作 ====================
+
+@router.get(
+    "/categories",
+    response_model=List[CategoryResponseDTO],
+    summary="列出所有分類",
+    description="列出所有可用的商品分類"
+)
+async def list_categories(
+    db: AsyncSession = Depends(get_db)
+) -> List[CategoryResponseDTO]:
+    """列出所有分類"""
+    repo = SqlAlchemyCategoryRepository(db)
+    categories = await repo.list()
+    return [CategoryResponseDTO(id=c.id, name=c.name, slug=c.slug) for c in categories]
 
 
 # ==================== CRUD 操作 ====================
@@ -92,6 +111,7 @@ async def get_product(
 async def list_products(
     skip: int = Query(default=0, ge=0, description="略過的筆數"),
     limit: int = Query(default=100, ge=1, le=1000, description="取得的筆數上限"),
+    category_id: Optional[int] = Query(default=None, description="分類 ID 篩選"),
     is_active: Optional[bool] = Query(default=None, description="篩選上架狀態"),
     db: AsyncSession = Depends(get_db)
 ) -> List[ProductResponseDTO]:
@@ -100,10 +120,11 @@ async def list_products(
 
     - **skip**: 略過的筆數
     - **limit**: 取得的筆數上限 (最大 1000)
+    - **category_id**: 分類 ID 篩選
     - **is_active**: 篩選上架狀態 (null=全部, true=上架, false=下架)
     """
     use_case = ListProductsUseCase(SqlAlchemyProductRepository(db))
-    products = await use_case.execute(skip=skip, limit=limit, is_active=is_active)
+    products = await use_case.execute(skip=skip, limit=limit, category_id=category_id, is_active=is_active)
     return [ProductResponseDTO.model_validate(p) for p in products]
 
 

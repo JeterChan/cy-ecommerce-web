@@ -84,6 +84,7 @@ class UserRepository(IUserRepository):
         existing_user.username = user.username
         existing_user.email = str(user.email)
         existing_user.password_hash = user.password_hash
+        existing_user.role = user.role
         existing_user.is_active = user.is_active
         existing_user.is_verified = user.is_verified
         existing_user.phone = user.phone
@@ -104,6 +105,7 @@ class UserRepository(IUserRepository):
             username=entity.username,
             email=str(entity.email),
             password_hash=entity.password_hash,
+            role=entity.role,
             is_active=entity.is_active,
             is_verified=entity.is_verified,
             phone=entity.phone,
@@ -123,6 +125,7 @@ class UserRepository(IUserRepository):
             username=model.username,
             email=model.email,  # type: ignore[arg-type]
             password_hash=model.password_hash,
+            role=model.role,
             is_active=model.is_active,
             is_verified=model.is_verified,
             phone=model.phone,

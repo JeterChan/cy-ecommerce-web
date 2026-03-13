@@ -38,6 +38,12 @@ class Settings(BaseSettings):
     BREVO_SENDER_NAME: str
     FRONTEND_URL: str
 
+    # 6. AWS S3 設定
+    AWS_ACCESS_KEY_ID: str | None = None
+    AWS_SECRET_ACCESS_KEY: str | None = None
+    AWS_S3_BUCKET: str | None = None
+    AWS_S3_REGION: str = "ap-northeast-1"
+
     @field_validator("FRONTEND_URL")
     @classmethod
     def strip_trailing_slash(cls, v: str) -> str:
