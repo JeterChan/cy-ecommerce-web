@@ -11,6 +11,10 @@ Auto-generated from all feature plans. Last updated: 2026-01-14
 - N/A (Frontend consumes API; Backend uses PostgreSQL/Redis) (012-order-frontend-ui)
 - Python 3.12 (Backend) + FastAPI, SQLAlchemy, Alembic, Celery, Redis, Pydantic (013-user-profile-api)
 - PostgreSQL (Users table extension), Redis (Verification Tokens) (013-user-profile-api)
+- Python 3.12, TypeScript 5.x, Vue 3.5 + FastAPI, Pydantic v2, SQLAlchemy, Alembic, Boto3 (AWS SDK) (016-product-management-enhancement)
+- PostgreSQL (商品與圖片資訊), AWS S3 (圖片檔案) (016-product-management-enhancement)
+- Python 3.12, TypeScript 5.x, Vue 3.5 + FastAPI, Vue Router, Pinia, Lucide Icons, shadcn/ui (017-admin-management-portal)
+- PostgreSQL (Users table) (017-admin-management-portal)
 
 - Python 3.11 (Backend), Node.js/TypeScript (Frontend) (007-member-system)
 
@@ -30,9 +34,9 @@ cd src [ONLY COMMANDS FOR ACTIVE TECHNOLOGIES][ONLY COMMANDS FOR ACTIVE TECHNOLO
 Python 3.11 (Backend), Node.js/TypeScript (Frontend): Follow standard conventions
 
 ## Recent Changes
-- 013-user-profile-api: Added Python 3.12 (Backend) + FastAPI, SQLAlchemy, Alembic, Celery, Redis, Pydantic
-- 013-user-profile-api: Added [if applicable, e.g., PostgreSQL, CoreData, files or N/A]
-- 012-order-frontend-ui: Added TypeScript 5.x, Vue 3.5 + Axios, Pinia, Vue Router, Tailwind CSS, shadcn/ui (radix-vue)
+- 017-admin-management-portal: Added Python 3.12, TypeScript 5.x, Vue 3.5 + FastAPI, Vue Router, Pinia, Lucide Icons, shadcn/ui
+- 016-product-management-enhancement: Added Python 3.12, TypeScript 5.x, Vue 3.5 + FastAPI, Pydantic v2, SQLAlchemy, Alembic, Boto3 (AWS SDK)
+- 014-auth-module-enhancement: Added [if applicable, e.g., PostgreSQL, CoreData, files or N/A]
 
 
 <!-- MANUAL ADDITIONS START -->

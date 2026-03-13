@@ -47,3 +47,10 @@ class CartResponse(BaseModel):
 
     model_config = ConfigDict(from_attributes=True)
 
+
+class CartMergeRequest(BaseModel):
+    """購物車合併請求"""
+    guest_items: list[dict] = Field(..., description="訪客購物車商品列表")
+
+    model_config = ConfigDict(from_attributes=True)
+

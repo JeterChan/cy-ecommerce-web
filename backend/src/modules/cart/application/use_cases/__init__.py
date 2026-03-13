@@ -15,6 +15,9 @@ from modules.cart.application.use_cases.cart_queries import (
     GetCartItemUseCase,
     GetCartSummaryUseCase,
 )
+from modules.cart.application.use_cases.cart_merge import (
+    MergeCartUseCase,
+)
 
 __all__ = [
     # Commands
@@ -27,5 +30,7 @@ __all__ = [
     "GetCartUseCase",
     "GetCartItemUseCase",
     "GetCartSummaryUseCase",
+    # Merge
+    "MergeCartUseCase",
 ]
 

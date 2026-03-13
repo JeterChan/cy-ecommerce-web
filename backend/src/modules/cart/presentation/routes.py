@@ -24,8 +24,9 @@ from modules.cart.application.use_cases import (
     GetCartUseCase,
     GetCartItemUseCase,
     GetCartSummaryUseCase,
+    MergeCartUseCase,
 )
-from modules.cart.domain.entities import CartItemResponse, CartItemCreate, CartItemUpdate
+from modules.cart.domain.entities import CartItemResponse, CartItemCreate, CartItemUpdate, CartMergeRequest
 from modules.cart.infrastructure.utils import (
     generate_guest_token,
     set_guest_token_cookie,
@@ -369,6 +370,65 @@ async def clear_cart(
     repository, owner_id = repo_and_id
     use_case = ClearCartUseCase(repository)
     await use_case.execute(owner_id=owner_id)
+
+
+@router.post(
+    "/merge",
+    response_model=List[CartItemResponse],
+    status_code=status.HTTP_200_OK,
+    summary="合併訪客購物車到用戶購物車",
+    description="將訪客購物車的商品合併到認證用戶的購物車"
+)
+async def merge_cart(
+    merge_request: CartMergeRequest,
+    repo_and_id: Tuple[ICartRepository, str] = Depends(get_cart_repository),
+    db: AsyncSession = Depends(get_db)
+) -> List[CartItemResponse]:
+    """
+    合併訪客購物車到用戶購物車
+
+    - **guest_items**: 訪客購物車商品列表
+        [
+            {
+                "product_id": "uuid",
+                "quantity": 2
+            },
+            ...
+        ]
+
+    行為:
+    - 遍歷訪客商品
+    - 若用戶購物車已有該商品 → 累加數量
+    - 若用戶購物車無該商品 → 新增商品
+    - 只有認證用戶才能執行此操作
+
+    返回:
+    - 合併後的購物車項目列表
+    """
+    repository, owner_id = repo_and_id
+
+    # 確保只有認證用戶能執行合併
+    if isinstance(repository, RedisCartRepository):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Only authenticated users can merge cart"
+        )
+
+    try:
+        use_case = MergeCartUseCase(repository)
+        result = await use_case.execute(
+            owner_id=owner_id,
+            guest_items=merge_request.guest_items
+        )
+
+        # 若為 SQL Repository（會員），返回的結果已包含商品信息
+        # 若為 Redis Repository，需要進行富化（但上面已拒絕了訪客請求）
+        return result
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e)
+        )
 
 
 @router.get(

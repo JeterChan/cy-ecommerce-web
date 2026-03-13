@@ -66,6 +66,18 @@ export const useAuthStore = defineStore('auth', () => {
         }
       }
 
+      // 登入成功後，檢查是否需要合併購物車
+      const cartStore = useCartStore()
+      if (cartStore.items.length > 0) {
+        console.log('🔄 [Auth] 登入成功，檢測到訪客購物車，準備合併...')
+        // 自動嘗試合併（可根據需要改為顯示確認對話框）
+        await cartStore.mergeGuestCart()
+      } else {
+        console.log('ℹ️ [Auth] 登入成功，無訪客購物車，同步用戶購物車...')
+        // 直接同步用戶購物車
+        await cartStore.syncFromBackend()
+      }
+
       return Promise.resolve()
     } catch (error: any) {
       return Promise.reject(error)
@@ -84,8 +96,9 @@ export const useAuthStore = defineStore('auth', () => {
     accessToken.value = null
     refreshToken.value = null
 
-    // 重置購物車同步狀態
+    // 清空購物車（本地），保留後端數據供下次登入恢復
     const cartStore = useCartStore()
+    cartStore.clearCartLocal()
     cartStore.resetSync()
   }
 
