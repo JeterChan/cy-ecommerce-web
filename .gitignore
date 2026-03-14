@@ -20,3 +20,11 @@ __pycache__/
 *.pyc
 venv/
 .venv/
+
+# AI/Agent Configuration Directories
+.agent/
+.claude/
+.codex/
+.cursor/
+.gemini/
+.github/
