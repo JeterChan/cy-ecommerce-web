@@ -309,6 +309,7 @@ class RedisCartRepository(ICartRepository):
     ) -> List[CartItemResponse]:
         """
         批量新增商品（merge cart 使用）
+        使用 Redis Pipeline 優化，減少網路來回次數。
 
         Args:
             owner_id: 擁有者識別
@@ -317,14 +318,61 @@ class RedisCartRepository(ICartRepository):
         Returns:
             List[CartItemResponse]: 更新後的購物車項目列表
         """
+        key = self._cart_key(owner_id)
+        now = datetime.now(timezone.utc)
         result = []
-        for item in items:
-            updated_item = await self.add_item(
-                owner_id,
-                item.product_id,
-                item.quantity
+        
+        # 1. 使用 Pipeline 一次讀取所有商品的現有狀態 (HGET)
+        async with self.redis.pipeline(transaction=True) as pipe:
+            for item in items:
+                pipe.hget(key, str(item.product_id))
+            existing_values = await pipe.execute()
+        
+        # 2. 在記憶體中計算新狀態
+        updates = {} # product_id_str -> serialized_data
+        
+        for i, item in enumerate(items):
+            product_id_str = str(item.product_id)
+            existing = existing_values[i]
+            
+            if existing:
+                # 累加數量
+                data = self._deserialize_item(existing)
+                new_quantity = data["quantity"] + item.quantity
+                created_at = data["created_at"]
+                updated_at = now
+            else:
+                # 新增
+                new_quantity = item.quantity
+                created_at = now
+                updated_at = now
+                
+            serialized = self._serialize_item(
+                item.product_id, new_quantity, created_at, updated_at
             )
-            result.append(updated_item)
+            updates[product_id_str] = serialized
+            
+            # 建構回傳物件
+            item_id = uuid.uuid5(uuid.NAMESPACE_DNS, f"{owner_id}:{product_id_str}")
+            cart_id = uuid.uuid5(uuid.NAMESPACE_DNS, owner_id)
+            
+            result.append(CartItemResponse(
+                id=item_id,
+                cart_id=cart_id,
+                product_id=item.product_id,
+                quantity=new_quantity,
+                created_at=created_at,
+                updated_at=updated_at
+            ))
+            
+        # 3. 使用 Pipeline 一次寫入所有更新 (HSET) 並設定過期時間
+        if updates:
+            async with self.redis.pipeline(transaction=True) as pipe:
+                # 雖然 hset 支援多個 mapping, 但 python redis client 的 hset 
+                # 可以直接傳入 mapping 字典 {field: value, ...}
+                pipe.hset(key, mapping=updates)
+                pipe.expire(key, self.ttl)
+                await pipe.execute()
 
         return result
 

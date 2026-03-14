@@ -7,6 +7,7 @@ Cart API Routes
 from fastapi import APIRouter, Depends, HTTPException, status, Request, Response
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from typing import List, Optional, Tuple
+import logging
 import uuid
 
 from infrastructure.database import get_redis, get_db
@@ -15,6 +16,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from modules.cart.infrastructure.repositories.redis_repository import RedisCartRepository
 from modules.cart.infrastructure.repositories.sql_repository import SQLCartRepository
+from modules.cart.infrastructure.repositories.hybrid_repository import HybridCartRepository
 from modules.cart.domain.repository import ICartRepository
 from modules.cart.application.use_cases import (
     AddToCartUseCase,
@@ -37,6 +39,8 @@ from core.security import verify_token
 from modules.auth.infrastructure.repository import UserRepository
 from modules.product.infrastructure.repository import SqlAlchemyProductRepository
 
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/cart", tags=["Cart"])
 security = HTTPBearer(auto_error=False)  # auto_error=False 使其成為可選
@@ -87,7 +91,7 @@ async def enrich_cart_items_with_product_info(
                 item.image_url = image_url
         except Exception as e:
             # 商品查詢失敗時，使用預設值
-            print(f"Failed to enrich product info for {item.product_id}: {e}")
+            logger.error(f"Failed to enrich product info for {item.product_id}: {e}", exc_info=True)
             item.product_name = item.product_name or f"Unknown Product ({item.product_id})"
             item.unit_price = item.unit_price or 0.0
             item.subtotal = item.subtotal or 0.0
@@ -148,15 +152,15 @@ async def get_cart_repository(
     根據使用者狀態選擇 Repository
 
     邏輯:
-    - 若有登入（user 不為 None）→ 使用 SQLCartRepository，owner_id = str(user.id)
+    - 若有登入（user 不為 None）→ 使用 HybridCartRepository (Redis + SQL Async)，owner_id = str(user.id)
     - 若未登入（user 為 None）→ 使用 RedisCartRepository，owner_id = guest_token
 
     Returns:
         Tuple[ICartRepository, str]: (repository, owner_id)
     """
     if user:
-        # 會員：使用 SQL Repository
-        repository = SQLCartRepository(db)
+        # 會員：使用 Hybrid Repository (Redis 優先 + Celery 同步)
+        repository = HybridCartRepository(redis, db)
         owner_id = str(user.id)
     else:
         # 訪客：使用 Redis Repository + Guest Token
@@ -211,8 +215,8 @@ async def add_to_cart(
             quantity=item.quantity
         )
         
-        # 若為 Redis Repository（訪客），進行富化
-        if isinstance(repository, RedisCartRepository):
+        # 若為 Redis 或 Hybrid Repository，進行富化
+        if isinstance(repository, (RedisCartRepository, HybridCartRepository)):
             items = await enrich_cart_items_with_product_info([result], db)
             if items:
                 result = items[0]
@@ -245,8 +249,8 @@ async def get_cart(
     use_case = GetCartUseCase(repository)
     items = await use_case.execute(owner_id=owner_id)
     
-    # 若為 Redis Repository（訪客），進行富化
-    if isinstance(repository, RedisCartRepository):
+    # 若為 Redis 或 Hybrid Repository，進行富化（確保 UI 看到最新價格與名稱）
+    if isinstance(repository, (RedisCartRepository, HybridCartRepository)):
         items = await enrich_cart_items_with_product_info(items, db)
     
     return items
@@ -281,8 +285,8 @@ async def get_cart_item(
             detail=f"Product {product_id} not found in cart"
         )
 
-    # 若為 Redis Repository（訪客），進行富化
-    if isinstance(repository, RedisCartRepository):
+    # 若為 Redis 或 Hybrid Repository，進行富化
+    if isinstance(repository, (RedisCartRepository, HybridCartRepository)):
         items = await enrich_cart_items_with_product_info([item], db)
         if items:
             item = items[0]
@@ -319,8 +323,8 @@ async def update_cart_item(
             quantity=item_update.quantity
         )
         
-        # 若為 Redis Repository（訪客），進行富化
-        if isinstance(repository, RedisCartRepository):
+        # 若為 Redis 或 Hybrid Repository，進行富化
+        if isinstance(repository, (RedisCartRepository, HybridCartRepository)):
             items = await enrich_cart_items_with_product_info([result], db)
             if items:
                 result = items[0]

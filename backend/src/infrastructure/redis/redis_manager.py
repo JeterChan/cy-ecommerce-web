@@ -1,6 +1,8 @@
 from redis.asyncio import Redis, from_url
-from src.infrastructure.config import settings
+from infrastructure.config import settings
 from typing import AsyncGenerator
+import time
+from contextlib import asynccontextmanager
 
 class RedisClient:
     def __init__(self):
@@ -31,6 +33,28 @@ class RedisClient:
         if self._redis is None:
             raise RuntimeError("RedisClient not connected. Call connect() first.")
         return self._redis
+
+    @asynccontextmanager
+    async def distributed_lock(self, lock_name: str, expire: int = 10):
+        """
+        簡易的分散式鎖實作 (Context Manager)
+        
+        Args:
+            lock_name: 鎖的名稱
+            expire: 過期時間 (秒)
+        """
+        redis = self.client
+        lock_key = f"lock:{lock_name}"
+        
+        # 嘗試獲取鎖 (NX: 只在 key 不存在時設定, EX: 設定過期時間)
+        acquired = await redis.set(lock_key, "locked", nx=True, ex=expire)
+        
+        try:
+            yield acquired
+        finally:
+            if acquired:
+                # 釋放鎖
+                await redis.delete(lock_key)
 
 # Global instance
 redis_manager = RedisClient()
