@@ -15,6 +15,8 @@ Auto-generated from all feature plans. Last updated: 2026-01-14
 - PostgreSQL (商品與圖片資訊), AWS S3 (圖片檔案) (016-product-management-enhancement)
 - Python 3.12, TypeScript 5.x, Vue 3.5 + FastAPI, Vue Router, Pinia, Lucide Icons, shadcn/ui (017-admin-management-portal)
 - PostgreSQL (Users table) (017-admin-management-portal)
+- Python 3.12 + FastAPI, SQLAlchemy (Async), Redis-py (Async), Pydantic v2 (020-order-checkout-system)
+- PostgreSQL (訂單持久化), Redis (購物車暫存) (020-order-checkout-system)
 
 - Python 3.11 (Backend), Node.js/TypeScript (Frontend) (007-member-system)
 
@@ -34,10 +36,11 @@ cd src [ONLY COMMANDS FOR ACTIVE TECHNOLOGIES][ONLY COMMANDS FOR ACTIVE TECHNOLO
 Python 3.11 (Backend), Node.js/TypeScript (Frontend): Follow standard conventions
 
 ## Recent Changes
+- 020-order-checkout-system: Added Python 3.12 + FastAPI, SQLAlchemy (Async), Redis-py (Async), Pydantic v2
 - 017-admin-management-portal: Added Python 3.12, TypeScript 5.x, Vue 3.5 + FastAPI, Vue Router, Pinia, Lucide Icons, shadcn/ui
 - 016-product-management-enhancement: Added Python 3.12, TypeScript 5.x, Vue 3.5 + FastAPI, Pydantic v2, SQLAlchemy, Alembic, Boto3 (AWS SDK)
-- 014-auth-module-enhancement: Added [if applicable, e.g., PostgreSQL, CoreData, files or N/A]
 
 
 <!-- MANUAL ADDITIONS START -->
+- 開發環境不需要執行 `alembic migration`。系統啟動時會自動處理資料表結構同步（透過 `recreate_all`）。
 <!-- MANUAL ADDITIONS END -->
