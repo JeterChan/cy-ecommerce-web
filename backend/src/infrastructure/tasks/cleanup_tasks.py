@@ -29,7 +29,7 @@ def hard_delete_expired_accounts() -> dict:
     from sqlalchemy import delete as sa_delete
     from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncSession
     from infrastructure.config import settings
-    from modules.auth.infrastructure.models.user import UserModel
+    from modules.auth.infrastructure.models import UserModel
 
     async def _run() -> int:
         cutoff_date = datetime.now(timezone.utc) - timedelta(days=HARD_DELETE_AFTER_DAYS)

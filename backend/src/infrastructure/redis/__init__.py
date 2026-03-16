@@ -1,4 +1,2 @@
-from .token_manager import RedisTokenManager
-
-__all__ = ["RedisTokenManager"]
-
+from .redis_manager import redis_manager, get_redis
+__all__ = ['redis_manager', 'get_redis']

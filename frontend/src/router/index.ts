@@ -84,6 +84,31 @@ const router = createRouter({
       name: 'profile',
       component: () => import('@/views/ProfileView.vue'),
       meta: { requiresAuth: true }
+    },
+    {
+      path: '/admin',
+      component: () => import('@/layouts/AdminLayout.vue'),
+      meta: { requiresAuth: true, requiresAdmin: true },
+      children: [
+        {
+          path: 'dashboard',
+          name: 'admin-dashboard',
+          component: () => import('@/views/admin/AdminDashboard.vue'),
+          meta: { title: '儀表板' }
+        },
+        {
+          path: 'products',
+          name: 'admin-products',
+          component: () => import('@/views/admin/ProductManagementView.vue'),
+          meta: { title: '商品管理' }
+        },
+        {
+          path: 'categories',
+          name: 'admin-categories',
+          component: () => import('@/views/admin/CategoryManagementView.vue'),
+          meta: { title: '分類管理' }
+        }
+      ]
     }
   ]
 })
@@ -102,8 +127,10 @@ router.beforeEach(async (to, _from, next) => {
       await authStore.getCurrentUser()
       console.log('[Router] User 資訊獲取成功')
     } catch (error) {
-      console.warn('[Router] User 資訊獲取失敗，但保留認證狀態')
-      // 不清除狀態，允許繼續（API 攔截器會處理 token refresh）
+      // 無法驗證使用者身分（網路錯誤或 token 失效），清除認證狀態強制重新登入
+      // 不能「允許繼續」：若 user 為 null，requiresAdmin 檢查會立即失敗並導向 /
+      console.warn('[Router] User 資訊獲取失敗，清除認證狀態')
+      authStore.logout()
     }
   }
 
@@ -114,6 +141,17 @@ router.beforeEach(async (to, _from, next) => {
       path: '/login',
       query: { redirect: to.fullPath }
     })
+  } else if (to.meta.requiresAdmin) {
+    if (!authStore.user) {
+      // 有 token 但 user 仍為 null（不應發生，防禦性處理）
+      next({ path: '/login', query: { redirect: to.fullPath } })
+    } else if (authStore.user.role !== 'admin') {
+      // 已登入但非管理員角色
+      console.warn('[Router] 嘗試存取管理員頁面，但權限不足')
+      next({ path: '/' })
+    } else {
+      next()
+    }
   } else {
     next()
   }

@@ -1,7 +1,8 @@
 """刪除帳戶 Use Case（軟刪除）"""
 from uuid import UUID
 from datetime import datetime, timezone
-from modules.auth.domain.repositories.i_user_repository import IUserRepository
+from modules.auth.domain.repository import IUserRepository
+from modules.auth.domain.services.password_hasher import IPasswordHasher
 from core.exceptions import UserNotFoundError, InvalidCredentialsError
 import logging
 
@@ -17,8 +18,9 @@ class DeleteAccountUseCase:
     3. 儲存變更至資料庫
     """
 
-    def __init__(self, user_repository: IUserRepository):
+    def __init__(self, user_repository: IUserRepository, password_hasher: IPasswordHasher):
         self.user_repository = user_repository
+        self.password_hasher = password_hasher
 
     async def execute(self, user_id: UUID, password: str) -> None:
         """
@@ -37,7 +39,7 @@ class DeleteAccountUseCase:
             raise UserNotFoundError(f"使用者不存在 (id: {user_id})")
 
         # 驗證密碼
-        if not user.verify_password(password):
+        if not self.password_hasher.verify(password, user.password_hash):
             logger.warning(f"帳號刪除失敗：密碼驗證失敗 (id: {user_id})")
             raise InvalidCredentialsError("密碼驗證失敗，無法刪除帳號")
 

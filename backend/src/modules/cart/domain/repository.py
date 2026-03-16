@@ -2,10 +2,10 @@ from abc import ABC, abstractmethod
 from typing import List, Optional
 import uuid
 
-from modules.cart.domain.schemas import CartItemResponse, CartItemCreate
+from modules.cart.domain.entities import CartItemResponse, CartItemCreate
 
 
-class CartRepository(ABC):
+class ICartRepository(ABC):
     """
     購物車 Repository 介面
 

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { RouterLink, useRouter } from 'vue-router'
-import { ShoppingCart, Menu, ChevronDown, User } from 'lucide-vue-next'
+import { ShoppingCart, Menu, ChevronDown, User, LayoutDashboard } from 'lucide-vue-next'
 import { useI18n } from 'vue-i18n'
 import { Button } from '@/components/ui/button'
 import { useCartStore } from '@/stores/cart'
@@ -159,6 +159,15 @@ const handleLogout = () => {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
+              <template v-if="authStore.user?.role === 'admin'">
+                <DropdownMenuItem as-child class="cursor-pointer">
+                  <RouterLink to="/admin/dashboard" class="flex items-center gap-2">
+                    <LayoutDashboard class="h-4 w-4" />
+                    管理後台
+                  </RouterLink>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+              </template>
               <DropdownMenuItem as-child class="cursor-pointer">
                 <RouterLink to="/profile">{{ t('auth.profile') }}</RouterLink>
               </DropdownMenuItem>
@@ -185,6 +194,15 @@ const handleLogout = () => {
                 {{ authStore.user?.username }}
               </div>
               <DropdownMenuSeparator class="md:hidden" />
+              <template v-if="authStore.user?.role === 'admin'">
+                <DropdownMenuItem as-child class="cursor-pointer">
+                  <RouterLink to="/admin/dashboard" class="flex items-center gap-2">
+                    <LayoutDashboard class="h-4 w-4" />
+                    管理後台
+                  </RouterLink>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+              </template>
               <DropdownMenuItem as-child class="cursor-pointer">
                 <RouterLink to="/profile">{{ t('auth.profile') }}</RouterLink>
               </DropdownMenuItem>

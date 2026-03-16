@@ -1,5 +1,5 @@
 """忘記密碼 Use Case"""
-from modules.auth.domain.repositories.i_user_repository import IUserRepository
+from modules.auth.domain.repository import IUserRepository
 from infrastructure.redis.token_manager import RedisTokenManager
 from infrastructure.tasks.email_tasks import send_password_reset
 from infrastructure.config import settings

@@ -1,0 +1,71 @@
+openapi: 3.0.3
+info:
+  title: Cart API with Redis Optimization
+  version: 1.0.0
+  description: Optimized shopping cart API using Redis for storage and PostgreSQL for validation/pricing.
+
+paths:
+  /cart:
+    get:
+      summary: Get user shopping cart
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Cart'
+    post:
+      summary: Add to cart
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AddToCartRequest'
+      responses:
+        '200':
+          description: Item added successfully
+        '400':
+          description: Insufficient stock or invalid request
+
+components:
+  schemas:
+    Cart:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/CartItem'
+        total:
+          type: number
+          format: double
+
+    CartItem:
+      type: object
+      properties:
+        product_id:
+          type: string
+        name:
+          type: string
+        quantity:
+          type: integer
+        price:
+          type: number
+          format: double
+        subtotal:
+          type: number
+          format: double
+
+    AddToCartRequest:
+      type: object
+      required:
+        - product_id
+        - quantity
+      properties:
+        product_id:
+          type: string
+        quantity:
+          type: integer
+          minimum: 1

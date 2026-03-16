@@ -1,0 +1,115 @@
+openapi: 3.1.0
+info:
+  title: Auth Module Enhancement API
+  version: 1.0.0
+  description: API contracts for Email Verification, Password Reset, and Account Management.
+
+paths:
+  /auth/verify-email:
+    post:
+      summary: Verify email using token
+      tags: [Auth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                token:
+                  type: string
+                  example: "v-token-123"
+      responses:
+        "200":
+          description: Email verified successfully
+        "400":
+          description: Invalid or expired token
+
+  /auth/forgot-password:
+    post:
+      summary: Request password reset email
+      tags: [Auth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                  format: email
+                  example: "user@example.com"
+      responses:
+        "202":
+          description: Reset request accepted (regardless if email exists)
+
+  /auth/reset-password:
+    post:
+      summary: Reset password using token
+      tags: [Auth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                token:
+                  type: string
+                  example: "r-token-456"
+                new_password:
+                  type: string
+                  minLength: 8
+                  example: "new_secure_pass"
+      responses:
+        "200":
+          description: Password reset successfully
+        "400":
+          description: Invalid token or password complexity failed
+
+  /me/change-password:
+    post:
+      summary: Change password for logged-in user
+      tags: [Profile]
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                old_password:
+                  type: string
+                new_password:
+                  type: string
+                  minLength: 8
+      responses:
+        "200":
+          description: Password updated
+        "401":
+          description: Old password incorrect
+
+  /me:
+    delete:
+      summary: Soft delete account
+      tags: [Profile]
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                password:
+                  type: string
+                  description: Verification required for deletion
+      responses:
+        "204":
+          description: Account marked as deleted
+        "401":
+          description: Password verification failed

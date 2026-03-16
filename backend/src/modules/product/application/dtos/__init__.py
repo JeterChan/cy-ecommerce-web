@@ -1,19 +1,20 @@
-"""
-Product DTOs (Data Transfer Objects)
-
-區分 Input 和 Output DTOs 以提高程式碼清晰度
-"""
-from .inputs import ProductCreateDTO, ProductUpdateDTO, ProductStockAdjustDTO
-from .outputs import ProductResponseDTO, ProductListItemDTO
+from .product_create_dto import ProductBase, ProductCreateDTO
+from .product_update_dto import ProductUpdateDTO
+from .product_stock_adjust_dto import ProductStockAdjustDTO
+from .product_response_dto import ProductResponseDTO
+from .product_list_item_dto import ProductListItemDTO
+from .image_presign_dto import ImagePresignRequest
+from .category_dto import CategoryResponseDTO, CategoryCreateDTO, ProductListResponseDTO
 
 __all__ = [
-    # Input DTOs
+    "ProductBase",
     "ProductCreateDTO",
     "ProductUpdateDTO",
     "ProductStockAdjustDTO",
-
-    # Output DTOs
     "ProductResponseDTO",
     "ProductListItemDTO",
+    "ImagePresignRequest",
+    "CategoryResponseDTO",
+    "CategoryCreateDTO",
+    "ProductListResponseDTO",
 ]
-

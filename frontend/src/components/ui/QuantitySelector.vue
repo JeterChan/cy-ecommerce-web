@@ -6,15 +6,17 @@ const props = withDefaults(defineProps<{
   modelValue: number
   min?: number
   max?: number
+  disabled?: boolean
 }>(), {
   min: 1,
-  max: 99
+  max: 99,
+  disabled: false
 })
 
 const emit = defineEmits(['update:modelValue'])
 
-const canDecrease = computed(() => props.modelValue > props.min)
-const canIncrease = computed(() => props.modelValue < props.max)
+const canDecrease = computed(() => !props.disabled && props.modelValue > props.min)
+const canIncrease = computed(() => !props.disabled && props.modelValue < props.max)
 
 function decrease() {
   if (canDecrease.value) {
@@ -51,7 +53,10 @@ function handleInput(event: Event) {
 </script>
 
 <template>
-  <div class="flex items-center border border-gray-300 rounded-md w-fit bg-white">
+  <div 
+    class="flex items-center border border-gray-300 rounded-md w-fit bg-white"
+    :class="{ 'opacity-50 pointer-events-none bg-gray-50': disabled }"
+  >
     <button 
       type="button"
       class="p-2 hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors text-gray-600"

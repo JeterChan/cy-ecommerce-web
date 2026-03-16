@@ -1,6 +1,6 @@
 from pydantic import BaseModel, Field, ConfigDict
 from typing import Optional
-from modules.auth.domain.entities.UserEntity import UserEntity
+from modules.auth.domain.entities import UserEntity
 
 class UserProfileResponse(BaseModel):
     """使用者個人檔案回應 DTO"""

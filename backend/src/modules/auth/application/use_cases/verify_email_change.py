@@ -1,5 +1,5 @@
 """驗證電子郵件變更 Use Case"""
-from modules.auth.infrastructure.repositories.user_repository import UserRepository
+from modules.auth.domain.repository import IUserRepository
 from modules.auth.application.dtos import VerifyEmailChangeRequest
 from infrastructure.redis.token_manager import RedisTokenManager
 from core.exceptions import ValidationError
@@ -17,7 +17,7 @@ class VerifyEmailChangeUseCase:
 
     def __init__(
         self,
-        user_repository: UserRepository,
+        user_repository: IUserRepository,
         redis_token_manager: RedisTokenManager,
     ):
         self.user_repository = user_repository

@@ -1,6 +1,6 @@
 """更新使用者個人檔案 Use Case"""
 from uuid import UUID
-from modules.auth.domain.repositories.i_user_repository import IUserRepository
+from modules.auth.domain.repository import IUserRepository
 from modules.auth.application.dtos import UpdateProfileRequest, UpdateProfileResponse
 from core.exceptions import UserNotFoundError, ValidationError
 import logging

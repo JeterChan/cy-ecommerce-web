@@ -1,5 +1,5 @@
 """重設密碼 Use Case"""
-from modules.auth.domain.repositories.i_user_repository import IUserRepository
+from modules.auth.domain.repository import IUserRepository
 from infrastructure.redis.token_manager import RedisTokenManager
 from core.security import get_password_hash
 from core.exceptions import UserNotFoundError

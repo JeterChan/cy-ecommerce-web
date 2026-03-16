@@ -1,0 +1,21 @@
+task_definition:
+  name: sync_member_cart_task
+  module: modules.cart.infrastructure.tasks
+  queue: cart_sync_queue
+  
+  parameters:
+    user_id:
+      type: string (UUID)
+      description: The unique ID of the member whose cart needs syncing.
+    
+  logic:
+    1. Read all fields from Redis key `cart:{user_id}`.
+    2. Convert Redis JSON data to database entities.
+    3. Use a transactional UPSERT or DELETE-THEN-INSERT to update PostgreSQL table `cart_items`.
+    
+  retry_policy:
+    max_retries: 5
+    backoff_strategy: exponential
+    retry_on: 
+      - sqlalchemy.exc.OperationalError
+      - redis.exceptions.ConnectionError

@@ -23,7 +23,17 @@ const goToDetail = (id: string) => {
         :src="product.imageUrl" 
         :alt="product.name"
         class="object-cover w-full h-full hover:scale-105 transition-transform duration-300"
+        :class="{ 'grayscale opacity-50': product.stockQuantity === 0 }"
       />
+      <!-- 庫存標籤 -->
+      <div class="absolute top-2 right-2 flex flex-col gap-1">
+        <Badge v-if="product.stockQuantity === 0" variant="destructive" class="shadow-md">
+          已售罄
+        </Badge>
+        <Badge v-else-if="product.isLowStock" variant="warning" class="bg-yellow-500 hover:bg-yellow-600 text-white shadow-md">
+          庫存緊張
+        </Badge>
+      </div>
     </div>
     
     <CardHeader class="p-4 pb-2">

@@ -213,8 +213,20 @@ export const useCartStore = defineStore('cart', () => {
     try {
       console.log('🗑️ [Cart] 清空購物車...')
 
-      // 先同步到後端
-      await cartApiService.clearCart()
+      const authStore = useAuthStore()
+      
+      // 只有認證用戶才需要調用後端 API
+      if (authStore.isAuthenticated) {
+        try {
+          await cartApiService.clearCart()
+          console.log('✅ [Cart] 後端購物車清空成功')
+        } catch (error) {
+          console.warn('⚠️ [Cart] 後端購物車清空失敗:', error)
+          // 後端失敗不影響本地清空
+        }
+      } else {
+        console.log('👤 [Cart] 訪客用戶，只清空本地購物車')
+      }
 
       // 更新本地狀態
       items.value = []
@@ -222,8 +234,72 @@ export const useCartStore = defineStore('cart', () => {
       console.log('✅ [Cart] 清空購物車成功')
     } catch (error) {
       console.error('❌ [Cart] 清空購物車失敗:', error)
-      // 即使後端失敗，也清空本地購物車
+      // 即使出錯，也清空本地購物車
       items.value = []
+    } finally {
+      isLoading.value = false
+    }
+  }
+
+  const clearCartLocal = (): void => {
+    console.log('🗑️ [Cart] 清空本地購物車（登出）')
+    items.value = []
+    localStorage.removeItem('cart')
+  }
+
+  const resetSync = (): void => {
+    console.log('🔄 [Cart] 重置同步標記')
+    isSynced.value = false
+  }
+
+  const mergeGuestCart = async (): Promise<boolean> => {
+    console.log('🔄 [Cart] 開始合併訪客購物車...')
+    
+    isLoading.value = true
+    try {
+      // 取得本地訪客購物車（在登入前的購物車）
+      const guestItems = items.value
+
+      if (guestItems.length === 0) {
+        console.log('ℹ️ [Cart] 訪客購物車為空，無需合併')
+        // 清空本地（因為登出時已清空），重新同步用戶購物車
+        await syncFromBackend()
+        return true
+      }
+
+      // 轉換格式以便後端合併
+      const itemsToMerge = guestItems.map(item => ({
+        product_id: item.productId,
+        quantity: item.quantity
+      }))
+
+      // 呼叫後端合併 API
+      const mergedItems = await cartApiService.mergeCart(itemsToMerge)
+
+      // 清空本地購物車（移除訪客商品）
+      items.value = []
+      localStorage.removeItem('cart')
+
+      // 同步後端的合併結果到本地
+      const newItems: CartItem[] = mergedItems.map(item => ({
+        productId: item.product_id,
+        name: item.product_name || `Product ${item.product_id}`,
+        price: item.unit_price || 0,
+        imageUrl: item.image_url || '',
+        quantity: item.quantity
+      }))
+
+      items.value = newItems
+      localStorage.setItem('cart', JSON.stringify(items.value))
+      isSynced.value = true
+
+      console.log('✅ [Cart] 購物車合併完成，共', items.value.length, '項商品')
+      return true
+    } catch (error) {
+      console.error('❌ [Cart] 購物車合併失敗:', error)
+      // 合併失敗，使用原本的後端購物車
+      await syncFromBackend()
+      return false
     } finally {
       isLoading.value = false
     }
@@ -238,6 +314,9 @@ export const useCartStore = defineStore('cart', () => {
     removeFromCart,
     updateQuantity,
     clearCart,
-    syncFromBackend
+    clearCartLocal,
+    syncFromBackend,
+    resetSync,
+    mergeGuestCart
   }
 })

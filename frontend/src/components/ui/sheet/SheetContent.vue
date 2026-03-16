@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { type HTMLAttributes } from 'vue'
-import { DialogClose, DialogContent, type DialogContentEmits, type DialogContentProps, DialogOverlay, DialogPortal, useForwardPropsEmits } from 'radix-vue'
+import { DialogClose, DialogContent, type DialogContentEmits, type DialogContentProps, DialogDescription, DialogOverlay, DialogPortal, useForwardPropsEmits, VisuallyHidden } from 'radix-vue'
 import { X } from 'lucide-vue-next'
 import { cva } from 'class-variance-authority'
 import { cn } from '@/lib/utils'
@@ -47,6 +47,10 @@ const sheetVariants = cva(
       :class="cn(sheetVariants({ side }), props.class)"
       v-bind="forwarded"
     >
+      <!-- Visually hidden description satisfies Radix accessibility check when no SheetDescription is provided -->
+      <VisuallyHidden>
+        <DialogDescription />
+      </VisuallyHidden>
       <DialogClose
         class="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-secondary"
       >

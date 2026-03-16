@@ -64,6 +64,18 @@ export const cartApiService = {
     console.log('📡 [Cart API] 呼叫 DELETE /api/v1/cart')
     await api.delete('/api/v1/cart')
     console.log('✅ [Cart API] 清空購物車成功')
+  },
+
+  /**
+   * 合併訪客購物車到用戶購物車
+   */
+  async mergeCart(guestItems: Array<{ product_id: string; quantity: number }>): Promise<CartItemAPI[]> {
+    console.log('📡 [Cart API] 呼叫 POST /api/v1/cart/merge', { guest_items: guestItems })
+    const response = await api.post<CartItemAPI[]>('/api/v1/cart/merge', {
+      guest_items: guestItems
+    })
+    console.log('✅ [Cart API] 購物車合併成功:', response.data)
+    return response.data
   }
 }
 
