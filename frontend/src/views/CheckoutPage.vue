@@ -96,7 +96,7 @@ const handleSubmit = async () => {
   try {
     const order = await store.submitOrder()
     console.log('🎉 [CheckoutPage] 訂單送出成功，導向成功頁面')
-    router.push({ path: '/order-success', query: { orderId: order.id } })
+    router.push({ path: '/order-success', query: { orderId: order.id, orderNumber: order.order_number } })
   } catch (e) {
     console.error('❌ [CheckoutPage] 訂單送出失敗:', e)
     window.scrollTo({ top: 0, behavior: 'smooth' })
@@ -137,13 +137,15 @@ const goBackToCart = () => {
             v-model="shipping" 
             v-model:note="orderNote"
             :errors="errors"
-          />
-
-          <PaymentMethod 
-            v-model="payment"
+            :purchaser-name="purchaser.name"
+            :purchaser-phone="purchaser.phone"
           />
         </div>
         <div>
+          <PaymentMethod 
+            v-model="payment"
+            class="mb-6"
+          />
           <OrderSummary />
           <Button 
             @click="handleSubmit"

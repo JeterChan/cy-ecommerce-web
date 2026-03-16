@@ -27,45 +27,57 @@ export const productApiService = {
       queryParams.append('category_id', params.categoryId.toString())
     }
 
+    if (params.categoryIds && params.categoryIds.length > 0) {
+      params.categoryIds.forEach(id => {
+        queryParams.append('category_ids', id.toString())
+      })
+    }
+
     // 只獲取上架商品
     queryParams.append('is_active', 'true')
 
     const url = `/api/v1/products?${queryParams.toString()}`
     console.log('📡 [Product API] GET', url)
 
-    const response = await api.get<any[]>(url)
+    const response = await api.get<any>(url)
+    const data = response.data || {}
+    
+    // 驗證回傳結構，確保 items 是陣列且 total 是數字
+    const backendItems = Array.isArray(data.items) ? data.items : []
+    const totalCount = typeof data.total === 'number' ? data.total : backendItems.length
 
-    // 轉換後端格式為前端格式
-    const transformed = response.data.map((p: any): Product => ({
-      id: p.id,
-      name: p.name,
-      description: p.description || '',
-      price: Number(p.price),
-      imageUrl: p.image_url || 'https://placehold.co/300x200?text=Product',
-      tags: p.category_names || [],
-      stockQuantity: p.stock_quantity,
-      isLowStock: p.is_low_stock,
+    // 轉換後端格式為前端格式，增加欄位防護
+    const transformed = backendItems.map((p: any): Product => ({
+      id: p?.id || '',
+      name: p?.name || '未命名商品',
+      description: p?.description || '',
+      price: (typeof p?.price === 'number' || typeof p?.price === 'string') ? Number(p.price) : 0,
+      imageUrl: p?.image_url || 'https://placehold.co/300x200?text=Product',
+      tags: Array.isArray(p?.category_names) ? p.category_names : [],
+      stockQuantity: typeof p?.stock_quantity === 'number' ? p.stock_quantity : 0,
+      isLowStock: !!p?.is_low_stock,
       is_featured: false,
-      categoryIds: p.category_ids || [],
-      categoryNames: p.category_names || []
+      categoryIds: Array.isArray(p?.category_ids) ? p.category_ids : [],
+      categoryNames: Array.isArray(p?.category_names) ? p.category_names : []
     }))
 
     // 應用前端搜尋過濾 (如果後端尚未支援 query)
     let filtered = transformed
     if (params.query) {
       const q = params.query.toLowerCase()
-      filtered = filtered.filter(p =>
+      filtered = filtered.filter((p: Product) =>
         p.name.toLowerCase().includes(q) ||
         p.description.toLowerCase().includes(q)
       )
     }
 
+    const limit = params.limit || 10
     return {
       products: filtered,
-      total: filtered.length,
+      total: totalCount,
       page: params.page || 1,
-      limit: params.limit || filtered.length,
-      pages: Math.ceil(filtered.length / (params.limit || 10))
+      limit: limit,
+      pages: Math.ceil(totalCount / limit)
     }
   },
 
@@ -76,17 +88,23 @@ export const productApiService = {
     try {
       console.log('📡 [Product API] GET /api/v1/products/' + id)
       const response = await api.get<any>(`/api/v1/products/${id}`)
+      const data = response.data
+
+      if (!data || !data.id) {
+        console.error('❌ [Product API] 取得無效的產品資料')
+        return undefined
+      }
 
       return {
-        id: response.data.id,
-        name: response.data.name,
-        description: response.data.description || '',
-        price: Number(response.data.price),
-        imageUrl: response.data.image_url || 'https://placehold.co/300x200?text=Product',
-        tags: response.data.category_names || [],
+        id: data.id,
+        name: data.name || '未命名商品',
+        description: data.description || '',
+        price: (typeof data.price === 'number' || typeof data.price === 'string') ? Number(data.price) : 0,
+        imageUrl: data.image_url || 'https://placehold.co/300x200?text=Product',
+        tags: Array.isArray(data.category_names) ? data.category_names : [],
         is_featured: false,
-        categoryIds: response.data.category_ids || [],
-        categoryNames: response.data.category_names || []
+        categoryIds: Array.isArray(data.category_ids) ? data.category_ids : [],
+        categoryNames: Array.isArray(data.category_names) ? data.category_names : []
       }
     } catch (error) {
       console.error('❌ [Product API] 獲取產品失敗:', error)

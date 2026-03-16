@@ -1,5 +1,6 @@
 import { api } from '@/lib/api'
 import type { OrderDetail, OrderListResponse, OrderSearchParams, OrderStatus } from '@/types/order'
+import { ShippingMethod, PaymentStatus } from '@/types/orderInfo'
 
 const BASE_URL = '/api/v1/orders'
 
@@ -17,13 +18,13 @@ export const orderService = {
       queryParams.status = status
     }
 
-    const response = await api.get<OrderListResponse>(BASE_URL, { params: queryParams })
+    // 後端返回的是 OrderListResponse 物件 { orders: [], total: ..., skip: ..., limit: ... }
+    const response = await api.get<any>(BASE_URL, { params: queryParams })
+    const data = response.data
 
-    // 轉換後端回應格式以匹配前端預期
-    const backendData = response.data as any
     return {
-      items: backendData.orders || [],
-      total: backendData.total || 0,
+      items: data.orders || [],
+      total: data.total || 0,
       page: page,
       limit: limit
     }
@@ -32,17 +33,35 @@ export const orderService = {
   /**
    * 取得訂單詳情
    */
-  async getOrder(id: number | string): Promise<OrderDetail> {
-    const response = await api.get<OrderDetail>(`${BASE_URL}/${id}`)
-    return response.data
+  async getOrder(id: string | number): Promise<OrderDetail> {
+    const response = await api.get<any>(`${BASE_URL}/${id}`)
+    const data = response.data
+
+    // 映射後端扁平資料到前端巢狀結構
+    // TODO: 後端 OrderResponse 尚未包含 shipping_method，目前暫時硬編碼為 HOME_DELIVERY
+    const orderDetail: OrderDetail = {
+      ...data,
+      shipping_info: {
+        recipient_name: data.recipient_name,
+        recipient_phone: data.recipient_phone,
+        address: data.shipping_address,
+        method: (data.shipping_method as ShippingMethod) || ShippingMethod.HOME_DELIVERY
+      },
+      payment_info: {
+        method: data.payment_method as any,
+        status: data.status === 'PENDING' ? PaymentStatus.UNPAID : PaymentStatus.PAID
+      }
+    }
+
+    return orderDetail
   },
 
   /**
    * 取消訂單
+   * 呼叫 PATCH /api/v1/orders/{id}/status 變更訂單狀態為 CANCELLED
    */
-  async cancelOrder(id: number | string): Promise<{ id: number; status: OrderStatus }> {
-    // 使用 PATCH 更新訂單狀態為 CANCELLED
-    const response = await api.patch<{ id: number; status: OrderStatus }>(`${BASE_URL}/${id}/status`, {
+  async cancelOrder(id: number | string): Promise<{ id: string; status: OrderStatus }> {
+    const response = await api.patch<any>(`${BASE_URL}/${id}/status`, {
       status: 'CANCELLED'
     })
     return {

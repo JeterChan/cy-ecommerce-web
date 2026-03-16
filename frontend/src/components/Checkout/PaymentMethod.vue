@@ -22,29 +22,16 @@ watch(form, (newValue) => {
     <h2 class="text-lg font-bold mb-4">付款方式</h2>
     
     <div class="grid grid-cols-1 gap-4">
-      <label class="flex items-center p-4 border rounded-lg cursor-pointer hover:bg-gray-50" :class="{'border-slate-900 ring-1 ring-slate-900': form.method === PaymentMethod.CREDIT_CARD}">
+      <label class="flex items-center p-4 border rounded-lg cursor-pointer hover:bg-gray-50" :class="{'border-slate-900 ring-1 ring-slate-900': form.method === PaymentMethod.BANK_TRANSFER}">
         <input 
           type="radio" 
           v-model="form.method" 
-          :value="PaymentMethod.CREDIT_CARD"
+          :value="PaymentMethod.BANK_TRANSFER"
           class="text-slate-900 focus:ring-slate-500 mr-3"
         >
         <div>
-          <p class="font-medium">信用卡付款</p>
-          <p class="text-sm text-gray-500">支援 Visa, MasterCard, JCB</p>
-        </div>
-      </label>
-
-      <label class="flex items-center p-4 border rounded-lg cursor-pointer hover:bg-gray-50" :class="{'border-slate-900 ring-1 ring-slate-900': form.method === PaymentMethod.ATM}">
-        <input 
-          type="radio" 
-          v-model="form.method" 
-          :value="PaymentMethod.ATM"
-          class="text-slate-900 focus:ring-slate-500 mr-3"
-        >
-        <div>
-          <p class="font-medium">ATM 轉帳</p>
-          <p class="text-sm text-gray-500">提供虛擬帳號，請於 24 小時內付款</p>
+          <p class="font-medium">銀行轉帳</p>
+          <p class="text-sm text-gray-500">提供匯款帳號，請於 24 小時內付款</p>
         </div>
       </label>
 
