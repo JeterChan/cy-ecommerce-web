@@ -1,8 +1,7 @@
-import pytest
 from src.shared.exceptions.base import DomainException
 from src.shared.exceptions.common import (
     ResourceNotFoundException,
-    BusinessRuleViolationException
+    BusinessRuleViolationException,
 )
 
 

@@ -1,0 +1,67 @@
+# src/infrastructure/config.py
+from pathlib import Path
+from pydantic_settings import BaseSettings
+from pydantic import computed_field, field_validator
+
+# .env 位於 config.py 上三層（src/infrastructure/ → src/ → backend/）
+_ENV_FILE = Path(__file__).parent.parent.parent / ".env"
+
+class Settings(BaseSettings):
+    # 1. 基礎設定
+    PROJECT_NAME: str
+    ENV: str
+
+    # 2. 資料庫變數 (Pydantic 會自動讀取對應名稱的環境變數)
+    DB_USER: str
+    DB_PASSWORD: str
+    DB_HOST: str
+    DB_PORT: int
+    DB_NAME: str
+
+    # 3. Redis 設定
+    REDIS_HOST: str
+    REDIS_PORT: int
+    REDIS_DB: int
+    REDIS_PASSWORD: str | None = None
+    REDIS_DECODE_RESPONSES: bool
+
+    # 4. 購物車 Guest Token 設定
+    GUEST_TOKEN_COOKIE_NAME: str
+    GUEST_TOKEN_MAX_AGE: int
+    GUEST_TOKEN_PATH: str
+    GUEST_TOKEN_SECURE: bool
+    GUEST_TOKEN_SAMESITE: str
+
+    # 5. Email (Brevo) 設定
+    BREVO_API_KEY: str
+    BREVO_SENDER_EMAIL: str
+    BREVO_SENDER_NAME: str
+    FRONTEND_URL: str
+
+    @field_validator("FRONTEND_URL")
+    @classmethod
+    def strip_trailing_slash(cls, v: str) -> str:
+        return v.rstrip("/")
+
+    # 6. 自動組合成 SQLAlchemy 需要的連線字串
+    @computed_field
+    @property
+    def database_url(self) -> str:
+        """
+        Builds the SQLAlchemy+asyncpg PostgreSQL connection URL from the current settings.
+        
+        Returns:
+            str: Connection URL formatted as "postgresql+asyncpg://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}".
+        """
+        return f"postgresql+asyncpg://{self.DB_USER}:{self.DB_PASSWORD}@{self.DB_HOST}:{self.DB_PORT}/{self.DB_NAME}"
+
+    model_config = {
+        # 優先讀取 .env 檔案，如果沒有則讀取系統環境變數
+        "env_file": str(_ENV_FILE),
+        "env_file_encoding": "utf-8",
+        "case_sensitive": True,
+        "extra": "ignore"  # 忽略額外的環境變數（不報錯）
+    }
+
+# 實例化
+settings = Settings()

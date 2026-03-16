@@ -4,7 +4,16 @@ __pycache__/
 env/
 venv/
 .env
+.env.test
 .idea/
 .docker/
 .coverage
 htmlcov/
+
+# Celery
+celerybeat-schedule
+celerybeat-schedule.db
+celerybeat-schedule.bak
+celerybeat-schedule.dir
+celerybeat-schedule.dat
+

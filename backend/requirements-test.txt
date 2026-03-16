@@ -1,0 +1,27 @@
+# 測試專用依賴清單
+# 安裝: pip install -r requirements-test.txt
+
+# 測試框架
+pytest>=7.4.0
+pytest-asyncio>=0.21.0
+pytest-cov>=4.1.0  # 測試覆蓋率
+pytest-xdist>=3.3.0  # 平行測試
+
+# HTTP 測試
+httpx>=0.24.0
+
+# PostgreSQL 測試（與生產環境相同）
+asyncpg>=0.28.0
+psycopg2-binary>=2.9.9
+
+# Mock 工具
+pytest-mock>=3.11.0
+
+# 資料庫 Fixture
+pytest-postgresql>=5.0.0  # PostgreSQL 測試工具
+
+# 程式碼品質
+ruff>=0.0.280
+black>=23.7.0
+mypy>=1.5.0
+

@@ -3,8 +3,10 @@ from typing import List
 from src.shared.domain.events import DomainEvent
 from src.shared.domain.event_bus import IEventBus, EventHandler
 
+
 class InMemoryEventBus(IEventBus):
-    """ 記憶體實作用於測試 """
+    """記憶體實作用於測試"""
+
     def __init__(self):
         self.published_events: List[DomainEvent] = []
         self.handlers = {}
@@ -21,12 +23,14 @@ class InMemoryEventBus(IEventBus):
             self.handlers[event_type] = []
         self.handlers[event_type].append(handler)
 
+
 class SampleEvent(DomainEvent):
     message: str
 
+
 @pytest.mark.asyncio
 async def test_event_bus_publish():
-    """ 測試事件發布 """
+    """測試事件發布"""
     bus = InMemoryEventBus()
     event = SampleEvent(message="test")
 
@@ -35,9 +39,10 @@ async def test_event_bus_publish():
     assert len(bus.published_events) == 1
     assert bus.published_events[0].message == "test"
 
+
 @pytest.mark.asyncio
 async def test_event_bus_subscribe():
-    """ 測試事件訂閱 """
+    """測試事件訂閱"""
     bus = InMemoryEventBus()
     received_events = []
 
