@@ -6,16 +6,13 @@ import { useI18n } from 'vue-i18n'
 import { useForm, useField } from 'vee-validate'
 import { toTypedSchema } from '@vee-validate/zod'
 import { ProfileUpdateSchema, ChangePasswordSchema, type ProfileUpdateFormValues, type ChangePasswordFormValues } from '@/models/auth.schema'
-import { userService } from '@/services/userService'
 import { authService } from '@/services/authService'
-import { useRouter } from 'vue-router'
 import Navbar from '@/components/layout/Navbar.vue'
 import Footer from '@/components/layout/Footer.vue'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Separator } from '@/components/ui/separator'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import {
   Loader2,
@@ -23,10 +20,8 @@ import {
   Mail,
   Calendar,
   Phone,
-  MapPin,
   CreditCard,
   Edit,
-  CheckCircle2,
   Save,
   X,
   Lock,
@@ -38,7 +33,6 @@ import {
 const { t } = useI18n()
 const authStore = useAuthStore()
 const { showSuccess, showError } = useToast()
-const router = useRouter()
 
 const isEditing = ref(false)
 const isSubmitting = ref(false)
@@ -235,9 +229,9 @@ const handleRequestEmailChange = async () => {
                 <Label class="text-muted-foreground flex items-center gap-1"><Mail class="h-3 w-3" /> 電子郵件</Label>
                 <div class="flex items-center justify-between px-3 py-2 bg-muted rounded-md">
                   <span class="font-medium">{{ authStore.user?.email }}</span>
-                  <span v-if="authStore.user?.is_verified" class="text-xs text-green-600 flex items-center gap-1">
+                  <!-- <span v-if="authStore.user?.is_verified" class="text-xs text-green-600 flex items-center gap-1">
                     <CheckCircle2 class="h-3 w-3" /> 已驗證
-                  </span>
+                  </span> -->
                 </div>
                 
                 <div v-if="!changeEmailSuccess">

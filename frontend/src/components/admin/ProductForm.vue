@@ -8,12 +8,15 @@ import { categoryService, type AdminCategory } from '@/services/categoryService'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { X, Upload, CheckCircle2, Loader2, Star } from 'lucide-vue-next'
+import { X, Upload, Loader2, Star } from 'lucide-vue-next'
 import axios from 'axios'
 import { useToast } from '@/composables/useToast'
 
 interface Props {
-  initialValues?: Partial<ProductFormValues> & { id?: string }
+  initialValues?: Partial<ProductFormValues> & { 
+    id?: string;
+    images?: { url: string; is_primary: boolean; file?: File }[] 
+  }
 }
 
 const props = defineProps<Props>()
@@ -26,7 +29,7 @@ const categories = ref<AdminCategory[]>([])
 const selectedCategoryIds = ref<number[]>(props.initialValues?.category_ids || [])
 
 const uploadedImages = ref<{ url: string; is_primary: boolean; file?: File }[]>(
-  props.initialValues?.images?.map(img => ({
+  props.initialValues?.images?.map((img: any) => ({
     url: img.url,
     is_primary: img.is_primary
   })) || 
@@ -96,11 +99,15 @@ const handleFileSelect = async (event: Event) => {
 }
 
 const removeImage = (index: number) => {
-  const wasPrimary = uploadedImages.value[index].is_primary
+  const img = uploadedImages.value[index]
+  if (!img) return
+  
+  const wasPrimary = img.is_primary
   uploadedImages.value.splice(index, 1)
   
   if (wasPrimary && uploadedImages.value.length > 0) {
-    uploadedImages.value[0].is_primary = true
+    const firstImg = uploadedImages.value[0]
+    if (firstImg) firstImg.is_primary = true
   }
   updateImageUrls()
 }
