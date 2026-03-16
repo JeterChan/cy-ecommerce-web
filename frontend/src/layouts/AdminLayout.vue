@@ -3,8 +3,6 @@ import { RouterLink, RouterView, useRouter } from 'vue-router'
 import { 
   LayoutDashboard, 
   Package, 
-  ShoppingCart, 
-  Users, 
   LogOut, 
   ExternalLink,
   Menu,

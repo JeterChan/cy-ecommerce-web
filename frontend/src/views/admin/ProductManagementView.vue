@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, watch, onMounted } from 'vue'
+import { ref, onMounted } from 'vue'
 import { Plus, Pencil, Trash2, Power, PowerOff, Loader2, Search, X } from 'lucide-vue-next'
 import { adminProductService } from '@/services/adminProductService'
 import { categoryService, type AdminCategory } from '@/services/categoryService'
@@ -7,7 +7,6 @@ import type { Product } from '@/models/Product'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
-import { Input } from '@/components/ui/input'
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet'
 import ConfirmDialog from '@/components/ui/ConfirmDialog.vue'
 import Pagination from '@/components/ui/Pagination.vue'
@@ -21,7 +20,7 @@ const total = ref(0)
 const currentPage = ref(1)
 const isLoading = ref(true)
 const isSheetOpen = ref(false)
-const editingProduct = ref<Partial<Product> | null>(null)
+const editingProduct = ref<any>(null)
 const { showSuccess, showError } = useToast()
 
 // Filters

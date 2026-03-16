@@ -112,7 +112,7 @@ const goBack = () => {
                   <CarouselContent>
                     <CarouselItem v-for="image in product.images" :key="image.url">
                       <div class="aspect-square">
-                        <img :src="image.url" :alt="image.alt_text || product.name" class="w-full h-full object-cover" />
+                        <img :src="image.url" :alt="product.name" class="w-full h-full object-cover" />
                       </div>
                     </CarouselItem>
                   </CarouselContent>

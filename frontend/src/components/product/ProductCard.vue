@@ -30,7 +30,7 @@ const goToDetail = (id: string) => {
         <Badge v-if="product.stockQuantity === 0" variant="destructive" class="shadow-md">
           已售罄
         </Badge>
-        <Badge v-else-if="product.isLowStock" variant="warning" class="bg-yellow-500 hover:bg-yellow-600 text-white shadow-md">
+        <Badge v-else-if="product.isLowStock" variant="secondary" class="bg-yellow-500 hover:bg-yellow-600 text-white shadow-md">
           庫存緊張
         </Badge>
       </div>
