@@ -97,7 +97,9 @@ async def close_redis() -> None:
 
 async def get_redis() -> "aioredis.Redis":
     if redis_client is None:
-        raise RuntimeError("...")
+        raise RuntimeError(
+            "Redis client is not initialized. Ensure init_redis() is called during application startup before using get_redis()."
+        )
     return redis_client # 回傳共用實例
 
 async def drop_all() -> None:
