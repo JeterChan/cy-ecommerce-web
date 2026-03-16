@@ -30,6 +30,8 @@ class CreateProductUseCase:
             ) for img in data.images
         ]
 
+        category_id = data.category_ids[0] if data.category_ids else None
+
         product = Product(
             name=data.name,
             description=data.description,
@@ -37,7 +39,7 @@ class CreateProductUseCase:
             stock_quantity=data.stock_quantity,
             is_active=data.is_active,
             images=images,
-            category_ids=data.category_ids or []
+            category_id=category_id
         )
 
         product.validate()

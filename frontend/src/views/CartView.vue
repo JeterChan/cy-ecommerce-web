@@ -4,13 +4,13 @@ import { useCartStore } from '@/stores/cart'
 import CartItem from '@/components/cart/CartItem.vue'
 import CartSummary from '@/components/cart/CartSummary.vue'
 import { useRouter } from 'vue-router'
-import { ShoppingBag, ArrowLeft } from 'lucide-vue-next'
+import { ShoppingBag, ArrowLeft, Trash2 } from 'lucide-vue-next'
 import Navbar from '@/components/layout/Navbar.vue'
 import Footer from '@/components/layout/Footer.vue'
 import { Button } from '@/components/ui/button'
 
 const cartStore = useCartStore()
-const { items, totalQuantity, totalAmount } = storeToRefs(cartStore)
+const { items, totalQuantity, totalAmount, isLoading } = storeToRefs(cartStore)
 const router = useRouter()
 
 const updateQuantity = (id: string, quantity: number) => {
@@ -19,6 +19,12 @@ const updateQuantity = (id: string, quantity: number) => {
 
 const removeItem = (id: string) => {
   cartStore.removeFromCart(id)
+}
+
+const handleClearCart = async () => {
+  if (confirm('確定要清空購物車嗎？')) {
+    await cartStore.clearCart()
+  }
 }
 
 const continueShopping = () => {
@@ -33,9 +39,20 @@ const continueShopping = () => {
     <main class="flex-grow container mx-auto py-12 px-4">
       <div class="flex items-center justify-between mb-8">
         <h1 class="text-3xl font-bold text-gray-900">購物車</h1>
-        <Button variant="ghost" @click="continueShopping" class="text-muted-foreground hover:text-primary">
-          <ArrowLeft class="mr-2 h-4 w-4" /> 繼續購物
-        </Button>
+        <div class="flex gap-2">
+          <Button 
+            v-if="items.length > 0"
+            variant="outline" 
+            @click="handleClearCart" 
+            :disabled="isLoading"
+            class="text-destructive hover:bg-destructive hover:text-destructive-foreground"
+          >
+            <Trash2 class="mr-2 h-4 w-4" /> 清空購物車
+          </Button>
+          <Button variant="ghost" @click="continueShopping" class="text-muted-foreground hover:text-primary">
+            <ArrowLeft class="mr-2 h-4 w-4" /> 繼續購物
+          </Button>
+        </div>
       </div>
 
       <div v-if="items.length === 0" class="text-center py-20 bg-white rounded-xl border border-gray-100 shadow-sm">

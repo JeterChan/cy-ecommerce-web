@@ -38,6 +38,8 @@ class UpdateProductUseCase:
                         is_primary=img.get('is_primary', False)
                     ) for img in value
                 ]
+            elif key == 'category_ids':
+                existing.category_id = value[0] if value and len(value) > 0 else None
             else:
                 setattr(existing, key, value)
 

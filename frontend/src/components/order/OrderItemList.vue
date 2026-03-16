@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { RouterLink } from 'vue-router'
 import type { OrderItem } from '@/types/order'
 
 defineProps<{
@@ -24,7 +25,12 @@ const formatCurrency = (amount: number) => {
         <!-- 桌面版布局 -->
         <div class="hidden md:grid grid-cols-12 gap-4 items-center">
           <div class="col-span-6">
-            <div class="font-medium text-gray-900">{{ item.product_name }}</div>
+            <RouterLink 
+              :to="`/product/${item.product_id}`"
+              class="font-medium text-gray-900 hover:text-primary hover:underline transition-colors"
+            >
+              {{ item.product_name }}
+            </RouterLink>
             <div v-if="item.options" class="text-xs text-gray-500 mt-1">
               <span v-for="(value, key) in item.options" :key="key" class="mr-2">
                 {{ key }}: {{ value }}
@@ -44,7 +50,12 @@ const formatCurrency = (amount: number) => {
 
         <!-- 移動版布局 -->
         <div class="md:hidden space-y-2">
-          <div class="font-medium text-gray-900">{{ item.product_name }}</div>
+          <RouterLink 
+            :to="`/product/${item.product_id}`"
+            class="font-medium text-gray-900 block hover:text-primary transition-colors"
+          >
+            {{ item.product_name }}
+          </RouterLink>
           <div v-if="item.options" class="text-xs text-gray-500">
             <span v-for="(value, key) in item.options" :key="key" class="mr-2">
               {{ key }}: {{ value }}

@@ -40,16 +40,19 @@ const loadProducts = async () => {
   if (shouldFilter) {
     isFiltering.value = true
     
-    // Find category ID if a single tag is selected
-    let categoryId: number | undefined = undefined
-    if (selectedTags.value.length === 1) {
-        const cat = allCategories.value.find(c => c.name === selectedTags.value[0])
-        if (cat) categoryId = Number(cat.id)
+    // Find category IDs from selected tags
+    const categoryIds: number[] = []
+    if (selectedTags.value.length > 0) {
+      // Find IDs for all selected tags
+      selectedTags.value.forEach(tagName => {
+        const cat = allCategories.value.find(c => c.name === tagName)
+        if (cat) categoryIds.push(Number(cat.id))
+      })
     }
 
     const response = await productService.getProducts({ 
       tags: selectedTags.value,
-      categoryId,
+      categoryIds: categoryIds.length > 0 ? categoryIds : undefined,
       query: searchQuery.value,
       page: page.value,
       limit: limit.value

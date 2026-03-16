@@ -19,9 +19,11 @@ class IProductRepository(ABC):
         skip: int = 0,
         limit: int = 100,
         category_id: Optional[int] = None,
-        is_active: Optional[bool] = None,
-    ) -> List[Product]:
+        category_ids: Optional[List[int]] = None,
+        is_active: Optional[bool] = None
+    ) -> Tuple[List[Product], int]:
         pass
+
 
     @abstractmethod
     async def list_admin(
@@ -40,4 +42,12 @@ class IProductRepository(ABC):
 
     @abstractmethod
     async def delete(self, product_id: UUID) -> bool:
+        pass
+
+    @abstractmethod
+    async def get_by_ids_with_lock(self, product_ids: List[UUID]) -> List[Product]:
+        """
+        批量取得商品並加上 FOR UPDATE 鎖定。
+        用於結帳等需要保證庫存一致性的場景。
+        """
         pass

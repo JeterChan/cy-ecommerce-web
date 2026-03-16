@@ -1,12 +1,36 @@
 <script setup lang="ts">
+import { ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import Navbar from '@/components/layout/Navbar.vue'
 import Footer from '@/components/layout/Footer.vue'
 import { Button } from '@/components/ui/button'
+import { orderService } from '@/services/orderService'
 
 const route = useRoute()
 const router = useRouter()
 const orderId = route.query.orderId as string
+const orderNumber = ref<string>((route.query.orderNumber as string) || '')
+const fetchError = ref(false)
+
+onMounted(async () => {
+  // 1. 若兩者皆無，視為異常進入，直接導向回訂單列表
+  if (!orderId && !orderNumber.value) {
+    console.warn('[OrderSuccess] 無訂單 ID 或編號，導向至訂單列表')
+    router.replace('/orders')
+    return
+  }
+
+  // 2. 若有 ID 但無編號 (例如從外部連結進入或 Query 被截斷)，則向 API 請求
+  if (!orderNumber.value && orderId) {
+    try {
+      const order = await orderService.getOrder(orderId)
+      orderNumber.value = order.order_number
+    } catch (error) {
+      console.error('Failed to fetch order details:', error)
+      fetchError.value = true
+    }
+  }
+})
 
 const viewOrderDetail = () => {
   if (orderId) {
@@ -33,7 +57,9 @@ const viewOrderDetail = () => {
       
       <div class="bg-gray-50 max-w-md mx-auto p-6 rounded-lg mb-8">
         <p class="text-sm text-gray-500 mb-1">訂單編號</p>
-        <p class="font-mono font-medium text-lg">{{ orderId || 'Loading...' }}</p>
+        <p v-if="orderNumber" class="font-mono font-medium text-lg text-slate-900">{{ orderNumber }}</p>
+        <p v-else-if="fetchError" class="text-red-500 text-sm">無法取得訂單編號</p>
+        <p v-else class="text-gray-400 text-sm animate-pulse">載入中...</p>
       </div>
       
       <div class="flex flex-col sm:flex-row justify-center gap-4">

@@ -5,25 +5,17 @@ from typing import List, Optional, Tuple
 from uuid import UUID
 from modules.product.domain.repository import IProductRepository
 from modules.product.domain.entities import Product, ProductImage
-from modules.product.infrastructure.models import ProductModel, ProductImageModel, CategoryModel, association_table
+from modules.product.infrastructure.models import ProductModel, ProductImageModel, CategoryModel
 
 class SqlAlchemyProductRepository(IProductRepository):
     def __init__(self, db: AsyncSession):
         self.db = db
 
-    async def _fetch_category_models(self, category_ids: List[int]) -> List[CategoryModel]:
-        """根據 ID 列表取得 CategoryModel 實例"""
-        if not category_ids:
-            return []
-        stmt = select(CategoryModel).where(CategoryModel.id.in_(category_ids))
-        result = await self.db.execute(stmt)
-        return list(result.scalars().all())
+# _fetch_category_models removed
 
     async def create(self, product: Product) -> Product:
         model = self._to_model(product)
-
-        if product.category_ids:
-            model.categories = await self._fetch_category_models(product.category_ids)
+        model.category_id = product.category_id
 
         self.db.add(model)
         await self.db.flush()
@@ -37,21 +29,30 @@ class SqlAlchemyProductRepository(IProductRepository):
         model = result.scalar_one_or_none()
         return self._to_entity(model) if model else None
 
-    async def list(self, skip: int = 0, limit: int = 100, category_id: Optional[int] = None, is_active: Optional[bool] = None) -> List[Product]:
+    async def list(self, skip: int = 0, limit: int = 100, category_id: Optional[int] = None, category_ids: Optional[List[int]] = None, is_active: Optional[bool] = None) -> Tuple[List[Product], int]:
         stmt = select(ProductModel)
+        count_stmt = select(func.count()).select_from(ProductModel)
+
         if is_active is not None:
             stmt = stmt.where(ProductModel.is_active == is_active)
+            count_stmt = count_stmt.where(ProductModel.is_active == is_active)
         
-        if category_id:
-            cat_subquery = select(association_table.c.product_id).where(
-                association_table.c.category_id == category_id
-            )
-            stmt = stmt.where(ProductModel.id.in_(cat_subquery))
+        if category_ids:
+            stmt = stmt.where(ProductModel.category_id.in_(category_ids))
+            count_stmt = count_stmt.where(ProductModel.category_id.in_(category_ids))
+        elif category_id:
+            stmt = stmt.where(ProductModel.category_id == category_id)
+            count_stmt = count_stmt.where(ProductModel.category_id == category_id)
 
-        stmt = stmt.offset(skip).limit(limit)
+        # 執行總數查詢
+        count_result = await self.db.execute(count_stmt)
+        total = count_result.scalar() or 0
+
+        # 分頁與排序
+        stmt = stmt.order_by(ProductModel.created_at.desc()).offset(skip).limit(limit)
         result = await self.db.execute(stmt)
         models = result.scalars().all()
-        return [self._to_entity(m) for m in models]
+        return [self._to_entity(m) for m in models], total
 
     async def list_admin(
         self,
@@ -70,11 +71,8 @@ class SqlAlchemyProductRepository(IProductRepository):
             count_stmt = count_stmt.where(ProductModel.name.ilike(f"%{search}%"))
 
         if category_id:
-            cat_subquery = select(association_table.c.product_id).where(
-                association_table.c.category_id == category_id
-            )
-            stmt = stmt.where(ProductModel.id.in_(cat_subquery))
-            count_stmt = count_stmt.where(ProductModel.id.in_(cat_subquery))
+            stmt = stmt.where(ProductModel.category_id == category_id)
+            count_stmt = count_stmt.where(ProductModel.category_id == category_id)
 
         if sort == "created_asc":
             stmt = stmt.order_by(ProductModel.created_at.asc())
@@ -104,6 +102,7 @@ class SqlAlchemyProductRepository(IProductRepository):
         model.price = product.price
         model.stock_quantity = product.stock_quantity
         model.is_active = product.is_active
+        model.category_id = product.category_id
 
         if product.images:
             model.images = [
@@ -116,15 +115,14 @@ class SqlAlchemyProductRepository(IProductRepository):
         else:
             model.images = []
 
-        model.categories = await self._fetch_category_models(product.category_ids)
-
         await self.db.flush()
         await self.db.refresh(model)
         return self._to_entity(model)
 
     async def atomic_adjust_stock(self, product_id: UUID, quantity_change: int) -> Product:
         """實作 T016a: 原子扣減庫存 (使用 with_for_update)"""
-        stmt = select(ProductModel).where(ProductModel.id == product_id).with_for_update()
+        # 注意：必須加上 populate_existing() 確保屬性會重新從資料庫載入
+        stmt = select(ProductModel).where(ProductModel.id == product_id).with_for_update(of=ProductModel).execution_options(populate_existing=True)
         result = await self.db.execute(stmt)
         model = result.scalar_one_or_none()
 
@@ -152,6 +150,22 @@ class SqlAlchemyProductRepository(IProductRepository):
         await self.db.flush()
         return True
 
+    async def get_by_ids_with_lock(self, product_ids: List[UUID]) -> List[Product]:
+        """實作：批量鎖定商品 (悲觀鎖)"""
+        if not product_ids:
+            return []
+        
+        # 按照 ID 排序以防止死鎖 (Deadlock Prevention)
+        # 注意：必須加上 populate_existing() 確保屬性會重新從資料庫載入
+        stmt = select(ProductModel).where(ProductModel.id.in_(product_ids))\
+            .order_by(ProductModel.id.asc())\
+            .with_for_update(of=ProductModel)\
+            .execution_options(populate_existing=True)
+        
+        result = await self.db.execute(stmt)
+        models = result.scalars().all()
+        return [self._to_entity(m) for m in models]
+
     def _to_model(self, product: Product) -> ProductModel:
         """Domain Entity -> SQLAlchemy Model（不含分類，分類需非同步處理）"""
         images = [
@@ -178,14 +192,8 @@ class SqlAlchemyProductRepository(IProductRepository):
 
     def _to_entity(self, model: ProductModel) -> Product:
         """轉換 SQLAlchemy Model 為 Domain Entity"""
-        category_ids = []
-        category_names = []
-        try:
-            if model.categories:
-                category_ids = [c.id for c in model.categories]
-                category_names = [c.name for c in model.categories]
-        except Exception:
-            pass
+        category_id = model.category_id
+        category_name = model.category.name if model.category else None
 
         try:
             images = [
@@ -207,8 +215,8 @@ class SqlAlchemyProductRepository(IProductRepository):
             stock_quantity=model.stock_quantity,
             is_active=model.is_active,
             images=images,
-            category_ids=category_ids,
-            category_names=category_names,
+            category_id=category_id,
+            category_name=category_name,
             created_at=model.created_at,
             updated_at=model.updated_at
         )

@@ -58,6 +58,7 @@ export interface ProductSearchParams {
   tag?: string;
   tags?: string[];
   categoryId?: number;
+  categoryIds?: number[];
   page?: number;
   limit?: number;
 }
