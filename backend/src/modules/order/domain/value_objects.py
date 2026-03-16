@@ -19,3 +19,12 @@ class OrderStatus(str, Enum):
     def __str__(self) -> str:
         return self.value
 
+
+class PaymentMethod(str, Enum):
+    """付款方式枚舉"""
+    COD = "COD"                       # 貨到付款
+    BANK_TRANSFER = "BANK_TRANSFER"   # 銀行轉帳
+
+    def __str__(self) -> str:
+        return self.value
+

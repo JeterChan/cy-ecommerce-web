@@ -7,7 +7,7 @@ export const useOrderStore = defineStore('order', () => {
   const orders = ref<Order[]>([])
   const total = ref(0)
   const currentPage = ref(1)
-  const limit = ref(10)
+  const limit = ref(4)
   const currentOrder = ref<OrderDetail | null>(null)
   const loading = ref(false)
   const error = ref<string | null>(null)
@@ -28,7 +28,7 @@ export const useOrderStore = defineStore('order', () => {
     }
   }
 
-  const fetchOrderDetails = async (id: number | string) => {
+  const fetchOrderDetails = async (id: string) => {
     loading.value = true
     error.value = null
     currentOrder.value = null
@@ -42,21 +42,18 @@ export const useOrderStore = defineStore('order', () => {
     }
   }
 
-  const cancelOrder = async (id: number | string) => {
+  const cancelOrder = async (id: string) => {
     loading.value = true
     error.value = null
     try {
       const result = await orderService.cancelOrder(id)
       
-      // 將 id 轉換為 number 以便比較
-      const numericId = typeof id === 'string' ? parseInt(id) : id
-
       // Update local state if successful
-      if (currentOrder.value && currentOrder.value.id === numericId) {
+      if (currentOrder.value && currentOrder.value.id === id) {
         currentOrder.value.status = result.status
       }
       
-      const index = orders.value.findIndex(o => o.id === numericId)
+      const index = orders.value.findIndex(o => o.id === id)
       if (index !== -1 && orders.value[index]) {
         orders.value[index].status = result.status
       }

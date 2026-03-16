@@ -22,11 +22,12 @@ export interface OrderItem {
 
 // Summary view for lists
 export interface Order {
-  id: number;  // 後端返回的是整數，不是字串
+  id: string;  // 後端返回的是 UUID 字串
+  order_number: string; // 易讀的純數字編號
   user_id: string;
   status: OrderStatus;
   total_amount: number;
-  shipping_fee: number;
+  shipping_fee?: number;
   created_at: string;
   updated_at?: string;
   items?: OrderItem[]; // 可選，列表頁面可能不需要
@@ -35,9 +36,16 @@ export interface Order {
 // Detailed view
 export interface OrderDetail extends Order {
   items: OrderItem[];
-  purchaser_info?: PurchaserInfo; // 可選，後端可能沒有此欄位
-  shipping_info?: ShippingInfo; // 可選，後端可能沒有此欄位
-  payment_info?: PaymentInfo; // 可選，後端可能沒有此欄位
+  // 支援後端扁平化欄位
+  recipient_name?: string;
+  recipient_phone?: string;
+  shipping_address?: string;
+  payment_method?: string;
+  
+  // 保持相容原本組件預期的巢狀結構
+  purchaser_info?: PurchaserInfo; 
+  shipping_info?: ShippingInfo; 
+  payment_info?: PaymentInfo; 
   note?: string;
 }
 

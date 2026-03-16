@@ -15,7 +15,7 @@ export const useCheckoutStore = defineStore('checkout', () => {
     store_name: '' 
   })
   const payment = ref<PaymentInfo>({
-    method: PaymentMethod.CREDIT_CARD,
+    method: PaymentMethod.COD,
     status: PaymentStatus.UNPAID
   })
   const orderNote = ref('')
@@ -76,34 +76,27 @@ export const useCheckoutStore = defineStore('checkout', () => {
     }
 
     try {
-      // 🔑 關鍵：準備請求資料，包含購物車商品列表
+      // 🔑 關鍵：準備新的請求資料格式，符合 /api/v1/orders/checkout 的 CheckoutRequest
       const requestData = {
-        items: cartStore.items.map(item => ({
-          product_id: item.productId,  // UUID 格式
-          quantity: item.quantity
-        })),
-        shipping_fee: shipping.value.method === ShippingMethod.HOME_DELIVERY ? 100 : 60,
-        note: orderNote.value || ''
+        recipient_name: shipping.value.recipient_name || purchaser.value.name,
+        recipient_phone: shipping.value.recipient_phone || purchaser.value.phone,
+        shipping_address: shipping.value.address || '無地址', // 後端 validation 可能需要
+        payment_method: payment.value.method // 使用前端選擇的付款方式
       }
 
-      console.log('📡 [Checkout] 呼叫 API: POST /api/v1/orders')
+      console.log('📡 [Checkout] 呼叫新 API: POST /api/v1/orders/checkout')
       console.log('📤 [Checkout] 請求資料:', JSON.stringify(requestData, null, 2))
-      console.log('📦 [Checkout] 商品列表:', requestData.items.length, '個商品')
-      requestData.items.forEach((item, idx) => {
-        console.log(`   ${idx + 1}. 商品 ID: ${item.product_id}, 數量: ${item.quantity}`)
-      })
 
-      const response = await api.post('/api/v1/orders', requestData)
+      const response = await api.post('/api/v1/orders/checkout', requestData)
 
-      console.log('✅ [Checkout] 訂單建立成功:', response.data)
+      console.log('✅ [Checkout] 交易式結帳成功:', response.data)
       console.log('📋 [Checkout] 訂單 ID:', response.data.id)
       console.log('💰 [Checkout] 訂單總額:', response.data.total_amount)
-      console.log('📦 [Checkout] 訂單商品:', response.data.items?.length || 0, '個')
 
       const order = response.data
 
-      // 成功後清空購物車
-      console.log('🗑️ [Checkout] 清空購物車...')
+      // 成功後清空本地購物車狀態 (後端購物車已經在 API 中被清空)
+      console.log('🗑️ [Checkout] 清空本地購物車狀態...')
       await cartStore.clearCart()
 
       // 清空 checkout 的 items

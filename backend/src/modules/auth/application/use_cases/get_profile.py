@@ -1,7 +1,7 @@
 """取得使用者個人檔案 Use Case"""
 from uuid import UUID
 
-from modules.auth.infrastructure.repositories.user_repository import UserRepository
+from modules.auth.domain.repository import IUserRepository
 from modules.auth.application.dtos import UserProfileResponse
 from core.exceptions import UserNotFoundError
 
@@ -9,7 +9,7 @@ from core.exceptions import UserNotFoundError
 class GetProfileUseCase:
     """取得使用者個人檔案 Use Case"""
 
-    def __init__(self, user_repository: UserRepository):
+    def __init__(self, user_repository: IUserRepository):
         self.user_repository = user_repository
 
     async def execute(self, user_id: UUID) -> UserProfileResponse:

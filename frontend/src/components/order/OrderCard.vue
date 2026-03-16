@@ -32,11 +32,13 @@ const navigateToDetail = () => {
 <template>
   <Card class="cursor-pointer hover:shadow-lg transition-all duration-300 hover:border-primary/50" @click="navigateToDetail">
     <CardHeader class="pb-3">
-      <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-        <CardTitle class="text-base font-semibold">
-          訂單編號：#{{ order.id }}
+      <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+        <CardTitle class="text-base font-semibold text-gray-900 break-all sm:break-normal">
+          訂單編號：#{{ order.order_number }}
         </CardTitle>
-        <OrderStatusBadge :status="order.status" />
+        <div class="shrink-0">
+          <OrderStatusBadge :status="order.status" class="whitespace-nowrap shadow-sm" />
+        </div>
       </div>
     </CardHeader>
     <CardContent class="space-y-3">
@@ -50,7 +52,7 @@ const navigateToDetail = () => {
       </div>
       <div class="flex items-center justify-between text-xs text-muted-foreground">
         <span>運費</span>
-        <span>{{ formatCurrency(order.shipping_fee) }}</span>
+        <span>{{ formatCurrency(order.shipping_fee ?? 0) }}</span>
       </div>
     </CardContent>
     <CardFooter class="pt-3 border-t">

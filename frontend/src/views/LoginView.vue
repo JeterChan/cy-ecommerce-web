@@ -61,9 +61,16 @@ const onSubmit = handleSubmit(async (values) => {
       console.warn('⚠️ [Login] 購物車同步失敗，但不影響登入:', cartError)
     }
 
-    // 導向 redirect 參數指定的路徑，或預設首頁
-    const redirectPath = (route.query.redirect as string) || '/'
-    router.push(redirectPath)
+    // 導向 redirect 參數指定的路徑，或根據角色跳轉
+    const redirectPath = route.query.redirect as string
+    const isSafeRedirect = redirectPath && redirectPath.startsWith('/') && !redirectPath.startsWith('//')
+    if (isSafeRedirect) {
+      router.push(redirectPath)
+    } else if (authStore.user?.role === 'admin') {
+      router.push('/admin/dashboard')
+    } else {
+      router.push('/')
+    }
   } catch (error: any) {
     const status = error.response?.status
     if (status === 403) {

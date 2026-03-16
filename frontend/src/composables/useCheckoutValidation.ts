@@ -64,24 +64,32 @@ export function useCheckoutValidation() {
     }
 
     if (info.method === ShippingMethod.HOME_DELIVERY) {
-      if (!info.address?.trim()) {
+      const addr = info.address?.trim() || ''
+      if (!addr) {
         newErrors.address = '請輸入收件地址'
         isValid = false
-      }
-    } else if (info.method === ShippingMethod.STORE_PICKUP_711) {
-      if (!info.store_name?.trim()) {
-        newErrors.store_name = '請輸入門市名稱'
+      } else if (addr.length < 8) {
+        newErrors.address = '地址過短，請輸入包含縣市、鄉鎮市區及路段的完整地址'
+        isValid = false
+      } else if (!/[縣市]/.test(addr) || !/[區市鎮鄉]/.test(addr)) {
+        newErrors.address = '地址格式不完整，請確保包含縣市與鄉鎮市區'
         isValid = false
       }
     }
+    // 7-11 寄送已移除
 
     Object.assign(errors.value, newErrors)
     
     // Clear valid fields
     if (info.recipient_name?.trim()) delete errors.value.recipient_name
     if (info.recipient_phone?.trim() && /^09\d{8}$/.test(info.recipient_phone)) delete errors.value.recipient_phone
-    if (info.method === ShippingMethod.HOME_DELIVERY && info.address?.trim()) delete errors.value.address
-    if (info.method === ShippingMethod.STORE_PICKUP_711 && info.store_name?.trim()) delete errors.value.store_name
+    if (info.method === ShippingMethod.HOME_DELIVERY && 
+        info.address?.trim() && 
+        info.address.trim().length >= 8 && 
+        /[縣市]/.test(info.address) && 
+        /[區市鎮鄉]/.test(info.address)) {
+      delete errors.value.address
+    }
 
     return isValid
   }

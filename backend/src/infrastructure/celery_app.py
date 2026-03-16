@@ -13,6 +13,7 @@ celery_app = Celery(
     include=[
         "infrastructure.tasks.email_tasks",
         "infrastructure.tasks.cleanup_tasks",
+        "modules.cart.infrastructure.tasks",
     ],
 )
 
@@ -22,6 +23,12 @@ celery_app.conf.update(
     accept_content=["json"],
     timezone="Asia/Taipei",
     enable_utc=True,
+    task_queues={
+        "default": {"routing_key": "default"},
+        "email_queue": {"routing_key": "email_queue"},
+        "cart_sync_queue": {"routing_key": "cart_sync_queue"},
+    },
+    task_default_queue="default",
     # Celery Beat 排程設定
     beat_schedule={
         "hard-delete-expired-accounts": {

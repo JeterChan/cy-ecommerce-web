@@ -46,6 +46,35 @@ const formatDate = (dateString: string) => {
     minute: '2-digit'
   })
 }
+
+// 翻譯輔助函數
+const translateShippingMethod = (method: string) => {
+  const maps: Record<string, string> = {
+    'HOME_DELIVERY': '宅配到府',
+    'STORE_PICKUP_711': '超商取貨 (7-11)',
+    'PICKUP': '門市自取'
+  }
+  return maps[method] || method
+}
+
+const translatePaymentMethod = (method: string) => {
+  const maps: Record<string, string> = {
+    'CREDIT_CARD': '信用卡',
+    'COD': '貨到付款',
+    'BANK_TRANSFER': '銀行轉帳'
+  }
+  return maps[method] || method
+}
+
+const translatePaymentStatus = (status: string) => {
+  const maps: Record<string, string> = {
+    'UNPAID': '待付款',
+    'PAID': '已付款',
+    'FAILED': '付款失敗',
+    'REFUNDED': '已退款'
+  }
+  return maps[status] || status
+}
 </script>
 
 <template>
@@ -76,9 +105,11 @@ const formatDate = (dateString: string) => {
         <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b pb-6">
           <div>
             <h1 class="text-3xl font-bold tracking-tight">訂單詳情</h1>
-            <p class="text-muted-foreground mt-1 text-sm">訂單編號：{{ currentOrder.id }}</p>
+            <p class="text-muted-foreground mt-1 text-sm">訂單編號：#{{ currentOrder.order_number }}</p>
           </div>
-          <OrderStatusBadge :status="currentOrder.status" class="text-base px-3 py-1" />
+          <div class="shrink-0">
+            <OrderStatusBadge :status="currentOrder.status" class="text-base px-3 py-1 whitespace-nowrap shadow-sm" />
+          </div>
         </div>
 
         <!-- Items -->
@@ -106,7 +137,7 @@ const formatDate = (dateString: string) => {
               </div>
               <div class="flex justify-between">
                 <span class="text-muted-foreground">配送方式</span>
-                <span class="font-medium text-gray-900">{{ currentOrder.shipping_info.method }}</span>
+                <span class="font-medium text-gray-900">{{ translateShippingMethod(currentOrder.shipping_info.method) }}</span>
               </div>
               <div v-if="currentOrder.shipping_info.address" class="flex justify-between items-start gap-4">
                 <span class="text-muted-foreground shrink-0">地址</span>
@@ -132,11 +163,11 @@ const formatDate = (dateString: string) => {
             <div v-if="currentOrder.payment_info" class="space-y-3 text-sm">
                <div class="flex justify-between">
                 <span class="text-muted-foreground">付款方式</span>
-                <span class="font-medium text-gray-900">{{ currentOrder.payment_info.method }}</span>
+                <span class="font-medium text-gray-900">{{ translatePaymentMethod(currentOrder.payment_info.method) }}</span>
               </div>
               <div class="flex justify-between">
                 <span class="text-muted-foreground">付款狀態</span>
-                <span class="font-medium text-gray-900">{{ currentOrder.payment_info.status }}</span>
+                <span class="font-medium text-gray-900 text-primary">{{ translatePaymentStatus(currentOrder.payment_info.status) }}</span>
               </div>
                <div class="flex justify-between">
                 <span class="text-muted-foreground">訂單日期</span>
@@ -159,11 +190,11 @@ const formatDate = (dateString: string) => {
         <section class="bg-gray-50 p-6 rounded-lg border space-y-3">
           <div class="flex justify-between text-sm">
             <span class="text-muted-foreground">商品小計</span>
-            <span class="font-medium">{{ formatCurrency(currentOrder.total_amount - currentOrder.shipping_fee) }}</span>
+            <span class="font-medium">{{ formatCurrency(currentOrder.total_amount - (currentOrder.shipping_fee || 0)) }}</span>
           </div>
           <div class="flex justify-between text-sm">
             <span class="text-muted-foreground">運費</span>
-            <span class="font-medium">{{ formatCurrency(currentOrder.shipping_fee) }}</span>
+            <span class="font-medium">{{ formatCurrency(currentOrder.shipping_fee || 0) }}</span>
           </div>
           <div class="border-t border-gray-200 pt-3 mt-3 flex justify-between items-center">
             <span class="font-semibold text-lg text-gray-900">總計</span>

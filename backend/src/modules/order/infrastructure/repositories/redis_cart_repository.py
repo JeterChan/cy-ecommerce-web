@@ -6,11 +6,12 @@ Order Module - Redis Cart Repository (Adapter)
 """
 
 from typing import List
-from modules.cart.infrastructure.redis_repository import RedisCartRepository as CartRedisRepo
-from modules.cart.domain.schemas import CartItemResponse
+from modules.order.domain.repository import ICartAdapter
+from modules.cart.infrastructure.repositories.redis_repository import RedisCartRepository as CartRedisRepo
+from modules.cart.domain.entities import CartItemResponse
 
 
-class OrderCartAdapter:
+class OrderCartAdapter(ICartAdapter):
     """
     訂單模組的購物車適配器
 

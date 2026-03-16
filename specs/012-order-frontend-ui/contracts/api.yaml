@@ -1,0 +1,173 @@
+openapi: 3.0.0
+info:
+  title: Order API
+  version: 1.0.0
+  description: API for managing customer orders
+paths:
+  /orders:
+    get:
+      summary: List Orders
+      description: Get a paginated list of orders for the authenticated user.
+      parameters:
+        - in: query
+          name: page
+          schema:
+            type: integer
+            default: 1
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            default: 10
+        - in: query
+          name: status
+          schema:
+            type: string
+            enum: [PENDING, PAID, SHIPPED, COMPLETED, CANCELLED]
+      responses:
+        '200':
+          description: A list of orders
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/OrderSummary'
+                  total:
+                    type: integer
+                  page:
+                    type: integer
+                  limit:
+                    type: integer
+
+  /orders/{orderId}:
+    get:
+      summary: Get Order Details
+      description: Get detailed information about a specific order.
+      parameters:
+        - in: path
+          name: orderId
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Detailed order information
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrderDetail'
+        '403':
+          description: Forbidden (Order does not belong to user)
+        '404':
+          description: Order not found
+
+  /orders/{orderId}/cancel:
+    post:
+      summary: Cancel Order
+      description: Cancel a pending order.
+      parameters:
+        - in: path
+          name: orderId
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Order successfully cancelled
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                  status:
+                    type: string
+                    example: CANCELLED
+        '400':
+          description: Cannot cancel order (e.g., already shipped)
+        '403':
+          description: Forbidden
+        '404':
+          description: Order not found
+
+components:
+  schemas:
+    OrderSummary:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        created_at:
+          type: string
+          format: date-time
+        total_amount:
+          type: number
+        status:
+          type: string
+          enum: [PENDING, PAID, SHIPPED, COMPLETED, CANCELLED]
+        items_count:
+          type: integer
+          description: Number of items in the order (optional summary field)
+
+    OrderDetail:
+      allOf:
+        - $ref: '#/components/schemas/OrderSummary'
+        - type: object
+          properties:
+            items:
+              type: array
+              items:
+                $ref: '#/components/schemas/OrderItem'
+            shipping_info:
+              $ref: '#/components/schemas/ShippingInfo'
+            payment_info:
+              $ref: '#/components/schemas/PaymentInfo'
+            shipping_fee:
+              type: number
+
+    OrderItem:
+      type: object
+      properties:
+        id:
+          type: string
+        product_name:
+          type: string
+        quantity:
+          type: integer
+        unit_price:
+          type: number
+        subtotal:
+          type: number
+        options:
+          type: object
+
+    ShippingInfo:
+      type: object
+      properties:
+        recipient_name:
+          type: string
+        recipient_phone:
+          type: string
+        address:
+          type: string
+        method:
+          type: string
+          enum: [HOME_DELIVERY, STORE_PICKUP_711]
+
+    PaymentInfo:
+      type: object
+      properties:
+        method:
+          type: string
+          enum: [CREDIT_CARD, COD, ATM]
+        status:
+          type: string
+          enum: [UNPAID, PAID, FAILED, REFUNDED]

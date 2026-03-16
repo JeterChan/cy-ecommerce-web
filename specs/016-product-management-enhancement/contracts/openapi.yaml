@@ -1,0 +1,148 @@
+openapi: 3.0.0
+info:
+  title: Product Management API
+  version: 1.0.0
+  description: 商品管理功能 API 規格 (包含後台管理與前台展示)
+
+paths:
+  /api/v1/products/{id}:
+    get:
+      summary: 取得單一商品詳情
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProductDetail'
+
+  /api/v1/admin/products:
+    post:
+      summary: (管理員) 建立商品
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProductCreate'
+      responses:
+        201:
+          description: Created
+
+  /api/v1/admin/products/{id}:
+    put:
+      summary: (管理員) 更新商品
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProductUpdate'
+      responses:
+        200:
+          description: OK
+    delete:
+      summary: (管理員) 刪除商品
+      security:
+        - BearerAuth: []
+      responses:
+        204:
+          description: No Content
+
+  /api/v1/admin/products/images/presign:
+    post:
+      summary: (管理員) 獲取 S3 預簽名 URL
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                filename:
+                  type: string
+                content_type:
+                  type: string
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  upload_url:
+                    type: string
+                  image_id:
+                    type: string
+
+components:
+  schemas:
+    ProductDetail:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        price:
+          type: number
+        stock_quantity:
+          type: integer
+        is_low_stock:
+          type: boolean
+          description: 庫存緊張 (即時計算，stock < 5)
+        images:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProductImage'
+    
+    ProductImage:
+      type: object
+      properties:
+        url:
+          type: string
+        alt_text:
+          type: string
+        is_primary:
+          type: boolean
+
+    ProductCreate:
+      type: object
+      required:
+        - name
+        - price
+      properties:
+        name:
+          type: string
+        price:
+          type: number
+        stock_quantity:
+          type: integer
+        image_urls:
+          type: array
+          items:
+            type: string
+
+    ProductUpdate:
+      type: object
+      properties:
+        name:
+          type: string
+        price:
+          type: number
+        stock_quantity:
+          type: integer
+
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT

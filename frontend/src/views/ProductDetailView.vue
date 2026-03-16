@@ -1,11 +1,18 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { Check } from 'lucide-vue-next'
+import { Check, X } from 'lucide-vue-next'
 import type { Product } from '@/models/Product'
 import { productService } from '@/services/productService'
 import { useCartStore } from '@/stores/cart'
 import QuantitySelector from '@/components/ui/QuantitySelector.vue'
+import {
+  Carousel,
+  CarouselContent,
+  CarouselItem,
+  CarouselNext,
+  CarouselPrevious,
+} from '@/components/ui/carousel'
 import Navbar from '@/components/layout/Navbar.vue'
 import Footer from '@/components/layout/Footer.vue'
 import CategorySidebar from '@/components/layout/CategorySidebar.vue'
@@ -35,7 +42,6 @@ const handleAddToCart = async () => {
       }, 2000)
     } catch (error) {
       console.error('加入購物車失敗:', error)
-      // 可以在這裡顯示錯誤訊息給使用者
     }
   }
 }
@@ -101,34 +107,74 @@ const goBack = () => {
 
           <div v-else-if="product" class="bg-white rounded-xl shadow-lg overflow-hidden border border-gray-100">
             <div class="md:flex">
-              <div class="md:flex-shrink-0 md:w-1/2 h-64 md:h-auto bg-gray-100">
-                <img class="w-full h-full object-cover" :src="product.imageUrl" :alt="product.name">
+              <div class="md:flex-shrink-0 md:w-1/2 bg-gray-100 relative group">
+                <Carousel v-if="product.images && product.images.length > 0" class="w-full h-full">
+                  <CarouselContent>
+                    <CarouselItem v-for="image in product.images" :key="image.url">
+                      <div class="aspect-square">
+                        <img :src="image.url" :alt="image.alt_text || product.name" class="w-full h-full object-cover" />
+                      </div>
+                    </CarouselItem>
+                  </CarouselContent>
+                  <div v-if="product.images.length > 1">
+                    <CarouselPrevious class="left-2 opacity-0 group-hover:opacity-100 transition-opacity" />
+                    <CarouselNext class="right-2 opacity-0 group-hover:opacity-100 transition-opacity" />
+                  </div>
+                </Carousel>
+                <img v-else class="w-full h-full object-cover" :src="product.imageUrl" :alt="product.name">
               </div>
-              <div class="p-8 md:w-1/2 flex flex-col justify-center">
+              <div class="p-8 md:w-1/2 flex flex-col">
                 <div class="flex flex-wrap gap-2 mb-4">
                    <span v-for="tag in product.tags" :key="tag" class="text-xs bg-slate-100 text-slate-700 px-3 py-1 rounded-full font-medium">
                      {{ tag }}
                    </span>
                 </div>
-                <h1 class="text-3xl font-bold text-gray-900 mb-4 leading-tight">{{ product.name }}</h1>
+                
+                <h1 class="text-3xl font-bold text-gray-900 mb-2 leading-tight">{{ product.name }}</h1>
+                
+                <!-- 庫存狀態 -->
+                <div class="mb-4">
+                  <span v-if="product.stockQuantity === 0" class="text-red-600 font-bold flex items-center gap-1">
+                    <X class="w-4 h-4" /> 已售罄
+                  </span>
+                  <span v-else-if="product.isLowStock" class="text-orange-500 font-medium flex items-center gap-1">
+                    庫存緊張 (僅剩 {{ product.stockQuantity }} 件)
+                  </span>
+                  <span v-else class="text-green-600 text-sm">
+                    庫存充足
+                  </span>
+                </div>
+
                 <div class="text-3xl font-bold text-slate-900 mb-6">{{ formatPrice(product.price) }}</div>
                 <p class="text-gray-600 mb-8 leading-relaxed text-lg">{{ product.description }}</p>
                 
                 <div class="mt-auto pt-6 border-t border-gray-100">
                   <div class="flex items-center gap-4 mb-6">
                     <span class="text-gray-700 font-medium">數量</span>
-                    <QuantitySelector v-model="quantity" />
+                    <QuantitySelector 
+                      v-model="quantity" 
+                      :max="product.stockQuantity" 
+                      :disabled="product.stockQuantity === 0"
+                    />
                   </div>
                   
                   <button 
                     @click="handleAddToCart"
-                    class="w-full bg-primary text-primary-foreground py-4 px-6 rounded-lg font-bold text-lg hover:bg-primary/90 transition-all active:scale-[0.98] shadow-lg hover:shadow-xl flex justify-center items-center gap-2 border border-primary"
+                    :disabled="product.stockQuantity === 0 || addedSuccess"
+                    class="w-full bg-primary text-primary-foreground py-4 px-6 rounded-lg font-bold text-lg hover:bg-primary/90 transition-all active:scale-[0.98] shadow-lg hover:shadow-xl flex justify-center items-center gap-2 border border-primary disabled:bg-gray-300 disabled:border-gray-300 disabled:text-gray-500 disabled:cursor-not-allowed disabled:shadow-none"
                     :class="{ 'bg-green-600 hover:bg-green-700': addedSuccess }"
                   >
-                    <span v-if="addedSuccess" class="flex items-center gap-2 animate-in fade-in slide-in-from-bottom-1 duration-300">
-                       <Check class="w-5 h-5" /> 已加入購物車
-                    </span>
-                    <span v-else>加入購物車</span>
+                    <template v-if="addedSuccess">
+                      <span class="flex items-center gap-2 animate-in fade-in slide-in-from-bottom-1 duration-300">
+                         <Check class="w-5 h-5" /> 已加入購物車
+                      </span>
+                    </template>
+                    <template v-else-if="product.stockQuantity === 0">
+                      已售罄
+                    </template>
+                    <template v-else>
+                      加入購物車
+                    </template>
                   </button>
                   <p class="text-center text-xs text-gray-400 mt-3">
                     * 此為展示頁面，不提供實際結帳功能

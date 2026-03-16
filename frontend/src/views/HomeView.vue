@@ -2,7 +2,9 @@
 import { ref, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { productService } from '@/services/productService'
+import { categoryService } from '@/services/categoryService'
 import type { Product } from '@/models/Product'
+import type { Category } from '@/models/Category'
 import ProductCard from '@/components/product/ProductCard.vue'
 import Navbar from '@/components/layout/Navbar.vue'
 import Footer from '@/components/layout/Footer.vue'
@@ -16,7 +18,7 @@ import { Button } from '@/components/ui/button'
 const route = useRoute()
 const router = useRouter()
 const products = ref<Product[]>([])
-const allTags = ref<string[]>([])
+const allCategories = ref<Category[]>([])
 const isFiltering = ref(false)
 
 // Filter state
@@ -38,13 +40,19 @@ const loadProducts = async () => {
   if (shouldFilter) {
     isFiltering.value = true
     
-    // If route has a tag and we have no local tags selected (e.g. fresh load), use it
-    if (tag && selectedTags.value.length === 0) {
-        selectedTags.value = [tag]
+    // Find category IDs from selected tags
+    const categoryIds: number[] = []
+    if (selectedTags.value.length > 0) {
+      // Find IDs for all selected tags
+      selectedTags.value.forEach(tagName => {
+        const cat = allCategories.value.find(c => c.name === tagName)
+        if (cat) categoryIds.push(Number(cat.id))
+      })
     }
 
     const response = await productService.getProducts({ 
       tags: selectedTags.value,
+      categoryIds: categoryIds.length > 0 ? categoryIds : undefined,
       query: searchQuery.value,
       page: page.value,
       limit: limit.value
@@ -60,16 +68,15 @@ const loadProducts = async () => {
   }
 }
 
-const loadTags = async () => {
+const loadCategories = async () => {
   try {
-    allTags.value = await productService.getTags()
+    allCategories.value = await categoryService.getCategories()
   } catch (e) {
-    console.error('Failed to load tags', e)
+    console.error('Failed to load categories', e)
   }
 }
 
 const handleSearch = () => {
-  // Search implies filtering mode
   isFiltering.value = true
   page.value = 1
   loadProducts()
@@ -78,17 +85,10 @@ const handleSearch = () => {
 const handleTagChange = (tags: string[]) => {
   selectedTags.value = tags
   page.value = 1
-  
-  // Interaction implies filtering mode
   isFiltering.value = true 
 
-  // Update URL query for bookmarkability
   if (tags.length === 1) {
     router.push({ query: { tag: tags[0] } })
-  } else if (tags.length === 0) {
-    // If clearing tags, we likely want to see "All Products" list unless search is also empty...
-    // But traditionally "All" button in filters means "Show everything".
-    router.push({ query: { view: 'all' } })
   } else {
      router.push({ query: { view: 'all' } })
   }
@@ -103,26 +103,25 @@ const handlePageChange = (newPage: number) => {
 }
 
 onMounted(async () => {
-  await loadTags()
+  await loadCategories()
+  
+  // Set initial selected tags from URL if present
+  const tag = route.query.tag as string
+  if (tag) {
+    selectedTags.value = [tag]
+  }
+  
   await loadProducts()
 })
 
 watch(() => [route.query.tag, route.query.view], async ([newTag, newView]) => {
-    // If route changes to a specific tag, override selection (e.g. browser back button)
     if (newTag && typeof newTag === 'string') {
         selectedTags.value = [newTag]
         isFiltering.value = true
         page.value = 1
         await loadProducts()
     } else if (newView === 'all') {
-        // If switching to "View All" via route (e.g. Navbar link), reset filters IF we weren't already manually filtering
-        // Actually, Navbar "All Products" link should probably clear filters.
-        // But if we just added a second tag, route goes to view=all. We DON'T want to clear filters then.
-        // So we only clear if we are NOT already filtering (which is tricky) OR if we explicitly decide Navbar link clears.
-        
-        // Current logic: If we are entering 'all' view from 'featured', setup list.
-        // If we are already in list mode (isFiltering=true), assume valid state unless...
-        if (!isFiltering.value) {
+        if (!isFiltering.value || (selectedTags.value.length === 0 && !searchQuery.value)) {
              selectedTags.value = []
              searchQuery.value = ''
              isFiltering.value = true
@@ -130,7 +129,6 @@ watch(() => [route.query.tag, route.query.view], async ([newTag, newView]) => {
              await loadProducts()
         }
     } else if (!newTag && !newView) {
-        // Route has no params -> Default Home
         isFiltering.value = false
         selectedTags.value = []
         searchQuery.value = ''
@@ -165,7 +163,7 @@ watch(() => [route.query.tag, route.query.view], async ([newTag, newView]) => {
              <div class="space-y-2">
                <h3 class="text-sm font-medium text-muted-foreground">分類篩選</h3>
                <TagFilter 
-                 :tags="allTags" 
+                 :tags="allCategories.map(c => c.name)" 
                  :selectedTags="selectedTags" 
                  @update:selectedTags="handleTagChange" 
                />

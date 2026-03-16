@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.exceptions import RequestValidationError
 from contextlib import asynccontextmanager
 
-from infrastructure.database import recreate_all, init_redis, close_redis
+from infrastructure.database import init_redis, close_redis
 from infrastructure import models
 
 from shared.exceptions.base import DomainException
@@ -27,6 +27,8 @@ from core.exception_handlers import (
 
 from modules.auth.presentation.routes import router as auth_router
 from modules.product.presentation.routes import router as product_router
+from modules.product.presentation.admin_routes import router as admin_product_router
+from modules.product.presentation.category_routes import router as admin_category_router
 from modules.cart.presentation.routes import router as cart_router
 from modules.order.presentation.routes import router as order_router
 
@@ -36,8 +38,9 @@ async def lifespan(application: FastAPI):
         # 啟動時執行
 
         print("🚀 Application startup")
-        await recreate_all()
-        print("✅ Database tables created")
+        from infrastructure.database import init_db
+        await init_db()
+        print("✅ Database tables initialized (only creating missing tables)")
 
         await init_redis()
         print("✅ Redis connection established")
@@ -60,14 +63,22 @@ app = FastAPI(
 )
 
 # CORS 配置
+from infrastructure.config import settings
+
+origins = [
+    "http://localhost:5173",
+    "http://localhost:3000",
+    "http://127.0.0.1:5173",
+    "http://127.0.0.1:3000",
+]
+
+# 如果環境變數中有設定前端網址，則加入許可清單
+if settings.FRONTEND_URL:
+    origins.append(settings.FRONTEND_URL)
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:5173",  # Vite 開發伺服器
-        "http://localhost:3000",  # 備用前端埠
-        "http://127.0.0.1:5173",
-        "http://127.0.0.1:3000",
-    ],
+    allow_origins=origins,
     allow_credentials=True,
     allow_methods=["*"],  # 允許所有 HTTP 方法
     allow_headers=["*"],  # 允許所有 headers
@@ -88,6 +99,8 @@ app.add_exception_handler(DomainException, domain_exception_handler)
 # Router 註冊
 app.include_router(auth_router)
 app.include_router(product_router, prefix="/api/v1")
+app.include_router(admin_product_router, prefix="/api/v1")
+app.include_router(admin_category_router, prefix="/api/v1")
 app.include_router(cart_router, prefix="/api/v1")
 app.include_router(order_router, prefix="/api/v1")
 

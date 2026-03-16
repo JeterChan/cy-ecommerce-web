@@ -1,13 +1,13 @@
 export const ShippingMethod = {
   HOME_DELIVERY: 'HOME_DELIVERY',
-  STORE_PICKUP_711: 'STORE_PICKUP_711'
+  // STORE_PICKUP_711: 'STORE_PICKUP_711'
 } as const;
 export type ShippingMethod = (typeof ShippingMethod)[keyof typeof ShippingMethod];
 
 export const PaymentMethod = {
-  CREDIT_CARD: 'CREDIT_CARD',
+  // CREDIT_CARD: 'CREDIT_CARD',
   COD: 'COD',
-  ATM: 'ATM'
+  BANK_TRANSFER: 'BANK_TRANSFER'
 } as const;
 export type PaymentMethod = (typeof PaymentMethod)[keyof typeof PaymentMethod];
 

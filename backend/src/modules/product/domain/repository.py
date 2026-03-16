@@ -1,25 +1,53 @@
 from abc import ABC, abstractmethod
-from typing import List, Optional
+from typing import List, Optional, Tuple
 from uuid import UUID
 from modules.product.domain.entities import Product
 
-class ProductRepository(ABC):
+
+class IProductRepository(ABC):
     @abstractmethod
-    def create(self, product: Product) -> Product:
+    async def create(self, product: Product) -> Product:
         pass
 
     @abstractmethod
-    def get_by_id(self, product_id: UUID) -> Optional[Product]:
+    async def get_by_id(self, product_id: UUID) -> Optional[Product]:
         pass
 
     @abstractmethod
-    def list(self, skip: int = 0, limit: int = 100) -> List[Product]:
+    async def list(
+        self,
+        skip: int = 0,
+        limit: int = 100,
+        category_id: Optional[int] = None,
+        category_ids: Optional[List[int]] = None,
+        is_active: Optional[bool] = None
+    ) -> Tuple[List[Product], int]:
+        pass
+
+
+    @abstractmethod
+    async def list_admin(
+        self,
+        page: int = 1,
+        limit: int = 10,
+        search: Optional[str] = None,
+        category_id: Optional[int] = None,
+        sort: str = "created_desc",
+    ) -> Tuple[List[Product], int]:
         pass
 
     @abstractmethod
-    def update(self, product: Product) -> Product:
+    async def update(self, product: Product) -> Product:
         pass
 
     @abstractmethod
-    def delete(self, product_id: UUID) -> bool:
+    async def delete(self, product_id: UUID) -> bool:
+        pass
+
+    @abstractmethod
+    async def get_by_ids_with_lock(self, product_ids: List[UUID]) -> List[Product]:
+        """
+        批量取得商品並加上 FOR UPDATE 鎖定。
+        用於結帳等需要保證庫存一致性的場景。
+        """
         pass

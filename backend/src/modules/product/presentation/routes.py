@@ -9,6 +9,7 @@ from typing import List, Optional
 from uuid import UUID
 
 from infrastructure.database import get_db
+from modules.product.infrastructure.repository import SqlAlchemyProductRepository
 from modules.product.application.use_cases import (
     CreateProductUseCase,
     GetProductUseCase,
@@ -18,15 +19,35 @@ from modules.product.application.use_cases import (
     ToggleProductActiveUseCase,
     AdjustProductStockUseCase,
 )
+from modules.product.infrastructure.category_repository import SqlAlchemyCategoryRepository
 from modules.product.application.dtos import (
     ProductCreateDTO,
     ProductUpdateDTO,
     ProductResponseDTO,
+    ProductListResponseDTO,
     ProductStockAdjustDTO,
+    CategoryResponseDTO,
 )
 
 
 router = APIRouter(prefix="/products", tags=["Products"])
+
+
+# ==================== 分類操作 ====================
+
+@router.get(
+    "/categories",
+    response_model=List[CategoryResponseDTO],
+    summary="列出所有分類",
+    description="列出所有可用的商品分類"
+)
+async def list_categories(
+    db: AsyncSession = Depends(get_db)
+) -> List[CategoryResponseDTO]:
+    """列出所有分類"""
+    repo = SqlAlchemyCategoryRepository(db)
+    categories = await repo.list()
+    return [CategoryResponseDTO(id=c.id, name=c.name, slug=c.slug) for c in categories]
 
 
 # ==================== CRUD 操作 ====================
@@ -50,7 +71,7 @@ async def create_product(
     - **stock_quantity**: 庫存數量 (必填，≥ 0)
     """
     try:
-        use_case = CreateProductUseCase(db)
+        use_case = CreateProductUseCase(SqlAlchemyProductRepository(db))
         product = await use_case.execute(data)
         return ProductResponseDTO.model_validate(product)
     except ValueError as e:
@@ -72,7 +93,7 @@ async def get_product(
 ) -> ProductResponseDTO:
     """取得指定 UUID 的商品詳細資訊"""
     try:
-        use_case = GetProductUseCase(db)
+        use_case = GetProductUseCase(SqlAlchemyProductRepository(db))
         product = await use_case.execute(product_id)
         return ProductResponseDTO.model_validate(product)
     except ValueError as e:
@@ -84,26 +105,43 @@ async def get_product(
 
 @router.get(
     "",
-    response_model=List[ProductResponseDTO],
-    summary="列出商品清單",
-    description="列出商品清單，支援分頁和篩選"
+    response_model=ProductListResponseDTO,
+    summary="列出商品",
+    description="取得商品清單，支援分頁與分類篩選"
 )
 async def list_products(
     skip: int = Query(default=0, ge=0, description="略過的筆數"),
     limit: int = Query(default=100, ge=1, le=1000, description="取得的筆數上限"),
+    category_id: Optional[int] = Query(default=None, description="分類 ID 篩選"),
+    category_ids: Optional[List[int]] = Query(default=None, description="分類 ID 列表篩選"),
     is_active: Optional[bool] = Query(default=None, description="篩選上架狀態"),
     db: AsyncSession = Depends(get_db)
-) -> List[ProductResponseDTO]:
+) -> ProductListResponseDTO:
     """
     列出商品清單
 
     - **skip**: 略過的筆數
     - **limit**: 取得的筆數上限 (最大 1000)
+    - **category_id**: 分類 ID 篩選
+    - **category_ids**: 分類 ID 列表篩選
     - **is_active**: 篩選上架狀態 (null=全部, true=上架, false=下架)
     """
-    use_case = ListProductsUseCase(db)
-    products = await use_case.execute(skip=skip, limit=limit, is_active=is_active)
-    return [ProductResponseDTO.model_validate(p) for p in products]
+    use_case = ListProductsUseCase(SqlAlchemyProductRepository(db))
+    products, total = await use_case.execute(
+        skip=skip, 
+        limit=limit, 
+        category_id=category_id, 
+        category_ids=category_ids,
+        is_active=is_active
+    )
+
+    return ProductListResponseDTO(
+        items=[ProductResponseDTO.model_validate(p) for p in products],
+        total=total,
+        skip=skip,
+        limit=limit
+    )
+
 
 
 @router.put(
@@ -119,7 +157,7 @@ async def update_product(
 ) -> ProductResponseDTO:
     """更新商品資訊 (部分更新)"""
     try:
-        use_case = UpdateProductUseCase(db)
+        use_case = UpdateProductUseCase(SqlAlchemyProductRepository(db))
         product = await use_case.execute(product_id, data)
         return ProductResponseDTO.model_validate(product)
     except ValueError as e:
@@ -143,7 +181,7 @@ async def delete_product(
 ) -> None:
     """刪除指定 UUID 的商品"""
     try:
-        use_case = DeleteProductUseCase(db)
+        use_case = DeleteProductUseCase(SqlAlchemyProductRepository(db))
         await use_case.execute(product_id)
     except ValueError as e:
         raise HTTPException(
@@ -166,7 +204,7 @@ async def toggle_product_active(
 ) -> ProductResponseDTO:
     """切換商品的上架/下架狀態"""
     try:
-        use_case = ToggleProductActiveUseCase(db)
+        use_case = ToggleProductActiveUseCase(SqlAlchemyProductRepository(db))
         product = await use_case.execute(product_id)
         return ProductResponseDTO.model_validate(product)
     except ValueError as e:
@@ -194,7 +232,7 @@ async def adjust_product_stock(
     - **reason**: 調整原因 (選填)
     """
     try:
-        use_case = AdjustProductStockUseCase(db)
+        use_case = AdjustProductStockUseCase(SqlAlchemyProductRepository(db))
         product = await use_case.execute(product_id, data.quantity_change)
         return ProductResponseDTO.model_validate(product)
     except ValueError as e:
