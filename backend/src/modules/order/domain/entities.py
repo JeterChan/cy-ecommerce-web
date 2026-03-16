@@ -19,8 +19,8 @@ class OrderItem:
     quantity: int
     unit_price: Decimal
     subtotal: Decimal
-    id: Optional[int] = None
-    order_id: Optional[int] = None
+    id: Optional[UUID] = None
+    order_id: Optional[UUID] = None
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None
 
@@ -45,12 +45,17 @@ class OrderItem:
 @dataclass
 class Order:
     """訂單領域實體"""
-    user_id: str
+    user_id: UUID  # Changed to UUID to match database
+    order_number: str
     total_amount: Decimal
     shipping_fee: Decimal
-    status: str  # OrderStatus enum
+    status: str  # OrderStatus enum value
+    recipient_name: str
+    recipient_phone: str
+    shipping_address: str
+    payment_method: str
     items: List[OrderItem] = field(default_factory=list)
-    id: Optional[int] = None
+    id: Optional[UUID] = None
     note: Optional[str] = None
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None
@@ -59,8 +64,7 @@ class Order:
         """驗證訂單資料的業務規則"""
         errors = []
 
-        if not self.user_id or not self.user_id.strip():
-            errors.append("使用者 ID 不可為空")
+        # user_id validation removed as UUID is not a string to strip()
 
         if self.total_amount < 0:
             errors.append("訂單總金額不可為負數")
@@ -73,6 +77,15 @@ class Order:
 
         if self.note and len(self.note) > 500:
             errors.append("訂單備註不可超過 500 字元")
+        
+        if not self.recipient_name or not self.recipient_name.strip():
+            errors.append("收件人姓名不可為空")
+            
+        if not self.recipient_phone or not self.recipient_phone.strip():
+            errors.append("收件人電話不可為空")
+            
+        if not self.shipping_address or not self.shipping_address.strip():
+            errors.append("收件地址不可為空")
 
         # 驗證總金額是否等於各項目小計加運費
         items_total = sum(item.subtotal for item in self.items)
@@ -94,4 +107,3 @@ class Order:
         """計算訂單總金額"""
         items_total = sum(item.subtotal for item in self.items)
         return items_total + self.shipping_fee
-

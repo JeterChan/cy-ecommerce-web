@@ -24,6 +24,7 @@ from modules.product.application.dtos import (
     ProductCreateDTO,
     ProductUpdateDTO,
     ProductResponseDTO,
+    ProductListResponseDTO,
     ProductStockAdjustDTO,
     CategoryResponseDTO,
 )
@@ -104,28 +105,43 @@ async def get_product(
 
 @router.get(
     "",
-    response_model=List[ProductResponseDTO],
-    summary="列出商品清單",
-    description="列出商品清單，支援分頁和篩選"
+    response_model=ProductListResponseDTO,
+    summary="列出商品",
+    description="取得商品清單，支援分頁與分類篩選"
 )
 async def list_products(
     skip: int = Query(default=0, ge=0, description="略過的筆數"),
     limit: int = Query(default=100, ge=1, le=1000, description="取得的筆數上限"),
     category_id: Optional[int] = Query(default=None, description="分類 ID 篩選"),
+    category_ids: Optional[List[int]] = Query(default=None, description="分類 ID 列表篩選"),
     is_active: Optional[bool] = Query(default=None, description="篩選上架狀態"),
     db: AsyncSession = Depends(get_db)
-) -> List[ProductResponseDTO]:
+) -> ProductListResponseDTO:
     """
     列出商品清單
 
     - **skip**: 略過的筆數
     - **limit**: 取得的筆數上限 (最大 1000)
     - **category_id**: 分類 ID 篩選
+    - **category_ids**: 分類 ID 列表篩選
     - **is_active**: 篩選上架狀態 (null=全部, true=上架, false=下架)
     """
     use_case = ListProductsUseCase(SqlAlchemyProductRepository(db))
-    products = await use_case.execute(skip=skip, limit=limit, category_id=category_id, is_active=is_active)
-    return [ProductResponseDTO.model_validate(p) for p in products]
+    products, total = await use_case.execute(
+        skip=skip, 
+        limit=limit, 
+        category_id=category_id, 
+        category_ids=category_ids,
+        is_active=is_active
+    )
+
+    return ProductListResponseDTO(
+        items=[ProductResponseDTO.model_validate(p) for p in products],
+        total=total,
+        skip=skip,
+        limit=limit
+    )
+
 
 
 @router.put(

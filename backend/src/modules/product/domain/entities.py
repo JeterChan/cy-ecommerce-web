@@ -21,8 +21,8 @@ class Product:
     stock_quantity: int
     id: Optional[UUID] = None
     is_active: bool = True
-    category_ids: List[int] = field(default_factory=list)
-    category_names: List[str] = field(default_factory=list)
+    category_id: Optional[int] = None
+    category_name: Optional[str] = None
     images: List[ProductImage] = field(default_factory=list)
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None
