@@ -8,7 +8,6 @@ services:
       - ./src:/app/src # Mount the src directory to /app/src in the container
       - ./tests:/app/tests # Mount the tests directory to /app/tests in the container
       - ./alembic:/app/alembic # Mount the alembic directory to /app/alembic in the container
-      - ./scripts:/app/scripts # Mount the scripts directory to /app/scripts in the container
       - ./alembic.ini:/app/alembic.ini
     environment:
       - DATABASE_URL=postgresql+asyncpg://${DB_USER}:${DB_PASSWORD}@db:5432/${DB_NAME}
