@@ -25,6 +25,8 @@ RUN pip install --no-cache-dir --upgrade pip && \
 COPY alembic.ini .
 COPY alembic/ ./alembic/
 COPY src/ ./src/
+COPY start.sh .
+RUN chmod +x start.sh
 
 # 開放應用程式埠口
 EXPOSE 10000
@@ -33,5 +35,5 @@ EXPOSE 10000
 HEALTHCHECK --interval=30s --timeout=5s --start-period=5s --retries=3 \
     CMD curl -f http://localhost:10000/api/health || exit 1
 
-# 啟用命令：先執行資料庫遷移，再啟動應用程式
-CMD ["sh", "-c", "alembic upgrade head && uvicorn src.main:app --host 0.0.0.0 --port 10000"]
+# 啟用命令：使用 start.sh 腳本啟動
+CMD ["./start.sh"]
