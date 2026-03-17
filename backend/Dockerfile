@@ -21,7 +21,9 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir --upgrade pip && \
     pip install --no-cache-dir -r requirements.txt
 
-# 複製專案程式碼
+# 複製專案程式碼與設定檔
+COPY alembic.ini .
+COPY alembic/ ./alembic/
 COPY src/ ./src/
 
 # 開放應用程式埠口
