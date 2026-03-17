@@ -18,14 +18,20 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 # 複製依賴清單並安裝
 COPY requirements.txt .
-RUN pip install --no-cache-dir --upgrade pip && \
-    pip install --no-cache-dir -r requirements.txt
+RUN pip install --user --no-cache-dir --upgrade pip && \
+    pip install --user --no-cache-dir -r requirements.txt
 
-# 複製專案程式碼
+# 複製專案程式碼與設定檔
+COPY alembic.ini .
+COPY alembic/ ./alembic/
 COPY src/ ./src/
 
 # 開放應用程式埠口
-EXPOSE 8000
+EXPOSE 10000
 
-# 啟用命令
-CMD ["uvicorn", "src.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+# 健康檢查 (Render 會使用這個檢查服務是否存活)
+HEALTHCHECK --interval=30s --timeout=5s --start-period=5s --retries=3 \
+    CMD curl -f http://localhost:10000/api/health || exit 1
+
+# 啟用命令：先執行資料庫遷移，再啟動應用程式
+CMD ["sh", "-c", "alembic upgrade head; do echo 'Waiting for database...'; sleep 2; done && uvicorn src.main:app --host 0.0.0.0 --port 10000"]

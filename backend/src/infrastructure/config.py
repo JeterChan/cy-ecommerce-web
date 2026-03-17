@@ -44,6 +44,10 @@ class Settings(BaseSettings):
     AWS_S3_BUCKET: str | None = None
     AWS_S3_REGION: str = "ap-northeast-1"
 
+    # 7. Documentation URL 設定
+    DOCS_URL: str | None = "/api/docs"
+    REDOC_URL: str | None = "/api/redoc"
+
     @field_validator("FRONTEND_URL")
     @classmethod
     def strip_trailing_slash(cls, v: str) -> str:

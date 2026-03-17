@@ -26,13 +26,13 @@ class ProductModel(Base):
     # ✅ 使用 SQLAlchemy 的 func.now() 在資料庫層面處理時間戳
     # 避免 Python datetime.utcnow() 的過時警告
     created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=False),
+        DateTime(timezone=True),
         nullable=False,
         server_default=func.now()
     )
 
     updated_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=False),
+        DateTime(timezone=True),
         nullable=False,
         server_default=func.now(),
         onupdate=func.now()

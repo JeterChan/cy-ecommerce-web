@@ -68,10 +68,6 @@ tests/
 pytest.ini
 requirements-test.txt
 
-# Alembic (may want to include migrations in production)
-alembic.ini
-alembic/
-
 # CI/CD
 .github/
 .gitlab-ci.yml
