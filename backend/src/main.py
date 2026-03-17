@@ -5,6 +5,7 @@ from contextlib import asynccontextmanager
 
 from infrastructure.database import init_redis, close_redis
 from infrastructure import models
+from infrastructure.config import settings
 
 from shared.exceptions.base import DomainException
 from shared.exceptions.common import (
@@ -57,13 +58,14 @@ app = FastAPI(
     title="CyWeb E-commerce Backend",
     description="Modular Monolith API",
     version="1.0.0",
-    docs_url="/api/docs",
+    docs_url=settings.DOCS_URL if settings.DOCS_URL else None,
+    redoc_url=settings.REDOC_URL if settings.REDOC_URL else None,
     openapi_url="/api/openapi.json",
     lifespan=lifespan,
 )
 
 # CORS 配置
-from infrastructure.config import settings
+# from infrastructure.config import settings (Moved to top)
 
 origins = [
     "http://localhost:5173",

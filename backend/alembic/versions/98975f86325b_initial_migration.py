@@ -41,8 +41,8 @@ def upgrade() -> None:
     sa.Column('shipping_address', sa.String(length=1000), nullable=False),
     sa.Column('payment_method', sa.String(length=50), nullable=False),
     sa.Column('note', sa.String(length=500), nullable=True, comment='訂單備註'),
-    sa.Column('created_at', sa.DateTime(), server_default=sa.text('now()'), nullable=False),
-    sa.Column('updated_at', sa.DateTime(), server_default=sa.text('now()'), nullable=False),
+    sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
+    sa.Column('updated_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
     sa.PrimaryKeyConstraint('id')
     )
     op.create_index(op.f('ix_orders_created_at'), 'orders', ['created_at'], unique=False)
@@ -93,6 +93,7 @@ def upgrade() -> None:
     sa.Column('quantity', sa.Integer(), nullable=False, comment='購買數量'),
     sa.Column('subtotal', sa.Numeric(precision=12, scale=2), nullable=False, comment='小計'),
     sa.ForeignKeyConstraint(['order_id'], ['orders.id'], ondelete='CASCADE'),
+    # Note: product_id intentionally not FK'd - we snapshot product data at order time
     sa.PrimaryKeyConstraint('id')
     )
     op.create_index(op.f('ix_order_items_order_id'), 'order_items', ['order_id'], unique=False)
@@ -105,8 +106,8 @@ def upgrade() -> None:
     sa.Column('stock_quantity', sa.Integer(), nullable=False),
     sa.Column('category_id', sa.Integer(), nullable=True),
     sa.Column('is_active', sa.Boolean(), nullable=False),
-    sa.Column('created_at', sa.DateTime(), server_default=sa.text('now()'), nullable=False),
-    sa.Column('updated_at', sa.DateTime(), server_default=sa.text('now()'), nullable=False),
+    sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
+    sa.Column('updated_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
     sa.ForeignKeyConstraint(['category_id'], ['categories.id'], ),
     sa.PrimaryKeyConstraint('id')
     )
@@ -164,4 +165,6 @@ def downgrade() -> None:
     op.drop_index(op.f('ix_orders_created_at'), table_name='orders')
     op.drop_table('orders')
     op.drop_table('categories')
+    # Drop the enum type created in upgrade
+    op.execute("DROP TYPE IF EXISTS orderstatus")
     # ### end Alembic commands ###
