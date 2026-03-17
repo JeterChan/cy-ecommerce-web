@@ -19,11 +19,12 @@ class Settings(BaseSettings):
     DB_NAME: str
 
     # 3. Redis 設定
-    REDIS_HOST: str
-    REDIS_PORT: int
-    REDIS_DB: int
+    REDIS_URL: str | None = None  # 優先使用完整 URL
+    REDIS_HOST: str = "localhost"
+    REDIS_PORT: int = 6379
+    REDIS_DB: int = 0
     REDIS_PASSWORD: str | None = None
-    REDIS_DECODE_RESPONSES: bool
+    REDIS_DECODE_RESPONSES: bool = True
 
     # 4. 購物車 Guest Token 設定
     GUEST_TOKEN_COOKIE_NAME: str
@@ -64,6 +65,20 @@ class Settings(BaseSettings):
             str: Connection URL formatted as "postgresql+asyncpg://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}".
         """
         return f"postgresql+asyncpg://{self.DB_USER}:{self.DB_PASSWORD}@{self.DB_HOST}:{self.DB_PORT}/{self.DB_NAME}"
+
+    @computed_field
+    @property
+    def redis_url(self) -> str:
+        """
+        Returns the Redis connection URL. 
+        If REDIS_URL env var is set, uses it.
+        Otherwise, constructs it from host/port/db/password.
+        """
+        if self.REDIS_URL:
+            return self.REDIS_URL
+            
+        _password = f":{self.REDIS_PASSWORD}@" if self.REDIS_PASSWORD else ""
+        return f"redis://{_password}{self.REDIS_HOST}:{self.REDIS_PORT}/{self.REDIS_DB}"
 
     model_config = {
         # 優先讀取 .env 檔案，如果沒有則讀取系統環境變數
