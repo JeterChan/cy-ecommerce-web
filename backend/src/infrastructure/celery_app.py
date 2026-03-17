@@ -3,8 +3,7 @@ from celery import Celery
 from infrastructure.config import settings
 
 # Redis broker URL
-_redis_password = f":{settings.REDIS_PASSWORD}@" if settings.REDIS_PASSWORD else ""
-REDIS_URL = f"redis://{_redis_password}{settings.REDIS_HOST}:{settings.REDIS_PORT}/{settings.REDIS_DB}"
+REDIS_URL = settings.redis_url
 
 celery_app = Celery(
     "cy_ecommerce",
