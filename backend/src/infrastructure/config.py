@@ -12,11 +12,12 @@ class Settings(BaseSettings):
     ENV: str
 
     # 2. 資料庫變數 (Pydantic 會自動讀取對應名稱的環境變數)
-    DB_USER: str
-    DB_PASSWORD: str
-    DB_HOST: str
-    DB_PORT: int
-    DB_NAME: str
+    DATABASE_URL: str | None = None  # 優先使用完整 URL
+    DB_USER: str = "postgres"
+    DB_PASSWORD: str = "postgres"
+    DB_HOST: str = "localhost"
+    DB_PORT: int = 5432
+    DB_NAME: str = "ecommerce"
 
     # 3. Redis 設定
     REDIS_URL: str | None = None  # 優先使用完整 URL
@@ -64,6 +65,10 @@ class Settings(BaseSettings):
         Returns:
             str: Connection URL formatted as "postgresql+asyncpg://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}".
         """
+        if self.DATABASE_URL:
+            # Handle Render/Heroku postgres:// scheme for asyncpg
+            return self.DATABASE_URL.replace("postgres://", "postgresql+asyncpg://")
+            
         return f"postgresql+asyncpg://{self.DB_USER}:{self.DB_PASSWORD}@{self.DB_HOST}:{self.DB_PORT}/{self.DB_NAME}"
 
     @computed_field

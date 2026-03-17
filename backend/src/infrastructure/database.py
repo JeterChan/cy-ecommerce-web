@@ -56,29 +56,15 @@ async def init_redis() -> None:
     import redis.asyncio as aioredis
     global redis_client
 
-    # 只有在密碼存在且不為空時才傳遞 password 參數
-    redis_password = getattr(settings, 'REDIS_PASSWORD', None)
-    if redis_password and redis_password.strip():
-        # 有密碼的情況
-        redis_client = await aioredis.from_url(
-            f"redis://{settings.REDIS_HOST}:{settings.REDIS_PORT}/{settings.REDIS_DB}",
-            password=redis_password,
-            encoding="utf-8",
-            decode_responses=True,
-            max_connections=10,
-            socket_connect_timeout=5,
-            socket_keepalive=True,
-        )
-    else:
-        # 無密碼的情況（不傳遞 password 參數）
-        redis_client = await aioredis.from_url(
-            f"redis://{settings.REDIS_HOST}:{settings.REDIS_PORT}/{settings.REDIS_DB}",
-            encoding="utf-8",
-            decode_responses=True,
-            max_connections=10,
-            socket_connect_timeout=5,
-            socket_keepalive=True,
-        )
+    # 使用 settings.redis_url (已包含密碼與完整連線資訊)
+    redis_client = await aioredis.from_url(
+        settings.redis_url,
+        encoding="utf-8",
+        decode_responses=True,
+        max_connections=10,
+        socket_connect_timeout=5,
+        socket_keepalive=True,
+    )
 
     print("Redis connection established successfully")
 
