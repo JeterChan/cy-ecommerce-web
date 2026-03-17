@@ -34,4 +34,4 @@ HEALTHCHECK --interval=30s --timeout=5s --start-period=5s --retries=3 \
     CMD curl -f http://localhost:10000/api/health || exit 1
 
 # 啟用命令：先執行資料庫遷移，再啟動應用程式
-CMD ["sh", "-c", "alembic upgrade head; do echo 'Waiting for database...'; sleep 2; done && uvicorn src.main:app --host 0.0.0.0 --port 10000"]
+CMD ["sh", "-c", "alembic upgrade head && uvicorn src.main:app --host 0.0.0.0 --port 10000"]
