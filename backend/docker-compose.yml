@@ -2,6 +2,7 @@ services:
   api:
     build: .
     container_name: ecommerce_api
+    command: uvicorn src.main:app --host 0.0.0.0 --port 8000
     ports:
       - "8000:8000" # Map port 8000 of the container to port 8000 on the host
     volumes:
@@ -9,6 +10,7 @@ services:
       - ./tests:/app/tests # Mount the tests directory to /app/tests in the container
       - ./alembic:/app/alembic # Mount the alembic directory to /app/alembic in the container
       - ./alembic.ini:/app/alembic.ini
+      - ./scripts:/app/scripts
     environment:
       - DATABASE_URL=postgresql+asyncpg://${DB_USER}:${DB_PASSWORD}@db:5432/${DB_NAME}
       - REDIS_URL=${REDIS_URL}
@@ -24,6 +26,112 @@ services:
       - db
       - redis
     restart: always
+
+  # Dev migration task (one-off)
+  migrate:
+    build: .
+    command:
+      - sh
+      - -c
+      - |
+        echo "Running dev migration bootstrap..."
+        DB_STATE=$$(python3 - <<'PY'
+        import asyncio
+        import os
+        from sqlalchemy import text
+        from sqlalchemy.ext.asyncio import create_async_engine
+
+
+        async def main() -> None:
+            database_url = os.environ["DATABASE_URL"]
+            engine = create_async_engine(database_url)
+            try:
+                async with engine.connect() as conn:
+                    has_alembic_table = bool(
+                        (
+                            await conn.execute(
+                                text(
+                                    """
+                                    SELECT EXISTS (
+                                        SELECT 1
+                                        FROM information_schema.tables
+                                        WHERE table_schema = 'public'
+                                          AND table_name = 'alembic_version'
+                                    )
+                                    """
+                                )
+                            )
+                        ).scalar()
+                    )
+
+                    has_orders_table = bool(
+                        (
+                            await conn.execute(
+                                text(
+                                    """
+                                    SELECT EXISTS (
+                                        SELECT 1
+                                        FROM information_schema.tables
+                                        WHERE table_schema = 'public'
+                                          AND table_name = 'orders'
+                                    )
+                                    """
+                                )
+                            )
+                        ).scalar()
+                    )
+
+                    if not has_alembic_table:
+                        print("UNVERSIONED_WITH_TABLES" if has_orders_table else "FRESH_DB")
+                        return
+
+                    version_count = int(
+                        (
+                            await conn.execute(
+                                text("SELECT COUNT(*) FROM alembic_version")
+                            )
+                        ).scalar_one()
+                    )
+                    if version_count == 0 and has_orders_table:
+                        print("UNVERSIONED_WITH_TABLES")
+                        return
+
+                    print("VERSIONED_DB")
+            finally:
+                await engine.dispose()
+
+
+        asyncio.run(main())
+        PY
+        )
+
+        if [ "$$DB_STATE" = "UNVERSIONED_WITH_TABLES" ]; then
+          echo "Detected existing schema without Alembic baseline. Stamping 98975f86325b..."
+          alembic stamp 98975f86325b
+        fi
+
+        echo "Applying migrations..."
+        alembic upgrade head
+        echo "Migration completed."
+    volumes:
+      - ./src:/app/src
+      - ./alembic:/app/alembic
+      - ./alembic.ini:/app/alembic.ini
+    environment:
+      - DATABASE_URL=postgresql+asyncpg://${DB_USER}:${DB_PASSWORD}@db:5432/${DB_NAME}
+      - REDIS_URL=${REDIS_URL}
+      - REDIS_HOST=${REDIS_HOST}
+      - REDIS_PORT=${REDIS_PORT}
+      - REDIS_DB=${REDIS_DB}
+      - SECRET_KEY=${SECRET_KEY}
+      - ALGORITHM=${ALGORITHM}
+      - ACCESS_TOKEN_EXPIRE_MINUTES=${ACCESS_TOKEN_EXPIRE_MINUTES}
+    env_file:
+      - .env
+    depends_on:
+      - db
+    profiles:
+      - tools
 
   # PostgreSQL
   db:
