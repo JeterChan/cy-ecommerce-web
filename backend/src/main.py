@@ -32,6 +32,7 @@ from modules.product.presentation.admin_routes import router as admin_product_ro
 from modules.product.presentation.category_routes import router as admin_category_router
 from modules.cart.presentation.routes import router as cart_router
 from modules.order.presentation.routes import router as order_router
+from modules.order.presentation.admin_routes import router as admin_order_router
 
 @asynccontextmanager
 async def lifespan(application: FastAPI):
@@ -105,6 +106,7 @@ app.include_router(admin_product_router, prefix="/api/v1")
 app.include_router(admin_category_router, prefix="/api/v1")
 app.include_router(cart_router, prefix="/api/v1")
 app.include_router(order_router, prefix="/api/v1")
+app.include_router(admin_order_router, prefix="/api/v1")
 
 @app.get("/api")
 async def root():

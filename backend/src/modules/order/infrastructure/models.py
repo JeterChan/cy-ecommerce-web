@@ -61,6 +61,12 @@ class OrderModel(Base):
         comment="訂單備註"
     )
 
+    admin_note: Mapped[str] = mapped_column(
+        String(1000),
+        nullable=True,
+        comment="管理員內部備註"
+    )
+
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         nullable=False,
@@ -73,6 +79,12 @@ class OrderModel(Base):
         nullable=False,
         server_default=func.now(),
         onupdate=func.now()
+    )
+
+    status_updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+        comment="狀態最後更新時間"
     )
 
     items: Mapped[list["OrderItemModel"]] = relationship(

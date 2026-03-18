@@ -30,10 +30,12 @@ class PostgresOrderRepository(IOrderRepository):
             total_amount=float(order.total_amount),
             shipping_fee=float(order.shipping_fee),
             note=order.note,
+            admin_note=order.admin_note,
             recipient_name=order.recipient_name,
             recipient_phone=order.recipient_phone,
             shipping_address=order.shipping_address,
-            payment_method=order.payment_method
+            payment_method=order.payment_method,
+            status_updated_at=func.now() # Initial status timestamp
         )
 
         # 轉換訂單項目
@@ -88,6 +90,33 @@ class PostgresOrderRepository(IOrderRepository):
         result = await self.session.execute(stmt)
         return result.scalar_one()
 
+    async def list_all(
+        self,
+        skip: int = 0,
+        limit: int = 100,
+        status: Optional[str] = None
+    ) -> List[Order]:
+        stmt = select(OrderModel).order_by(OrderModel.created_at.desc())
+        
+        if status:
+            stmt = stmt.where(OrderModel.status == OrderStatus(status.upper()))
+            
+        stmt = stmt.offset(skip).limit(limit)
+        
+        result = await self.session.execute(stmt)
+        order_models = result.unique().scalars().all()
+
+        return [self._to_domain_entity(om) for om in order_models]
+
+    async def count_all(self, status: Optional[str] = None) -> int:
+        stmt = select(func.count()).select_from(OrderModel)
+        
+        if status:
+            stmt = stmt.where(OrderModel.status == OrderStatus(status.upper()))
+            
+        result = await self.session.execute(stmt)
+        return result.scalar_one()
+
     async def update(self, order: Order) -> Order:
         stmt = select(OrderModel).where(OrderModel.id == order.id)
         result = await self.session.execute(stmt)
@@ -96,11 +125,17 @@ class PostgresOrderRepository(IOrderRepository):
         if order_model is None:
             raise ValueError(f"訂單 {order.id} 不存在")
 
+        # 檢查狀態是否改變
+        new_status = OrderStatus(order.status) if isinstance(order.status, str) else order.status
+        if order_model.status != new_status:
+            order_model.status_updated_at = func.now()
+
         # 更新欄位
-        order_model.status = OrderStatus(order.status) if isinstance(order.status, str) else order.status
+        order_model.status = new_status
         order_model.total_amount = float(order.total_amount)
         order_model.shipping_fee = float(order.shipping_fee)
         order_model.note = order.note
+        order_model.admin_note = order.admin_note
         order_model.recipient_name = order.recipient_name
         order_model.recipient_phone = order.recipient_phone
         order_model.shipping_address = order.shipping_address
@@ -148,11 +183,14 @@ class PostgresOrderRepository(IOrderRepository):
             total_amount=Decimal(str(order_model.total_amount)),
             shipping_fee=Decimal(str(order_model.shipping_fee)),
             note=order_model.note,
+            admin_note=order_model.admin_note,
             recipient_name=order_model.recipient_name,
             recipient_phone=order_model.recipient_phone,
             shipping_address=order_model.shipping_address,
             payment_method=order_model.payment_method,
             items=items,
             created_at=order_model.created_at,
-            updated_at=order_model.updated_at
+            updated_at=order_model.updated_at,
+            status_updated_at=order_model.status_updated_at
         )
+

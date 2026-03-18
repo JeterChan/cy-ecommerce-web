@@ -39,6 +39,21 @@ class IOrderRepository(ABC):
         pass
 
     @abstractmethod
+    async def list_all(
+        self,
+        skip: int = 0,
+        limit: int = 100,
+        status: Optional[str] = None
+    ) -> List[Order]:
+        """查詢所有訂單 (管理員用)"""
+        pass
+
+    @abstractmethod
+    async def count_all(self, status: Optional[str] = None) -> int:
+        """計算所有訂單總數 (管理員用)"""
+        pass
+
+    @abstractmethod
     async def update(self, order: Order) -> Order:
         """更新訂單"""
         pass
