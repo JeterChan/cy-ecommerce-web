@@ -7,7 +7,8 @@ import {
   ExternalLink,
   Menu,
   X,
-  Tag
+  Tag,
+  ClipboardList
 } from 'lucide-vue-next'
 import { ref } from 'vue'
 import { useAuthStore } from '@/stores/auth'
@@ -33,6 +34,7 @@ const navItems = [
   { name: '儀表板', path: '/admin/dashboard', icon: LayoutDashboard },
   { name: '商品管理', path: '/admin/products', icon: Package },
   { name: '分類管理', path: '/admin/categories', icon: Tag },
+  { name: '訂單管理', path: '/admin/orders', icon: ClipboardList },
 ]
 </script>
 
