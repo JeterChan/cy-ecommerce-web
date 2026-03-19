@@ -3,6 +3,7 @@ Admin Order API Routes
 
 定義管理員專用的訂單管理 HTTP API 端點
 """
+from datetime import date
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import List, Optional
@@ -31,17 +32,27 @@ async def admin_list_orders(
     page: int = Query(default=1, ge=1, description="頁碼"),
     limit: int = Query(default=10, ge=1, le=100, description="每頁筆數"),
     status: Optional[str] = Query(default=None, description="訂單狀態篩選"),
+    search_order_number: Optional[str] = Query(default=None, description="訂單編號搜尋（模糊）"),
+    search_recipient_name: Optional[str] = Query(default=None, description="收件人姓名搜尋（模糊）"),
+    search_phone: Optional[str] = Query(default=None, description="收件人電話搜尋（模糊）"),
+    date_from: Optional[date] = Query(default=None, description="建立日期起（含）"),
+    date_to: Optional[date] = Query(default=None, description="建立日期迄（含當日）"),
     db: AsyncSession = Depends(get_db),
     admin: UserEntity = Depends(require_admin)
 ) -> AdminOrderListResponse:
-    """獲取系統中所有訂單，支援狀態篩選與分頁"""
+    """獲取系統中所有訂單，支援多欄位搜尋、狀態篩選與分頁"""
     order_repo = PostgresOrderRepository(db)
     use_case = AdminListOrdersUseCase(order_repo)
-    
+
     orders, total = await use_case.execute(
         page=page,
         limit=limit,
-        status=status
+        status=status,
+        search_order_number=search_order_number or None,
+        search_recipient_name=search_recipient_name or None,
+        search_phone=search_phone or None,
+        date_from=date_from,
+        date_to=date_to,
     )
     
     pages = math.ceil(total / limit) if total > 0 else 1

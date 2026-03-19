@@ -4,6 +4,7 @@ Order Module - PostgreSQL Repository Implementation
 此檔案實作訂單的 PostgreSQL Repository。
 """
 
+from datetime import date, datetime, time
 from typing import List, Optional
 from uuid import UUID
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -94,28 +95,48 @@ class PostgresOrderRepository(IOrderRepository):
         self,
         skip: int = 0,
         limit: int = 100,
-        status: Optional[str] = None
+        status: Optional[str] = None,
+        search_order_number: Optional[str] = None,
+        search_recipient_name: Optional[str] = None,
+        search_phone: Optional[str] = None,
+        date_from: Optional[date] = None,
+        date_to: Optional[date] = None,
     ) -> List[Order]:
         stmt = select(OrderModel).order_by(OrderModel.created_at.desc())
-        
-        if status:
-            stmt = stmt.where(OrderModel.status == OrderStatus(status.upper()))
-            
+        stmt = self._apply_filters(stmt, status, search_order_number, search_recipient_name, search_phone, date_from, date_to)
         stmt = stmt.offset(skip).limit(limit)
-        
         result = await self.session.execute(stmt)
         order_models = result.unique().scalars().all()
-
         return [self._to_domain_entity(om) for om in order_models]
 
-    async def count_all(self, status: Optional[str] = None) -> int:
+    async def count_all(
+        self,
+        status: Optional[str] = None,
+        search_order_number: Optional[str] = None,
+        search_recipient_name: Optional[str] = None,
+        search_phone: Optional[str] = None,
+        date_from: Optional[date] = None,
+        date_to: Optional[date] = None,
+    ) -> int:
         stmt = select(func.count()).select_from(OrderModel)
-        
-        if status:
-            stmt = stmt.where(OrderModel.status == OrderStatus(status.upper()))
-            
+        stmt = self._apply_filters(stmt, status, search_order_number, search_recipient_name, search_phone, date_from, date_to)
         result = await self.session.execute(stmt)
         return result.scalar_one()
+
+    def _apply_filters(self, stmt, status, search_order_number, search_recipient_name, search_phone, date_from, date_to):
+        if status:
+            stmt = stmt.where(OrderModel.status == OrderStatus(status.upper()))
+        if search_order_number:
+            stmt = stmt.where(OrderModel.order_number.ilike(f"%{search_order_number}%"))
+        if search_recipient_name:
+            stmt = stmt.where(OrderModel.recipient_name.ilike(f"%{search_recipient_name}%"))
+        if search_phone:
+            stmt = stmt.where(OrderModel.recipient_phone.ilike(f"%{search_phone}%"))
+        if date_from:
+            stmt = stmt.where(OrderModel.created_at >= datetime.combine(date_from, time.min))
+        if date_to:
+            stmt = stmt.where(OrderModel.created_at <= datetime.combine(date_to, time.max))
+        return stmt
 
     async def update(self, order: Order) -> Order:
         stmt = select(OrderModel).where(OrderModel.id == order.id)

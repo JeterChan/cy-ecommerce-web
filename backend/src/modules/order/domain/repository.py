@@ -5,6 +5,7 @@ Order Module - Repository Interfaces
 """
 
 from abc import ABC, abstractmethod
+from datetime import date
 from typing import List, Optional
 from uuid import UUID
 from modules.order.domain.entities import Order
@@ -43,13 +44,26 @@ class IOrderRepository(ABC):
         self,
         skip: int = 0,
         limit: int = 100,
-        status: Optional[str] = None
+        status: Optional[str] = None,
+        search_order_number: Optional[str] = None,
+        search_recipient_name: Optional[str] = None,
+        search_phone: Optional[str] = None,
+        date_from: Optional[date] = None,
+        date_to: Optional[date] = None,
     ) -> List[Order]:
         """查詢所有訂單 (管理員用)"""
         pass
 
     @abstractmethod
-    async def count_all(self, status: Optional[str] = None) -> int:
+    async def count_all(
+        self,
+        status: Optional[str] = None,
+        search_order_number: Optional[str] = None,
+        search_recipient_name: Optional[str] = None,
+        search_phone: Optional[str] = None,
+        date_from: Optional[date] = None,
+        date_to: Optional[date] = None,
+    ) -> int:
         """計算所有訂單總數 (管理員用)"""
         pass
 
