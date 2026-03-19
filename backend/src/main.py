@@ -39,12 +39,7 @@ from modules.order.presentation.admin_routes import router as admin_order_router
 async def lifespan(application: FastAPI):
     try:
         # 啟動時執行
-
         print("🚀 Application startup")
-        from infrastructure.database import init_db
-        await init_db()
-        print("✅ Database tables initialized (only creating missing tables)")
-
         await init_redis()
         print("✅ Redis connection established")
 

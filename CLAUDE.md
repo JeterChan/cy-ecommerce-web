@@ -36,12 +36,13 @@ Copy `backend/.env.example` to `backend/.env` before starting.
 ### Backend
 ```bash
 cd backend
-docker compose up --build                               # Start full stack
-docker compose --profile tools run --rm migrate        # Run Alembic migrations manually
-pytest                                                  # Run all tests
-pytest tests/modules/order/                            # Run single test module
-ruff check .                                           # Lint
-black .                                                # Format
+docker compose up --build                                                              # Start full stack (runs alembic upgrade head automatically)
+bash scripts/seed.sh                                                                   # Seed test data (requires running containers)
+docker exec ecommerce_api alembic revision --autogenerate -m "描述"                   # Generate new migration after schema changes
+pytest                                                                                 # Run all tests
+pytest tests/modules/order/                                                            # Run single test module
+ruff check .                                                                           # Lint
+black .                                                                                # Format
 ```
 
 ### Frontend
@@ -79,8 +80,8 @@ Cross-cutting infrastructure lives in `backend/src/infrastructure/` (database, c
 
 - Async SQLAlchemy with `asyncpg` driver
 - `get_db()` dependency auto-commits on success, rolls back on exception
-- **Dev only**: Tables auto-created via `init_db()` at app startup — no Alembic required for local dev
-- **Production**: `start.sh` runs `alembic upgrade head` before server startup
+- **Dev & Prod**: `alembic upgrade head` runs automatically at container startup (via `docker-compose.yml` command)
+- Schema changes require generating a migration: `docker exec ecommerce_api alembic revision --autogenerate -m "描述"`
 - Pessimistic locking (`SELECT ... FOR UPDATE`) used in checkout to prevent race conditions on stock
 
 ### Cart System
