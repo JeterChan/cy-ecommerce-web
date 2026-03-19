@@ -8,7 +8,7 @@ from datetime import date, datetime, time
 from typing import List, Optional
 from uuid import UUID
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func
+from sqlalchemy import select, func, cast, Date
 from modules.order.domain.repository import IOrderRepository
 from modules.order.domain.entities import Order, OrderItem
 from modules.order.domain.value_objects import OrderStatus
@@ -166,6 +166,25 @@ class PostgresOrderRepository(IOrderRepository):
         await self.session.refresh(order_model)
 
         return self._to_domain_entity(order_model)
+
+    async def get_today_stats(self) -> dict:
+        """取得台灣時區今日訂單數及銷售額（排除 CANCELLED、REFUNDED）"""
+        taipei_date = cast(func.timezone('Asia/Taipei', OrderModel.created_at), Date)
+        today_taipei = cast(func.timezone('Asia/Taipei', func.now()), Date)
+        excluded_statuses = [OrderStatus.CANCELLED, OrderStatus.REFUNDED]
+
+        stmt = (
+            select(
+                func.count().label('count'),
+                func.coalesce(func.sum(OrderModel.total_amount), 0).label('total_sales')
+            )
+            .select_from(OrderModel)
+            .where(taipei_date == today_taipei)
+            .where(OrderModel.status.notin_(excluded_statuses))
+        )
+        result = await self.session.execute(stmt)
+        row = result.one()
+        return {'count': row.count, 'total_sales': Decimal(str(row.total_sales))}
 
     async def delete(self, order_id: UUID) -> bool:
         stmt = select(OrderModel).where(OrderModel.id == order_id)

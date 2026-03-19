@@ -1,45 +1,70 @@
 <script setup lang="ts">
+import { ref, onMounted } from 'vue'
 import { useAuthStore } from '@/stores/auth'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { 
-  Package, 
-  AlertTriangle, 
+import {
+  Package,
+  AlertTriangle,
   ArrowRight,
   ShoppingCart,
   TrendingUp,
   ExternalLink
 } from 'lucide-vue-next'
 import { RouterLink } from 'vue-router'
+import { adminDashboardService } from '@/services/adminDashboardService'
 
 const authStore = useAuthStore()
 
-// Mock 統計數據
-const stats = [
-  { 
-    title: '商品總數', 
-    value: '128', 
-    icon: Package, 
+const isLoading = ref(true)
+const totalProducts = ref<number | null>(null)
+const lowStockCount = ref<number | null>(null)
+const todayOrders = ref<number | null>(null)
+const todaySales = ref<string | null>(null)
+
+function formatSales(value: string | null): string {
+  if (value === null) return '...'
+  const num = parseFloat(value)
+  return `NT$ ${num.toLocaleString('zh-TW', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`
+}
+
+onMounted(async () => {
+  try {
+    const stats = await adminDashboardService.getDashboardStats()
+    totalProducts.value = stats.total_products
+    lowStockCount.value = stats.low_stock_count
+    todayOrders.value = stats.today_orders
+    todaySales.value = stats.today_sales
+  } finally {
+    isLoading.value = false
+  }
+})
+
+const statCards = [
+  {
+    title: '商品總數',
+    getValue: () => isLoading.value ? '...' : String(totalProducts.value ?? 0),
+    icon: Package,
     color: 'text-blue-600',
     bg: 'bg-blue-100'
   },
-  { 
-    title: '低庫存警示', 
-    value: '5', 
-    icon: AlertTriangle, 
+  {
+    title: '低庫存警示',
+    getValue: () => isLoading.value ? '...' : String(lowStockCount.value ?? 0),
+    icon: AlertTriangle,
     color: 'text-amber-600',
     bg: 'bg-amber-100'
   },
-  { 
-    title: '今日訂單', 
-    value: '12', 
-    icon: ShoppingCart, 
+  {
+    title: '今日訂單',
+    getValue: () => isLoading.value ? '...' : String(todayOrders.value ?? 0),
+    icon: ShoppingCart,
     color: 'text-emerald-600',
     bg: 'bg-emerald-100'
   },
-  { 
-    title: '銷售額', 
-    value: 'NT$ 42,500', 
-    icon: TrendingUp, 
+  {
+    title: '銷售額',
+    getValue: () => isLoading.value ? '...' : formatSales(todaySales.value),
+    icon: TrendingUp,
     color: 'text-indigo-600',
     bg: 'bg-indigo-100'
   },
@@ -60,7 +85,7 @@ const stats = [
 
     <!-- Stats Grid -->
     <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-      <Card v-for="stat in stats" :key="stat.title" class="border-none shadow-sm">
+      <Card v-for="stat in statCards" :key="stat.title" class="border-none shadow-sm">
         <CardHeader class="flex flex-row items-center justify-between pb-2 space-y-0">
           <CardTitle class="text-sm font-medium text-gray-500">
             {{ stat.title }}
@@ -70,7 +95,7 @@ const stats = [
           </div>
         </CardHeader>
         <CardContent>
-          <div class="text-2xl font-bold">{{ stat.value }}</div>
+          <div class="text-2xl font-bold">{{ stat.getValue() }}</div>
         </CardContent>
       </Card>
     </div>
@@ -83,8 +108,8 @@ const stats = [
         </CardHeader>
         <CardContent class="p-0">
           <div class="divide-y divide-gray-100">
-            <RouterLink 
-              to="/admin/products" 
+            <RouterLink
+              to="/admin/products"
               class="flex items-center justify-between p-4 hover:bg-gray-50 transition-colors group"
             >
               <div class="flex items-center gap-3">
@@ -99,8 +124,8 @@ const stats = [
               <ArrowRight class="w-4 h-4 text-gray-300 group-hover:text-primary transition-colors" />
             </RouterLink>
 
-            <RouterLink 
-              to="/" 
+            <RouterLink
+              to="/"
               class="flex items-center justify-between p-4 hover:bg-gray-50 transition-colors group"
             >
               <div class="flex items-center gap-3">
@@ -126,7 +151,7 @@ const stats = [
         <p class="text-slate-400 text-sm mb-6">
           定期更新商品內容並確保庫存充足是成功的關鍵。
         </p>
-        <RouterLink 
+        <RouterLink
           to="/admin/products"
           class="inline-flex items-center justify-center rounded-md bg-primary px-6 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors shadow-lg shadow-primary/20"
         >

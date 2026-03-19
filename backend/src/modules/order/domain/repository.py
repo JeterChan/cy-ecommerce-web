@@ -77,6 +77,11 @@ class IOrderRepository(ABC):
         """刪除訂單"""
         pass
 
+    @abstractmethod
+    async def get_today_stats(self) -> dict:
+        """取得台灣時區今日訂單數及銷售額（排除 CANCELLED、REFUNDED）"""
+        pass
+
 
 class ICartAdapter(ABC):
     """購物車適配器抽象介面"""
