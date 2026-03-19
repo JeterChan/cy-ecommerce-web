@@ -5,6 +5,7 @@ Admin Category API Routes
 """
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.exc import IntegrityError
 from typing import List
 
 from infrastructure.database import get_db
@@ -46,14 +47,18 @@ async def admin_create_category(
     try:
         category = Category(id=None, name=data.name, slug=data.slug)
         category.validate()
+        if await repo.get_by_slug(data.slug):
+            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="分類 Slug 已存在")
+        if await repo.get_by_name(data.name):
+            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="分類名稱已存在")
         created = await repo.create(category)
         return CategoryResponseDTO(id=created.id, name=created.name, slug=created.slug)
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
-    except Exception as e:
-        if "unique" in str(e).lower():
-            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="分類名稱或 slug 已存在")
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
+    except HTTPException:
+        raise
+    except IntegrityError:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="分類名稱或 slug 已存在")
 
 
 @router.patch(
@@ -82,10 +87,8 @@ async def admin_update_category(
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
     except HTTPException:
         raise
-    except Exception as e:
-        if "unique" in str(e).lower():
-            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="分類名稱或 slug 已存在")
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
+    except IntegrityError:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="分類名稱或 slug 已存在")
 
 
 @router.delete(
