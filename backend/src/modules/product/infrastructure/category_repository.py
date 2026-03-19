@@ -20,9 +20,35 @@ class SqlAlchemyCategoryRepository:
         model = result.scalar_one_or_none()
         return self._to_entity(model) if model else None
 
+    async def get_by_slug(self, slug: str) -> Optional[Category]:
+        stmt = select(CategoryModel).where(CategoryModel.slug == slug)
+        result = await self.db.execute(stmt)
+        model = result.scalar_one_or_none()
+        return self._to_entity(model) if model else None
+
+    async def get_by_name(self, name: str) -> Optional[Category]:
+        stmt = select(CategoryModel).where(CategoryModel.name == name)
+        result = await self.db.execute(stmt)
+        model = result.scalar_one_or_none()
+        return self._to_entity(model) if model else None
+
     async def create(self, category: Category) -> Category:
         model = CategoryModel(name=category.name, slug=category.slug)
         self.db.add(model)
+        await self.db.flush()
+        await self.db.refresh(model)
+        return self._to_entity(model)
+
+    async def update(self, category_id: int, name: Optional[str], slug: Optional[str]) -> Optional[Category]:
+        stmt = select(CategoryModel).where(CategoryModel.id == category_id)
+        result = await self.db.execute(stmt)
+        model = result.scalar_one_or_none()
+        if not model:
+            return None
+        if name is not None:
+            model.name = name
+        if slug is not None:
+            model.slug = slug
         await self.db.flush()
         await self.db.refresh(model)
         return self._to_entity(model)

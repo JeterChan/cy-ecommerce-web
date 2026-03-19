@@ -43,13 +43,30 @@
 
 2. **啟動容器**:
    ```bash
-   docker-compose up --build
+   cd backend
+   docker compose up --build
    ```
-   啟動後，各服務位址如下：
-   - **前端頁面**: `http://localhost:5173`
-   - **後端 API**: `http://localhost:8000`
-   - **API 文檔 (Swagger)**: `http://localhost:8000/docs`
-   - **Flower (Celery 監控)**: `http://localhost:5555`
+    啟動後，各服務位址如下：
+    - **前端頁面**: `http://localhost:5173`
+    - **後端 API**: `http://localhost:8000`
+    - **API 文檔 (Swagger)**: `http://localhost:8000/docs`
+    - **Flower (Celery 監控)**: `http://localhost:5555`
+
+### 🗄️ 資料庫遷移（Dev / Production）
+
+- **Dev 環境**：API 啟動不自動跑 Alembic，當有新 migration 時手動執行一次。
+  ```bash
+  cd backend
+  docker compose --profile tools run --rm migrate
+  ```
+  `migrate` 服務會自動偵測「舊 dev DB 已有資料表但沒有 alembic_version」的情況，先 `stamp` 基線再 `upgrade`，避免 `DuplicateTableError`。
+  或使用本機 venv：
+  ```bash
+  cd backend
+  ./venv/bin/alembic upgrade head
+  ```
+
+- **Production 環境**：由 `backend/start.sh` 在啟動前自動執行 `alembic upgrade head`，再啟動 API。
 
 ## 📂 專案結構
 

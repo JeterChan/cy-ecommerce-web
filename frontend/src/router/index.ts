@@ -107,6 +107,12 @@ const router = createRouter({
           name: 'admin-categories',
           component: () => import('@/views/admin/CategoryManagementView.vue'),
           meta: { title: '分類管理' }
+        },
+        {
+          path: 'orders',
+          name: 'admin-orders',
+          component: () => import('@/views/admin/OrderManagementView.vue'),
+          meta: { title: '訂單管理' }
         }
       ]
     }

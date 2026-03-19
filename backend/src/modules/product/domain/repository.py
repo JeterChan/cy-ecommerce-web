@@ -51,3 +51,13 @@ class IProductRepository(ABC):
         用於結帳等需要保證庫存一致性的場景。
         """
         pass
+
+    @abstractmethod
+    async def count_total_active(self) -> int:
+        """計算啟用中的商品總數"""
+        pass
+
+    @abstractmethod
+    async def count_low_stock(self) -> int:
+        """計算低庫存商品數（is_active=True 且 0 < stock_quantity < 5）"""
+        pass

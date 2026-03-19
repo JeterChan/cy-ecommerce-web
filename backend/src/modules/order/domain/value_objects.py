@@ -12,8 +12,10 @@ class OrderStatus(str, Enum):
     PENDING = "PENDING"           # 待處理（訂單已建立，待付款）
     PAID = "PAID"                 # 已付款
     SHIPPED = "SHIPPED"           # 已出貨
+    DELIVERED = "DELIVERED"       # 已送達
     COMPLETED = "COMPLETED"       # 已完成
     CANCELLED = "CANCELLED"       # 已取消
+    REFUNDING = "REFUNDING"       # 退款中
     REFUNDED = "REFUNDED"         # 已退款
 
     def __str__(self) -> str:

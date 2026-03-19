@@ -138,6 +138,24 @@ class SqlAlchemyProductRepository(IProductRepository):
         await self.db.refresh(model)
         return self._to_entity(model)
 
+    async def count_total_active(self) -> int:
+        """計算啟用中的商品總數"""
+        stmt = select(func.count()).select_from(ProductModel).where(ProductModel.is_active == True)
+        result = await self.db.execute(stmt)
+        return result.scalar() or 0
+
+    async def count_low_stock(self) -> int:
+        """計算低庫存商品數（is_active=True 且 0 < stock_quantity < 5）"""
+        stmt = (
+            select(func.count())
+            .select_from(ProductModel)
+            .where(ProductModel.is_active == True)
+            .where(ProductModel.stock_quantity > 0)
+            .where(ProductModel.stock_quantity < 5)
+        )
+        result = await self.db.execute(stmt)
+        return result.scalar() or 0
+
     async def delete(self, product_id: UUID) -> bool:
         stmt = select(ProductModel).where(ProductModel.id == product_id)
         result = await self.db.execute(stmt)

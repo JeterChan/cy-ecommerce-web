@@ -7,7 +7,7 @@ import type { Product } from '@/models/Product'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet'
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import ConfirmDialog from '@/components/ui/ConfirmDialog.vue'
 import Pagination from '@/components/ui/Pagination.vue'
 import ProductForm from '@/components/admin/ProductForm.vue'
@@ -131,24 +131,22 @@ const formatPrice = (price: number) => {
     <!-- Header -->
     <div class="flex justify-between items-center mb-6">
       <h1 class="text-3xl font-bold text-gray-900 dark:text-white">商品管理</h1>
-      <Sheet v-model:open="isSheetOpen">
-        <SheetTrigger as-child>
-          <Button @click="openCreateSheet" class="flex items-center gap-2">
-            <Plus class="w-4 h-4" /> 新增商品
-          </Button>
-        </SheetTrigger>
-        <SheetContent side="right" class="sm:max-w-2xl overflow-y-auto">
-          <SheetHeader class="mb-6">
-            <SheetTitle>{{ editingProduct?.id ? '編輯商品' : '新增商品' }}</SheetTitle>
-          </SheetHeader>
-          <ProductForm 
+      <Button @click="openCreateSheet" class="flex items-center gap-2">
+        <Plus class="w-4 h-4" /> 新增商品
+      </Button>
+      <Dialog v-model:open="isSheetOpen">
+        <DialogContent class="max-w-2xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader class="mb-6">
+            <DialogTitle>{{ editingProduct?.id ? '編輯商品' : '新增商品' }}</DialogTitle>
+          </DialogHeader>
+          <ProductForm
             v-if="isSheetOpen"
-            :initial-values="editingProduct || undefined" 
+            :initial-values="editingProduct || undefined"
             @success="handleFormSuccess"
             @cancel="isSheetOpen = false"
           />
-        </SheetContent>
-      </Sheet>
+        </DialogContent>
+      </Dialog>
     </div>
 
     <!-- Search & Filter Bar -->

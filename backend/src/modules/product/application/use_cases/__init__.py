@@ -11,6 +11,7 @@ from .adjust_product_stock import AdjustProductStockUseCase
 from .get_product import GetProductUseCase
 from .list_products import ListProductsUseCase
 from .list_products_admin import ListProductsAdminUseCase
+from .get_dashboard_stats import GetDashboardStatsUseCase
 
 __all__ = [
     # Commands
@@ -23,5 +24,6 @@ __all__ = [
     "GetProductUseCase",
     "ListProductsUseCase",
     "ListProductsAdminUseCase",
+    "GetDashboardStatsUseCase",
 ]
 

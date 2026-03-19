@@ -4,10 +4,11 @@ Order Module - PostgreSQL Repository Implementation
 此檔案實作訂單的 PostgreSQL Repository。
 """
 
+from datetime import date, datetime, time
 from typing import List, Optional
 from uuid import UUID
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func
+from sqlalchemy import select, func, cast, Date
 from modules.order.domain.repository import IOrderRepository
 from modules.order.domain.entities import Order, OrderItem
 from modules.order.domain.value_objects import OrderStatus
@@ -30,10 +31,12 @@ class PostgresOrderRepository(IOrderRepository):
             total_amount=float(order.total_amount),
             shipping_fee=float(order.shipping_fee),
             note=order.note,
+            admin_note=order.admin_note,
             recipient_name=order.recipient_name,
             recipient_phone=order.recipient_phone,
             shipping_address=order.shipping_address,
-            payment_method=order.payment_method
+            payment_method=order.payment_method,
+            status_updated_at=func.now() # Initial status timestamp
         )
 
         # 轉換訂單項目
@@ -88,6 +91,53 @@ class PostgresOrderRepository(IOrderRepository):
         result = await self.session.execute(stmt)
         return result.scalar_one()
 
+    async def list_all(
+        self,
+        skip: int = 0,
+        limit: int = 100,
+        status: Optional[str] = None,
+        search_order_number: Optional[str] = None,
+        search_recipient_name: Optional[str] = None,
+        search_phone: Optional[str] = None,
+        date_from: Optional[date] = None,
+        date_to: Optional[date] = None,
+    ) -> List[Order]:
+        stmt = select(OrderModel).order_by(OrderModel.created_at.desc())
+        stmt = self._apply_filters(stmt, status, search_order_number, search_recipient_name, search_phone, date_from, date_to)
+        stmt = stmt.offset(skip).limit(limit)
+        result = await self.session.execute(stmt)
+        order_models = result.unique().scalars().all()
+        return [self._to_domain_entity(om) for om in order_models]
+
+    async def count_all(
+        self,
+        status: Optional[str] = None,
+        search_order_number: Optional[str] = None,
+        search_recipient_name: Optional[str] = None,
+        search_phone: Optional[str] = None,
+        date_from: Optional[date] = None,
+        date_to: Optional[date] = None,
+    ) -> int:
+        stmt = select(func.count()).select_from(OrderModel)
+        stmt = self._apply_filters(stmt, status, search_order_number, search_recipient_name, search_phone, date_from, date_to)
+        result = await self.session.execute(stmt)
+        return result.scalar_one()
+
+    def _apply_filters(self, stmt, status, search_order_number, search_recipient_name, search_phone, date_from, date_to):
+        if status:
+            stmt = stmt.where(OrderModel.status == OrderStatus(status.upper()))
+        if search_order_number:
+            stmt = stmt.where(OrderModel.order_number.ilike(f"%{search_order_number}%"))
+        if search_recipient_name:
+            stmt = stmt.where(OrderModel.recipient_name.ilike(f"%{search_recipient_name}%"))
+        if search_phone:
+            stmt = stmt.where(OrderModel.recipient_phone.ilike(f"%{search_phone}%"))
+        if date_from:
+            stmt = stmt.where(OrderModel.created_at >= datetime.combine(date_from, time.min))
+        if date_to:
+            stmt = stmt.where(OrderModel.created_at <= datetime.combine(date_to, time.max))
+        return stmt
+
     async def update(self, order: Order) -> Order:
         stmt = select(OrderModel).where(OrderModel.id == order.id)
         result = await self.session.execute(stmt)
@@ -96,11 +146,17 @@ class PostgresOrderRepository(IOrderRepository):
         if order_model is None:
             raise ValueError(f"訂單 {order.id} 不存在")
 
+        # 檢查狀態是否改變
+        new_status = OrderStatus(order.status) if isinstance(order.status, str) else order.status
+        if order_model.status != new_status:
+            order_model.status_updated_at = func.now()
+
         # 更新欄位
-        order_model.status = OrderStatus(order.status) if isinstance(order.status, str) else order.status
+        order_model.status = new_status
         order_model.total_amount = float(order.total_amount)
         order_model.shipping_fee = float(order.shipping_fee)
         order_model.note = order.note
+        order_model.admin_note = order.admin_note
         order_model.recipient_name = order.recipient_name
         order_model.recipient_phone = order.recipient_phone
         order_model.shipping_address = order.shipping_address
@@ -110,6 +166,25 @@ class PostgresOrderRepository(IOrderRepository):
         await self.session.refresh(order_model)
 
         return self._to_domain_entity(order_model)
+
+    async def get_today_stats(self) -> dict:
+        """取得台灣時區今日訂單數及銷售額（排除 CANCELLED、REFUNDED）"""
+        taipei_date = cast(func.timezone('Asia/Taipei', OrderModel.created_at), Date)
+        today_taipei = cast(func.timezone('Asia/Taipei', func.now()), Date)
+        excluded_statuses = [OrderStatus.CANCELLED, OrderStatus.REFUNDED]
+
+        stmt = (
+            select(
+                func.count().label('count'),
+                func.coalesce(func.sum(OrderModel.total_amount), 0).label('total_sales')
+            )
+            .select_from(OrderModel)
+            .where(taipei_date == today_taipei)
+            .where(OrderModel.status.notin_(excluded_statuses))
+        )
+        result = await self.session.execute(stmt)
+        row = result.one()
+        return {'count': row.count, 'total_sales': Decimal(str(row.total_sales))}
 
     async def delete(self, order_id: UUID) -> bool:
         stmt = select(OrderModel).where(OrderModel.id == order_id)
@@ -148,11 +223,14 @@ class PostgresOrderRepository(IOrderRepository):
             total_amount=Decimal(str(order_model.total_amount)),
             shipping_fee=Decimal(str(order_model.shipping_fee)),
             note=order_model.note,
+            admin_note=order_model.admin_note,
             recipient_name=order_model.recipient_name,
             recipient_phone=order_model.recipient_phone,
             shipping_address=order_model.shipping_address,
             payment_method=order_model.payment_method,
             items=items,
             created_at=order_model.created_at,
-            updated_at=order_model.updated_at
+            updated_at=order_model.updated_at,
+            status_updated_at=order_model.status_updated_at
         )
+

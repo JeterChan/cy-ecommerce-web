@@ -57,8 +57,10 @@ class Order:
     items: List[OrderItem] = field(default_factory=list)
     id: Optional[UUID] = None
     note: Optional[str] = None
+    admin_note: Optional[str] = None
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None
+    status_updated_at: Optional[datetime] = None
 
     def validate(self) -> None:
         """驗證訂單資料的業務規則"""
@@ -77,6 +79,9 @@ class Order:
 
         if self.note and len(self.note) > 500:
             errors.append("訂單備註不可超過 500 字元")
+        
+        if self.admin_note and len(self.admin_note) > 1000:
+            errors.append("管理員備註不可超過 1000 字元")
         
         if not self.recipient_name or not self.recipient_name.strip():
             errors.append("收件人姓名不可為空")

@@ -5,6 +5,7 @@ Order Module - Repository Interfaces
 """
 
 from abc import ABC, abstractmethod
+from datetime import date
 from typing import List, Optional
 from uuid import UUID
 from modules.order.domain.entities import Order
@@ -39,6 +40,34 @@ class IOrderRepository(ABC):
         pass
 
     @abstractmethod
+    async def list_all(
+        self,
+        skip: int = 0,
+        limit: int = 100,
+        status: Optional[str] = None,
+        search_order_number: Optional[str] = None,
+        search_recipient_name: Optional[str] = None,
+        search_phone: Optional[str] = None,
+        date_from: Optional[date] = None,
+        date_to: Optional[date] = None,
+    ) -> List[Order]:
+        """查詢所有訂單 (管理員用)"""
+        pass
+
+    @abstractmethod
+    async def count_all(
+        self,
+        status: Optional[str] = None,
+        search_order_number: Optional[str] = None,
+        search_recipient_name: Optional[str] = None,
+        search_phone: Optional[str] = None,
+        date_from: Optional[date] = None,
+        date_to: Optional[date] = None,
+    ) -> int:
+        """計算所有訂單總數 (管理員用)"""
+        pass
+
+    @abstractmethod
     async def update(self, order: Order) -> Order:
         """更新訂單"""
         pass
@@ -46,6 +75,11 @@ class IOrderRepository(ABC):
     @abstractmethod
     async def delete(self, order_id: UUID) -> bool:
         """刪除訂單"""
+        pass
+
+    @abstractmethod
+    async def get_today_stats(self) -> dict:
+        """取得台灣時區今日訂單數及銷售額（排除 CANCELLED、REFUNDED）"""
         pass
 
 

@@ -101,6 +101,7 @@ export const productApiService = {
         description: data.description || '',
         price: (typeof data.price === 'number' || typeof data.price === 'string') ? Number(data.price) : 0,
         imageUrl: data.image_url || 'https://placehold.co/300x200?text=Product',
+        images: Array.isArray(data.images) ? data.images.map((img: any) => ({ url: img.url, is_primary: img.is_primary })) : undefined,
         tags: Array.isArray(data.category_names) ? data.category_names : [],
         is_featured: false,
         categoryIds: Array.isArray(data.category_ids) ? data.category_ids : [],

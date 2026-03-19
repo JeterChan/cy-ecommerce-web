@@ -4,8 +4,11 @@ export const OrderStatus = {
   PENDING: 'PENDING',
   PAID: 'PAID',
   SHIPPED: 'SHIPPED',
+  DELIVERED: 'DELIVERED',
   COMPLETED: 'COMPLETED',
-  CANCELLED: 'CANCELLED'
+  CANCELLED: 'CANCELLED',
+  REFUNDING: 'REFUNDING',
+  REFUNDED: 'REFUNDED'
 } as const;
 
 export type OrderStatus = (typeof OrderStatus)[keyof typeof OrderStatus];
@@ -30,7 +33,11 @@ export interface Order {
   shipping_fee?: number;
   created_at: string;
   updated_at?: string;
+  status_updated_at?: string;
   items?: OrderItem[]; // 可選，列表頁面可能不需要
+  admin_note?: string; // 管理員內部備註
+  recipient_name?: string;
+  recipient_phone?: string;
 }
 
 // Detailed view
