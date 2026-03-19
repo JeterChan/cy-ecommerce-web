@@ -27,6 +27,20 @@ class SqlAlchemyCategoryRepository:
         await self.db.refresh(model)
         return self._to_entity(model)
 
+    async def update(self, category_id: int, name: Optional[str], slug: Optional[str]) -> Optional[Category]:
+        stmt = select(CategoryModel).where(CategoryModel.id == category_id)
+        result = await self.db.execute(stmt)
+        model = result.scalar_one_or_none()
+        if not model:
+            return None
+        if name is not None:
+            model.name = name
+        if slug is not None:
+            model.slug = slug
+        await self.db.flush()
+        await self.db.refresh(model)
+        return self._to_entity(model)
+
     async def delete(self, category_id: int) -> bool:
         stmt = select(CategoryModel).where(CategoryModel.id == category_id)
         result = await self.db.execute(stmt)

@@ -4,7 +4,7 @@ from .product_stock_adjust_dto import ProductStockAdjustDTO
 from .product_response_dto import ProductResponseDTO, ProductListResponseDTO
 from .product_list_item_dto import ProductListItemDTO
 from .image_presign_dto import ImagePresignRequest
-from .category_dto import CategoryResponseDTO, CategoryCreateDTO
+from .category_dto import CategoryResponseDTO, CategoryCreateDTO, CategoryUpdateDTO
 
 __all__ = [
     "ProductBase",
@@ -16,5 +16,6 @@ __all__ = [
     "ImagePresignRequest",
     "CategoryResponseDTO",
     "CategoryCreateDTO",
+    "CategoryUpdateDTO",
     "ProductListResponseDTO",
 ]
