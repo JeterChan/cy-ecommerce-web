@@ -18,6 +18,11 @@ export interface AdminOrderSearchParams {
   page?: number;
   limit?: number;
   status?: string;
+  search_order_number?: string;
+  search_recipient_name?: string;
+  search_phone?: string;
+  date_from?: string;
+  date_to?: string;
 }
 
 export const adminOrderService = {
@@ -29,6 +34,11 @@ export const adminOrderService = {
     if (params.page) queryParams.append('page', params.page.toString())
     if (params.limit) queryParams.append('limit', params.limit.toString())
     if (params.status) queryParams.append('status', params.status)
+    if (params.search_order_number) queryParams.append('search_order_number', params.search_order_number)
+    if (params.search_recipient_name) queryParams.append('search_recipient_name', params.search_recipient_name)
+    if (params.search_phone) queryParams.append('search_phone', params.search_phone)
+    if (params.date_from) queryParams.append('date_from', params.date_from)
+    if (params.date_to) queryParams.append('date_to', params.date_to)
 
     const url = `/api/v1/admin/orders?${queryParams.toString()}`
     const response = await api.get<AdminOrderListResponse>(url)

@@ -40,7 +40,11 @@ const { showSuccess, showError } = useToast()
 
 // Filters
 const statusFilter = ref<string>('ALL')
-const searchId = ref('')
+const searchOrderNumber = ref('')
+const searchRecipientName = ref('')
+const searchPhone = ref('')
+const dateFrom = ref('')
+const dateTo = ref('')
 
 // Order Detail
 const selectedOrderId = ref<string | null>(null)
@@ -58,7 +62,12 @@ const loadOrders = async () => {
     const response = await adminOrderService.getOrders({
       page: currentPage.value,
       limit: LIMIT,
-      status: statusFilter.value === 'ALL' ? undefined : statusFilter.value
+      status: statusFilter.value === 'ALL' ? undefined : statusFilter.value,
+      search_order_number: searchOrderNumber.value || undefined,
+      search_recipient_name: searchRecipientName.value || undefined,
+      search_phone: searchPhone.value || undefined,
+      date_from: dateFrom.value || undefined,
+      date_to: dateTo.value || undefined,
     })
     orders.value = response.orders
     total.value = response.total
@@ -70,6 +79,17 @@ const loadOrders = async () => {
 }
 
 const onFilterChange = () => {
+  currentPage.value = 1
+  loadOrders()
+}
+
+const resetFilters = () => {
+  statusFilter.value = 'ALL'
+  searchOrderNumber.value = ''
+  searchRecipientName.value = ''
+  searchPhone.value = ''
+  dateFrom.value = ''
+  dateTo.value = ''
   currentPage.value = 1
   loadOrders()
 }
@@ -174,23 +194,46 @@ const formatDate = (dateStr?: string) => {
     <!-- 篩選器 -->
     <Card>
       <CardContent class="pt-6">
-        <div class="flex flex-col gap-4 md:flex-row">
-          <div class="flex-1">
+        <div class="space-y-3">
+          <!-- 第一排：文字搜尋 -->
+          <div class="grid grid-cols-1 gap-3 md:grid-cols-3">
             <div class="relative">
               <Search class="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
               <Input
-                v-model="searchId"
-                placeholder="搜尋訂單編號..."
+                v-model="searchOrderNumber"
+                placeholder="訂單編號..."
                 class="pl-8"
                 @keyup.enter="onFilterChange"
               />
             </div>
+            <Input
+              v-model="searchRecipientName"
+              placeholder="收件人姓名..."
+              @keyup.enter="onFilterChange"
+            />
+            <Input
+              v-model="searchPhone"
+              placeholder="電話號碼..."
+              @keyup.enter="onFilterChange"
+            />
           </div>
-          <div class="w-full md:w-[200px]">
+          <!-- 第二排：日期 + 狀態 -->
+          <div class="grid grid-cols-1 gap-3 md:grid-cols-3">
+            <input
+              v-model="dateFrom"
+              type="date"
+              class="h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+              @keyup.enter="onFilterChange"
+            />
+            <input
+              v-model="dateTo"
+              type="date"
+              class="h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+              @keyup.enter="onFilterChange"
+            />
             <select
               v-model="statusFilter"
-              @change="onFilterChange"
-              class="w-full h-9 rounded-md border border-input bg-background px-3 py-1 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+              class="h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
             >
               <option value="ALL">全部狀態</option>
               <option value="PENDING">待付款</option>
@@ -203,9 +246,19 @@ const formatDate = (dateStr?: string) => {
               <option value="REFUNDED">已退款</option>
             </select>
           </div>
-          <Button variant="outline" @click="loadOrders">
-            重新整理
-          </Button>
+          <!-- 操作列 -->
+          <div class="flex justify-end gap-2">
+            <Button variant="ghost" @click="resetFilters">
+              重置篩選
+            </Button>
+            <Button variant="outline" @click="loadOrders">
+              重新整理
+            </Button>
+            <Button @click="onFilterChange">
+              <Search class="mr-1.5 h-4 w-4" />
+              搜尋
+            </Button>
+          </div>
         </div>
       </CardContent>
     </Card>
@@ -227,6 +280,7 @@ const formatDate = (dateStr?: string) => {
             <thead class="text-xs text-gray-700 uppercase bg-gray-100 dark:bg-gray-800 dark:text-gray-400">
               <tr>
                 <th class="px-4 py-3">訂單編號</th>
+                <th class="px-4 py-3">收件人</th>
                 <th class="px-4 py-3">日期</th>
                 <th class="px-4 py-3">金額</th>
                 <th class="px-4 py-3">狀態</th>
@@ -236,6 +290,7 @@ const formatDate = (dateStr?: string) => {
             <tbody>
               <tr v-for="order in orders" :key="order.id" class="border-b dark:border-gray-700 hover:bg-gray-50/50">
                 <td class="px-4 py-4 font-medium">{{ order.order_number }}</td>
+                <td class="px-4 py-4">{{ order.recipient_name }}</td>
                 <td class="px-4 py-4">{{ formatDate(order.created_at) }}</td>
                 <td class="px-4 py-4">${{ order.total_amount.toLocaleString() }}</td>
                 <td class="px-4 py-4">
