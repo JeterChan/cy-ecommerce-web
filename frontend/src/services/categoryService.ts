@@ -40,6 +40,12 @@ export const categoryService = {
     return response.data
   },
 
+  /** 管理員：更新分類 */
+  async updateCategory(id: number, data: { name?: string; slug?: string }): Promise<AdminCategory> {
+    const response = await api.patch<AdminCategory>(`/api/v1/admin/categories/${id}`, data)
+    return response.data
+  },
+
   /** 管理員：刪除分類 */
   async deleteCategory(id: number): Promise<void> {
     await api.delete(`/api/v1/admin/categories/${id}`)

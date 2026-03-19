@@ -21,12 +21,12 @@ import { Badge } from '@/components/ui/badge'
 import { Card, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
-} from '@/components/ui/sheet'
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
 import Pagination from '@/components/ui/Pagination.vue'
 import { useToast } from '@/composables/useToast'
 import { format } from 'date-fns'
@@ -267,15 +267,15 @@ const formatDate = (dateStr?: string) => {
       />
     </div>
 
-    <!-- 訂單詳情 Sheet -->
-    <Sheet v-model:open="isSheetOpen">
-      <SheetContent class="w-full sm:max-w-[600px] overflow-y-auto">
-        <SheetHeader>
-          <SheetTitle>訂單詳情</SheetTitle>
-          <SheetDescription v-if="orderDetail">
+    <!-- 訂單詳情 Dialog -->
+    <Dialog v-model:open="isSheetOpen">
+      <DialogContent class="max-w-2xl max-h-[80vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>訂單詳情</DialogTitle>
+          <DialogDescription v-if="orderDetail">
             訂單編號: {{ orderDetail.order_number }}
-          </SheetDescription>
-        </SheetHeader>
+          </DialogDescription>
+        </DialogHeader>
 
         <div v-if="isDetailLoading" class="flex h-64 items-center justify-center">
           <Loader2 class="h-8 w-8 animate-spin text-primary" />
@@ -382,7 +382,7 @@ const formatDate = (dateStr?: string) => {
             </Button>
           </div>
         </div>
-      </SheetContent>
-    </Sheet>
+      </DialogContent>
+    </Dialog>
   </div>
 </template>
