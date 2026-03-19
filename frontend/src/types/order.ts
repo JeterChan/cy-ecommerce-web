@@ -36,6 +36,8 @@ export interface Order {
   status_updated_at?: string;
   items?: OrderItem[]; // 可選，列表頁面可能不需要
   admin_note?: string; // 管理員內部備註
+  recipient_name?: string;
+  recipient_phone?: string;
 }
 
 // Detailed view
