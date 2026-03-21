@@ -31,9 +31,5 @@ RUN chmod +x start.sh
 # 開放應用程式埠口
 EXPOSE 10000
 
-# 健康檢查 (Render 會使用這個檢查服務是否存活)
-HEALTHCHECK --interval=30s --timeout=5s --start-period=5s --retries=3 \
-    CMD curl -f http://localhost:10000/api/health || exit 1
-
 # 啟用命令：使用 start.sh 腳本啟動
 CMD ["./start.sh"]
