@@ -2,7 +2,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from uuid import UUID
-from typing import List, Dict
+from typing import List, Dict, Optional, TYPE_CHECKING
 from decimal import Decimal
 from datetime import datetime
 import logging
@@ -20,6 +20,9 @@ from modules.order.application.dtos.checkout_request import CheckoutRequest
 from modules.order.application.dtos.order_response import OrderResponse
 from modules.order.application.dtos.order_item_response import OrderItemResponse
 
+if TYPE_CHECKING:
+    from infrastructure.stock_redis_service import StockRedisService
+
 # Assuming these exist in other modules
 from modules.product.infrastructure.models import ProductModel
 
@@ -28,62 +31,90 @@ class CheckoutUseCase:
         self,
         db: AsyncSession,
         order_repo: IOrderRepository,
-        cart_repo, # Using dynamic typing or ICartAdapter if strictly enforced
-        product_repo
+        cart_repo,
+        product_repo,
+        stock_service: Optional["StockRedisService"] = None,
     ):
         self.db = db
         self.order_repo = order_repo
         self.cart_repo = cart_repo
         self.product_repo = product_repo
+        self.stock_service = stock_service
 
     async def execute(self, user_id: UUID, request: CheckoutRequest) -> OrderResponse:
         """
         執行原子結帳流程
         """
         owner_id = str(user_id)
-        
+
         # 1. 讀取 Redis 購物車 (外部操作，不需要在 DB 事務內)
         if hasattr(self.cart_repo, 'get_cart'):
             cart_items = await self.cart_repo.get_cart(owner_id)
         else:
             cart_items = await self.cart_repo.get_cart_items(owner_id)
-            
+
         if not cart_items:
             raise EmptyCartException()
 
-        # 2. 執行資料庫原子操作，實作重試機制以應對極低機率的訂單編號碰撞
+        # 2. Redis 預扣庫存：在進入 DB 事務之前過濾庫存不足的請求
+        deducted_items: List[tuple] = []  # [(product_id, quantity), ...]
+        if self.stock_service:
+            try:
+                for item in cart_items:
+                    success, _ = await self.stock_service.try_deduct(item.product_id, item.quantity)
+                    if not success:
+                        # 回滾所有已成功預扣的商品
+                        for pid, qty in deducted_items:
+                            await self.stock_service.rollback(pid, qty)
+                        raise InsufficientStockException(
+                            product_name=str(item.product_id),
+                            requested=item.quantity,
+                            available=0,
+                        )
+                    deducted_items.append((item.product_id, item.quantity))
+            except InsufficientStockException:
+                raise
+            except Exception:
+                # Redis 異常：回滾已預扣的，然後重新拋出
+                for pid, qty in deducted_items:
+                    await self.stock_service.rollback(pid, qty)
+                raise
+
+        # 3. 執行資料庫原子操作，實作重試機制以應對極低機率的訂單編號碰撞
         max_retries = 3
         last_err = None
         created_order = None
-        for attempt in range(max_retries):
-            try:
-                # 為了能重試 IntegrityError，事務開啟必須在循環內部
-                if not self.db.in_transaction():
-                    async with self.db.begin():
+        try:
+            for attempt in range(max_retries):
+                try:
+                    if not self.db.in_transaction():
+                        async with self.db.begin():
+                            created_order = await self._perform_checkout(user_id, cart_items, request)
+                    else:
                         created_order = await self._perform_checkout(user_id, cart_items, request)
-                else:
-                    # 如果已經在事務中，重試機制可能因事務失效而無法多次執行
-                    created_order = await self._perform_checkout(user_id, cart_items, request)
-                    await self.db.flush()
-                
-                # 成功則跳出循環
-                break
-            except IntegrityError as e:
-                last_err = e
-                # 檢查是否為 order_number 碰撞
-                if "order_number" in str(e).lower() and not self.db.in_transaction() and attempt < max_retries - 1:
-                    logger.warning(f"訂單編號碰撞 (attempt {attempt + 1}), 正在重新產生並重試...")
-                    await self.db.rollback()
-                    continue
-                raise e
-        
-        if created_order is None and last_err:
-            raise last_err
+                        await self.db.flush()
+                    break
+                except IntegrityError as e:
+                    last_err = e
+                    if "order_number" in str(e).lower() and not self.db.in_transaction() and attempt < max_retries - 1:
+                        logger.warning(f"訂單編號碰撞 (attempt {attempt + 1}), 正在重新產生並重試...")
+                        await self.db.rollback()
+                        continue
+                    raise e
 
-        # 3. 成功提交後清空 Redis 購物車
+            if created_order is None and last_err:
+                raise last_err
+        except Exception:
+            # DB 事務失敗：回滾 Redis 預扣的庫存
+            if self.stock_service:
+                for pid, qty in deducted_items:
+                    await self.stock_service.rollback(pid, qty)
+            raise
+
+        # 4. 成功提交後清空 Redis 購物車
         await self.cart_repo.clear_cart(owner_id)
 
-        # 4. 轉換為 Response DTO
+        # 5. 轉換為 Response DTO
         return OrderResponse.model_validate(created_order)
 
     async def _perform_checkout(self, user_id: UUID, cart_items: list, request: CheckoutRequest) -> Order:

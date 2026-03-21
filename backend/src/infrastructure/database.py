@@ -8,7 +8,7 @@ if TYPE_CHECKING:
 
 engine = create_async_engine(
     settings.database_url,
-    echo=True, # prod 要關閉
+    echo=False,  # 關閉 SQL log，避免 I/O 開銷
     pool_size=5,
     max_overflow=10,
     pool_pre_ping=True, # 推薦開啟：自動偵測斷線並重連
@@ -61,7 +61,7 @@ async def init_redis() -> None:
         settings.redis_url,
         encoding="utf-8",
         decode_responses=True,
-        max_connections=10,
+        max_connections=50,
         socket_connect_timeout=5,
         socket_keepalive=True,
     )

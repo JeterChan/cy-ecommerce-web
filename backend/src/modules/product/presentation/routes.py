@@ -5,10 +5,12 @@ Product API Routes
 """
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.ext.asyncio import AsyncSession
+from redis.asyncio import Redis
 from typing import List, Optional
 from uuid import UUID
 
-from infrastructure.database import get_db
+from infrastructure.database import get_db, get_redis
+from infrastructure.stock_redis_service import StockRedisService
 from modules.product.infrastructure.repository import SqlAlchemyProductRepository
 from modules.product.application.use_cases import (
     CreateProductUseCase,
@@ -223,7 +225,8 @@ async def toggle_product_active(
 async def adjust_product_stock(
     product_id: UUID,
     data: ProductStockAdjustDTO,
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
+    redis: Redis = Depends(get_redis),
 ) -> ProductResponseDTO:
     """
     調整商品庫存
@@ -232,7 +235,8 @@ async def adjust_product_stock(
     - **reason**: 調整原因 (選填)
     """
     try:
-        use_case = AdjustProductStockUseCase(SqlAlchemyProductRepository(db))
+        stock_service = StockRedisService(redis, db)
+        use_case = AdjustProductStockUseCase(SqlAlchemyProductRepository(db), stock_service)
         product = await use_case.execute(product_id, data.quantity_change)
         return ProductResponseDTO.model_validate(product)
     except ValueError as e:

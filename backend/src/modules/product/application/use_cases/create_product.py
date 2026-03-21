@@ -1,13 +1,19 @@
+from typing import Optional, TYPE_CHECKING
+
 from modules.product.domain.entities import Product, ProductImage
 from modules.product.application.dtos import ProductCreateDTO
 from modules.product.domain.repository import IProductRepository
+
+if TYPE_CHECKING:
+    from infrastructure.stock_redis_service import StockRedisService
 
 
 class CreateProductUseCase:
     """建立商品的業務邏輯"""
 
-    def __init__(self, repo: IProductRepository):
+    def __init__(self, repo: IProductRepository, stock_service: Optional["StockRedisService"] = None):
         self.repo = repo
+        self.stock_service = stock_service
 
     async def execute(self, data: ProductCreateDTO) -> Product:
         """
@@ -44,4 +50,10 @@ class CreateProductUseCase:
 
         product.validate()
 
-        return await self.repo.create(product)
+        created = await self.repo.create(product)
+
+        # 同步 Redis 庫存
+        if self.stock_service and created.id:
+            await self.stock_service.init_stock(created.id, created.stock_quantity)
+
+        return created

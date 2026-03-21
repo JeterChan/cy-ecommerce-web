@@ -5,11 +5,13 @@ Admin Product API Routes
 """
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.ext.asyncio import AsyncSession
+from redis.asyncio import Redis
 from typing import List, Optional
 from uuid import UUID, uuid4
 import math
 
-from infrastructure.database import get_db
+from infrastructure.database import get_db, get_redis
+from infrastructure.stock_redis_service import StockRedisService
 from modules.auth.presentation.routes import require_admin
 from modules.auth.domain.entities import UserEntity
 from modules.product.application.use_cases import (
@@ -98,12 +100,14 @@ async def get_image_presigned_url(
 async def admin_create_product(
     data: ProductCreateDTO,
     db: AsyncSession = Depends(get_db),
+    redis: Redis = Depends(get_redis),
     admin: UserEntity = Depends(require_admin)
 ) -> ProductResponseDTO:
     """建立新商品，僅限管理員權限"""
     try:
         from modules.product.infrastructure.repository import SqlAlchemyProductRepository
-        use_case = CreateProductUseCase(SqlAlchemyProductRepository(db))
+        stock_service = StockRedisService(redis, db)
+        use_case = CreateProductUseCase(SqlAlchemyProductRepository(db), stock_service)
         product = await use_case.execute(data)
         return ProductResponseDTO.model_validate(product)
     except ValueError as e:

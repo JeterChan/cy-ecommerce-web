@@ -1,0 +1,17 @@
+{
+  "vus": 2000,
+  "expected_success": 10,
+  "checkout_success": 10,
+  "checkout_stock_error": 1990,
+  "checkout_other_error": 0,
+  "inventory_integrity": "PASS",
+  "duration_ms": {
+    "avg": 1407,
+    "min": 284,
+    "med": 1530,
+    "p90": 1966,
+    "p95": 2066,
+    "p99": 0,
+    "max": 2127
+  }
+}
