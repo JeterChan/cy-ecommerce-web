@@ -29,3 +29,8 @@ venv/
 .gemini/
 .github/
 backend/scripts/
+
+# Load test outputs
+backend/load_tests/users.json
+backend/load_tests/results.json
+backend/load_tests/results_*vu.log
