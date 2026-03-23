@@ -8,7 +8,7 @@ if TYPE_CHECKING:
 
 engine = create_async_engine(
     settings.database_url,
-    echo=False,  # 關閉 SQL log，避免 I/O 開銷
+    echo=False,  # 關閉 SQL log,避免 I/O 開銷
     pool_size=5,
     max_overflow=10,
     pool_pre_ping=True, # 推薦開啟：自動偵測斷線並重連

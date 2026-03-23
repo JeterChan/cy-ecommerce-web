@@ -45,6 +45,9 @@ class StockRedisService:
         """
         key = self._key(product_id)
 
+        # 記錄 DECRBY 前 key 是否存在，因為 DECRBY 對不存在的 key 會自動建立（從 0 開始）
+        exists_before = await self.redis.exists(key)
+
         remaining = await self.redis.decrby(key, quantity)
 
         if remaining >= 0:
@@ -53,13 +56,12 @@ class StockRedisService:
         # 結果 < 0：庫存不足，回滾
         await self.redis.incrby(key, quantity)
 
-        # 檢查是否因 key 不存在而回傳負數（lazy init）
-        exists = await self.redis.exists(key)
-        if exists:
-            # key 存在但庫存確實不足
+        if exists_before:
+            # key 原本就存在，庫存確實不足
             return False, 0
 
-        # key 不存在 → 從 DB 載入庫存後重試一次
+        # key 不存在 → 清除 DECRBY 自動建立的殘留 key，從 DB 載入庫存後重試一次
+        await self.redis.delete(key)
         if self.db is not None:
             loaded = await self._load_stock_from_db(product_id)
             if loaded is not None:

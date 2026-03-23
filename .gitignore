@@ -34,3 +34,4 @@ backend/scripts/
 backend/load_tests/users.json
 backend/load_tests/results.json
 backend/load_tests/results_*vu.log
+backend/load_tests/results_*vu.json

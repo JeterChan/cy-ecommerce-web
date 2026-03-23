@@ -58,7 +58,7 @@ async def seed(args):
 
     # --- 密碼只 hash 一次，所有用戶共用 ---
     password_hash = get_password_hash("LoadTest123!")
-    print(f"Password hashed once for all users")
+    print("Password hashed once for all users")
 
     async with async_session() as session:
         # === 1. 建立/更新測試商品 ===
