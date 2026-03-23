@@ -108,3 +108,7 @@ Cross-cutting infrastructure lives in `backend/src/infrastructure/` (database, c
 - `cart_sync_queue` — Redis → PostgreSQL cart sync
 - `default` — cleanup and misc tasks
 - Beat schedule: account cleanup every 24h
+
+## Response Language
+
+一律使用**繁體中文**回覆。
