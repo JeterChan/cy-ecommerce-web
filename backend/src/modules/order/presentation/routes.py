@@ -6,6 +6,7 @@ from typing import List, Optional
 import uuid
 
 from infrastructure.database import get_db, get_redis
+from infrastructure.stock_redis_service import StockRedisService
 from core.security import verify_token
 from modules.auth.infrastructure.repository import UserRepository
 
@@ -63,8 +64,9 @@ async def checkout(
     order_repo = PostgresOrderRepository(db)
     cart_repo = HybridCartRepository(redis, db)
     product_repo = SqlAlchemyProductRepository(db)
-    
-    use_case = CheckoutUseCase(db, order_repo, cart_repo, product_repo)
+    stock_service = StockRedisService(redis, db)
+
+    use_case = CheckoutUseCase(db, order_repo, cart_repo, product_repo, stock_service)
     
     try:
         return await use_case.execute(user_id=user.id, request=request)

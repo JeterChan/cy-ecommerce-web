@@ -1,13 +1,19 @@
 from uuid import UUID
+from typing import Optional, TYPE_CHECKING
+
 from modules.product.domain.entities import Product
 from modules.product.domain.repository import IProductRepository
+
+if TYPE_CHECKING:
+    from infrastructure.stock_redis_service import StockRedisService
 
 
 class AdjustProductStockUseCase:
     """調整商品庫存的業務邏輯"""
 
-    def __init__(self, repo: IProductRepository):
+    def __init__(self, repo: IProductRepository, stock_service: Optional["StockRedisService"] = None):
         self.repo = repo
+        self.stock_service = stock_service
 
     async def execute(self, product_id: UUID, quantity_change: int) -> Product:
         """
@@ -29,4 +35,10 @@ class AdjustProductStockUseCase:
 
         product.update_stock(quantity_change)
 
-        return await self.repo.update(product)
+        updated = await self.repo.update(product)
+
+        # 同步 Redis 庫存
+        if self.stock_service:
+            await self.stock_service.sync_stock(product_id, quantity_change)
+
+        return updated
