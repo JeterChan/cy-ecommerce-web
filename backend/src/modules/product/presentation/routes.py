@@ -9,7 +9,7 @@ from redis.asyncio import Redis
 from typing import List, Optional
 from uuid import UUID
 
-from infrastructure.database import get_db, get_redis
+from infrastructure.database import get_db, get_redis_optional
 from infrastructure.product_cache_service import ProductCacheService
 from infrastructure.stock_redis_service import StockRedisService
 from modules.product.infrastructure.repository import SqlAlchemyProductRepository
@@ -93,7 +93,7 @@ async def create_product(
 async def get_product(
     product_id: UUID,
     db: AsyncSession = Depends(get_db),
-    redis: Redis = Depends(get_redis),
+    redis: Optional[Redis] = Depends(get_redis_optional),
 ) -> ProductResponseDTO:
     """取得指定 UUID 的商品詳細資訊"""
     cache_service = ProductCacheService(redis)
@@ -132,7 +132,7 @@ async def list_products(
     category_ids: Optional[List[int]] = Query(default=None, description="分類 ID 列表篩選"),
     is_active: Optional[bool] = Query(default=None, description="篩選上架狀態"),
     db: AsyncSession = Depends(get_db),
-    redis: Redis = Depends(get_redis),
+    redis: Optional[Redis] = Depends(get_redis_optional),
 ) -> ProductListResponseDTO:
     """
     列出商品清單
@@ -187,7 +187,7 @@ async def update_product(
     product_id: UUID,
     data: ProductUpdateDTO,
     db: AsyncSession = Depends(get_db),
-    redis: Redis = Depends(get_redis),
+    redis: Optional[Redis] = Depends(get_redis_optional),
 ) -> ProductResponseDTO:
     """更新商品資訊 (部分更新)"""
     try:
@@ -219,7 +219,7 @@ async def update_product(
 async def delete_product(
     product_id: UUID,
     db: AsyncSession = Depends(get_db),
-    redis: Redis = Depends(get_redis),
+    redis: Optional[Redis] = Depends(get_redis_optional),
 ) -> None:
     """刪除指定 UUID 的商品"""
     try:
@@ -249,7 +249,7 @@ async def delete_product(
 async def toggle_product_active(
     product_id: UUID,
     db: AsyncSession = Depends(get_db),
-    redis: Redis = Depends(get_redis),
+    redis: Optional[Redis] = Depends(get_redis_optional),
 ) -> ProductResponseDTO:
     """切換商品的上架/下架狀態"""
     try:
@@ -280,7 +280,7 @@ async def adjust_product_stock(
     product_id: UUID,
     data: ProductStockAdjustDTO,
     db: AsyncSession = Depends(get_db),
-    redis: Redis = Depends(get_redis),
+    redis: Optional[Redis] = Depends(get_redis_optional),
 ) -> ProductResponseDTO:
     """
     調整商品庫存
