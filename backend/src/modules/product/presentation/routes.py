@@ -10,6 +10,7 @@ from typing import List, Optional
 from uuid import UUID
 
 from infrastructure.database import get_db, get_redis
+from infrastructure.product_cache_service import ProductCacheService
 from infrastructure.stock_redis_service import StockRedisService
 from modules.product.infrastructure.repository import SqlAlchemyProductRepository
 from modules.product.application.use_cases import (
@@ -91,13 +92,26 @@ async def create_product(
 )
 async def get_product(
     product_id: UUID,
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
+    redis: Redis = Depends(get_redis),
 ) -> ProductResponseDTO:
     """取得指定 UUID 的商品詳細資訊"""
+    cache_service = ProductCacheService(redis)
+
+    # Cache-Aside: 先查快取
+    cached = await cache_service.get_product_detail(product_id)
+    if cached is not None:
+        return ProductResponseDTO.model_validate(cached)
+
     try:
         use_case = GetProductUseCase(SqlAlchemyProductRepository(db))
         product = await use_case.execute(product_id)
-        return ProductResponseDTO.model_validate(product)
+        dto = ProductResponseDTO.model_validate(product)
+
+        # 回寫快取
+        await cache_service.set_product_detail(product_id, dto.model_dump(mode="json"))
+
+        return dto
     except ValueError as e:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -117,7 +131,8 @@ async def list_products(
     category_id: Optional[int] = Query(default=None, description="分類 ID 篩選"),
     category_ids: Optional[List[int]] = Query(default=None, description="分類 ID 列表篩選"),
     is_active: Optional[bool] = Query(default=None, description="篩選上架狀態"),
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
+    redis: Redis = Depends(get_redis),
 ) -> ProductListResponseDTO:
     """
     列出商品清單
@@ -128,21 +143,37 @@ async def list_products(
     - **category_ids**: 分類 ID 列表篩選
     - **is_active**: 篩選上架狀態 (null=全部, true=上架, false=下架)
     """
+    cache_service = ProductCacheService(redis)
+    cache_key = ProductCacheService.build_list_cache_key(
+        skip=skip, limit=limit, category_id=category_id,
+        category_ids=category_ids, is_active=is_active,
+    )
+
+    # Cache-Aside: 先查快取
+    cached = await cache_service.get_product_list(cache_key)
+    if cached is not None:
+        return ProductListResponseDTO.model_validate(cached)
+
     use_case = ListProductsUseCase(SqlAlchemyProductRepository(db))
     products, total = await use_case.execute(
-        skip=skip, 
-        limit=limit, 
-        category_id=category_id, 
+        skip=skip,
+        limit=limit,
+        category_id=category_id,
         category_ids=category_ids,
         is_active=is_active
     )
 
-    return ProductListResponseDTO(
+    dto = ProductListResponseDTO(
         items=[ProductResponseDTO.model_validate(p) for p in products],
         total=total,
         skip=skip,
         limit=limit
     )
+
+    # 回寫快取
+    await cache_service.set_product_list(cache_key, dto.model_dump(mode="json"))
+
+    return dto
 
 
 
@@ -155,12 +186,20 @@ async def list_products(
 async def update_product(
     product_id: UUID,
     data: ProductUpdateDTO,
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
+    redis: Redis = Depends(get_redis),
 ) -> ProductResponseDTO:
     """更新商品資訊 (部分更新)"""
     try:
         use_case = UpdateProductUseCase(SqlAlchemyProductRepository(db))
         product = await use_case.execute(product_id, data)
+
+        cache_service = ProductCacheService(redis)
+        db.info["after_commit"].append(
+            lambda: cache_service.invalidate_product_detail(product_id)
+        )
+        db.info["after_commit"].append(cache_service.invalidate_all_product_lists)
+
         return ProductResponseDTO.model_validate(product)
     except ValueError as e:
         status_code = (
@@ -179,12 +218,19 @@ async def update_product(
 )
 async def delete_product(
     product_id: UUID,
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
+    redis: Redis = Depends(get_redis),
 ) -> None:
     """刪除指定 UUID 的商品"""
     try:
         use_case = DeleteProductUseCase(SqlAlchemyProductRepository(db))
         await use_case.execute(product_id)
+
+        cache_service = ProductCacheService(redis)
+        db.info["after_commit"].append(
+            lambda: cache_service.invalidate_product_detail(product_id)
+        )
+        db.info["after_commit"].append(cache_service.invalidate_all_product_lists)
     except ValueError as e:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -202,12 +248,20 @@ async def delete_product(
 )
 async def toggle_product_active(
     product_id: UUID,
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
+    redis: Redis = Depends(get_redis),
 ) -> ProductResponseDTO:
     """切換商品的上架/下架狀態"""
     try:
         use_case = ToggleProductActiveUseCase(SqlAlchemyProductRepository(db))
         product = await use_case.execute(product_id)
+
+        cache_service = ProductCacheService(redis)
+        db.info["after_commit"].append(
+            lambda: cache_service.invalidate_product_detail(product_id)
+        )
+        db.info["after_commit"].append(cache_service.invalidate_all_product_lists)
+
         return ProductResponseDTO.model_validate(product)
     except ValueError as e:
         raise HTTPException(
@@ -238,6 +292,13 @@ async def adjust_product_stock(
         stock_service = StockRedisService(redis, db)
         use_case = AdjustProductStockUseCase(SqlAlchemyProductRepository(db), stock_service)
         product = await use_case.execute(product_id, data.quantity_change)
+
+        cache_service = ProductCacheService(redis)
+        db.info["after_commit"].append(
+            lambda: cache_service.invalidate_product_detail(product_id)
+        )
+        db.info["after_commit"].append(cache_service.invalidate_all_product_lists)
+
         return ProductResponseDTO.model_validate(product)
     except ValueError as e:
         status_code = (

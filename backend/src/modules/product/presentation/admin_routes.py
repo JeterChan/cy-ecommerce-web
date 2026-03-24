@@ -10,7 +10,8 @@ from typing import List, Optional
 from uuid import UUID, uuid4
 import math
 
-from infrastructure.database import get_db, get_redis
+from infrastructure.database import get_db, get_redis_optional
+from infrastructure.product_cache_service import ProductCacheService
 from infrastructure.stock_redis_service import StockRedisService
 from modules.auth.presentation.routes import require_admin
 from modules.auth.domain.entities import UserEntity
@@ -100,15 +101,20 @@ async def get_image_presigned_url(
 async def admin_create_product(
     data: ProductCreateDTO,
     db: AsyncSession = Depends(get_db),
-    redis: Redis = Depends(get_redis),
+    redis: Optional[Redis] = Depends(get_redis_optional),
     admin: UserEntity = Depends(require_admin)
 ) -> ProductResponseDTO:
     """建立新商品，僅限管理員權限"""
     try:
         from modules.product.infrastructure.repository import SqlAlchemyProductRepository
-        stock_service = StockRedisService(redis, db)
+        stock_service = StockRedisService(redis, db) if redis else None
         use_case = CreateProductUseCase(SqlAlchemyProductRepository(db), stock_service)
         product = await use_case.execute(data)
+
+        if redis:
+            cache_service = ProductCacheService(redis)
+            db.info["after_commit"].append(cache_service.invalidate_all_product_lists)
+
         return ProductResponseDTO.model_validate(product)
     except ValueError as e:
         raise HTTPException(
@@ -125,6 +131,7 @@ async def admin_update_product(
     product_id: UUID,
     data: ProductUpdateDTO,
     db: AsyncSession = Depends(get_db),
+    redis: Optional[Redis] = Depends(get_redis_optional),
     admin: UserEntity = Depends(require_admin)
 ) -> ProductResponseDTO:
     """更新商品資訊，僅限管理員權限"""
@@ -132,6 +139,14 @@ async def admin_update_product(
         from modules.product.infrastructure.repository import SqlAlchemyProductRepository
         use_case = UpdateProductUseCase(SqlAlchemyProductRepository(db))
         product = await use_case.execute(product_id, data)
+
+        if redis:
+            cache_service = ProductCacheService(redis)
+            db.info["after_commit"].append(
+                lambda: cache_service.invalidate_product_detail(product_id)
+            )
+            db.info["after_commit"].append(cache_service.invalidate_all_product_lists)
+
         return ProductResponseDTO.model_validate(product)
     except ValueError as e:
         status_code = (
@@ -149,6 +164,7 @@ async def admin_update_product(
 async def admin_delete_product(
     product_id: UUID,
     db: AsyncSession = Depends(get_db),
+    redis: Optional[Redis] = Depends(get_redis_optional),
     admin: UserEntity = Depends(require_admin)
 ) -> None:
     """刪除指定 UUID 的商品，僅限管理員權限"""
@@ -156,6 +172,13 @@ async def admin_delete_product(
         from modules.product.infrastructure.repository import SqlAlchemyProductRepository
         use_case = DeleteProductUseCase(SqlAlchemyProductRepository(db))
         await use_case.execute(product_id)
+
+        if redis:
+            cache_service = ProductCacheService(redis)
+            db.info["after_commit"].append(
+                lambda: cache_service.invalidate_product_detail(product_id)
+            )
+            db.info["after_commit"].append(cache_service.invalidate_all_product_lists)
     except ValueError as e:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
