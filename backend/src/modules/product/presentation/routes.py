@@ -195,8 +195,10 @@ async def update_product(
         product = await use_case.execute(product_id, data)
 
         cache_service = ProductCacheService(redis)
-        await cache_service.invalidate_product_detail(product_id)
-        await cache_service.invalidate_all_product_lists()
+        db.info["after_commit"].append(
+            lambda: cache_service.invalidate_product_detail(product_id)
+        )
+        db.info["after_commit"].append(cache_service.invalidate_all_product_lists)
 
         return ProductResponseDTO.model_validate(product)
     except ValueError as e:
@@ -225,8 +227,10 @@ async def delete_product(
         await use_case.execute(product_id)
 
         cache_service = ProductCacheService(redis)
-        await cache_service.invalidate_product_detail(product_id)
-        await cache_service.invalidate_all_product_lists()
+        db.info["after_commit"].append(
+            lambda: cache_service.invalidate_product_detail(product_id)
+        )
+        db.info["after_commit"].append(cache_service.invalidate_all_product_lists)
     except ValueError as e:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -253,8 +257,10 @@ async def toggle_product_active(
         product = await use_case.execute(product_id)
 
         cache_service = ProductCacheService(redis)
-        await cache_service.invalidate_product_detail(product_id)
-        await cache_service.invalidate_all_product_lists()
+        db.info["after_commit"].append(
+            lambda: cache_service.invalidate_product_detail(product_id)
+        )
+        db.info["after_commit"].append(cache_service.invalidate_all_product_lists)
 
         return ProductResponseDTO.model_validate(product)
     except ValueError as e:
@@ -288,7 +294,10 @@ async def adjust_product_stock(
         product = await use_case.execute(product_id, data.quantity_change)
 
         cache_service = ProductCacheService(redis)
-        await cache_service.invalidate_product_detail(product_id)
+        db.info["after_commit"].append(
+            lambda: cache_service.invalidate_product_detail(product_id)
+        )
+        db.info["after_commit"].append(cache_service.invalidate_all_product_lists)
 
         return ProductResponseDTO.model_validate(product)
     except ValueError as e:
