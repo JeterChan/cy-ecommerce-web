@@ -1,7 +1,10 @@
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
 from sqlalchemy.orm import DeclarativeBase
-from typing import AsyncGenerator, TYPE_CHECKING
+from typing import AsyncGenerator, Awaitable, Callable, List, TYPE_CHECKING
+import logging
 from infrastructure.config import settings
+
+logger = logging.getLogger(__name__)
 
 if TYPE_CHECKING:
     import redis.asyncio as aioredis
@@ -26,17 +29,25 @@ class Base(DeclarativeBase):
 async def get_db() -> AsyncGenerator[AsyncSession, None]:
     """
     Provide an AsyncSession for a transactional unit of work; commit is attempted after the caller finishes and the transaction is rolled back if an exception occurs.
-    
-    Returns:
-        session (AsyncSession): The database session bound to a transaction; the transaction is committed after use, or rolled back if an exception is raised.
+
+    Handlers can register after-commit callbacks via session.info["after_commit"]:
+        session.info["after_commit"].append(my_async_fn)
+    These callbacks run only after a successful commit.
     """
     async with AsyncSessionLocal() as session:
+        session.info["after_commit"]: List[Callable[[], Awaitable]] = []
         try:
             yield session
             await session.commit()
         except Exception:
             await session.rollback()
             raise
+        else:
+            for callback in session.info["after_commit"]:
+                try:
+                    await callback()
+                except Exception:
+                    logger.warning("after_commit callback failed", exc_info=True)
 
 # for dev
 async def init_db() -> None:
@@ -87,6 +98,10 @@ async def get_redis() -> "aioredis.Redis":
             "Redis client is not initialized. Ensure init_redis() is called during application startup before using get_redis()."
         )
     return redis_client # 回傳共用實例
+
+async def get_redis_optional() -> "aioredis.Redis | None":
+    """回傳 Redis 實例；若尚未初始化則回傳 None，不拋例外"""
+    return redis_client
 
 async def drop_all() -> None:
     """
