@@ -1,13 +1,16 @@
 """
-Order Module - Redis Cart Repository (Adapter)
+Order Module - Cart Adapter
 
-此檔案提供與 Cart Module Redis Repository 的整合介面。
-這是一個適配器模式，將 Cart Module 的 Repository 介面適配給 Order Module 使用。
+此檔案提供與 Cart Module 的整合介面。
+適配器模式，將 Cart Module 的 Repository 介面適配給 Order Module 使用。
+支援 RedisCartRepository 和 HybridCartRepository。
 """
 
 from typing import List
+from redis.asyncio import Redis
+from sqlalchemy.ext.asyncio import AsyncSession
 from modules.order.domain.repository import ICartAdapter
-from modules.cart.infrastructure.repositories.redis_repository import RedisCartRepository as CartRedisRepo
+from modules.cart.domain.repository import ICartRepository
 from modules.cart.domain.entities import CartItemResponse
 
 
@@ -16,14 +19,15 @@ class OrderCartAdapter(ICartAdapter):
     訂單模組的購物車適配器
 
     此類別封裝了與 Cart Module 的互動，提供訂單模組需要的購物車操作。
+    接受任何 ICartRepository 實作（RedisCartRepository、HybridCartRepository 等）。
     """
 
-    def __init__(self, cart_repository: CartRedisRepo):
+    def __init__(self, cart_repository: ICartRepository):
         """
         初始化購物車適配器
 
         Args:
-            cart_repository: Cart Module 的 RedisCartRepository 實例
+            cart_repository: Cart Module 的 ICartRepository 實作
         """
         self.cart_repo = cart_repository
 
@@ -61,4 +65,8 @@ class OrderCartAdapter(ICartAdapter):
         items = await self.cart_repo.get_cart(owner_id)
         return len(items) == 0
 
-
+    @classmethod
+    def for_member(cls, redis: Redis, db: AsyncSession) -> "OrderCartAdapter":
+        """建立會員用購物車適配器（HybridCartRepository）"""
+        from modules.cart.infrastructure.repositories.hybrid_repository import HybridCartRepository
+        return cls(HybridCartRepository(redis, db))

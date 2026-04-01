@@ -17,8 +17,8 @@ from modules.order.application.dtos.update_status_request import UpdateStatusReq
 from modules.order.application.use_cases.checkout import CheckoutUseCase
 from modules.order.application.use_cases.update_order_status import UpdateOrderStatusUseCase
 from modules.order.infrastructure.repositories.postgres_order_repository import PostgresOrderRepository
-from modules.cart.infrastructure.repositories.hybrid_repository import HybridCartRepository
-from modules.product.infrastructure.repository import SqlAlchemyProductRepository
+from modules.order.infrastructure.repositories.redis_cart_repository import OrderCartAdapter
+from modules.order.infrastructure.adapters import OrderProductAdapter
 from modules.order.domain.exceptions import (
     InsufficientStockException,
     PriceChangedException,
@@ -62,11 +62,11 @@ async def checkout(
     redis: Redis = Depends(get_redis)
 ):
     order_repo = PostgresOrderRepository(db)
-    cart_repo = HybridCartRepository(redis, db)
-    product_repo = SqlAlchemyProductRepository(db)
+    cart_repo = OrderCartAdapter.for_member(redis, db)
+    product_port = OrderProductAdapter(db)
     stock_service = StockRedisService(redis, db)
 
-    use_case = CheckoutUseCase(db, order_repo, cart_repo, product_repo, stock_service)
+    use_case = CheckoutUseCase(db, order_repo, cart_repo, product_port, stock_service)
     
     try:
         return await use_case.execute(user_id=user.id, request=request)
@@ -159,9 +159,9 @@ async def update_order_status(
     db: AsyncSession = Depends(get_db)
 ):
     order_repo = PostgresOrderRepository(db)
-    product_repo = SqlAlchemyProductRepository(db)
-    
-    use_case = UpdateOrderStatusUseCase(db, order_repo, product_repo)
+    product_port = OrderProductAdapter(db)
+
+    use_case = UpdateOrderStatusUseCase(db, order_repo, product_port)
     
     try:
         user_uuid = user.id if isinstance(user.id, uuid.UUID) else uuid.UUID(str(user.id))

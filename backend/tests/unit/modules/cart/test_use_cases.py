@@ -8,16 +8,16 @@ from modules.cart.application.use_cases.cart_commands import (
     UpdateCartItemQuantityUseCase,
 )
 from modules.cart.domain.exceptions import InsufficientStockException
-from modules.product.domain.entities import Product
+from modules.cart.domain.ports import ProductSnapshot
 
 
-def _make_product(stock=10, **kw):
+def _make_product_snapshot(stock=10, **kw):
     defaults = dict(
-        id=uuid4(), name="測試商品", description=None,
+        id=uuid4(), name="測試商品",
         price=Decimal("100"), stock_quantity=stock,
     )
     defaults.update(kw)
-    return Product(**defaults)
+    return ProductSnapshot(**defaults)
 
 
 # ── AddToCartUseCase ──
@@ -32,29 +32,29 @@ class TestAddToCartUseCase:
         return repo
 
     @pytest.fixture
-    def product_repo(self):
-        repo = AsyncMock()
-        repo.get_by_id.return_value = _make_product(stock=10)
-        return repo
+    def product_port(self):
+        port = AsyncMock()
+        port.get_product_info.return_value = _make_product_snapshot(stock=10)
+        return port
 
     @pytest.mark.asyncio
-    async def test_add_to_cart_success(self, cart_repo, product_repo):
-        use_case = AddToCartUseCase(cart_repo, product_repo)
-        product_id = product_repo.get_by_id.return_value.id
+    async def test_add_to_cart_success(self, cart_repo, product_port):
+        use_case = AddToCartUseCase(cart_repo, product_port)
+        product_id = product_port.get_product_info.return_value.id
 
         await use_case.execute("owner-1", product_id, 3)
 
         cart_repo.add_item.assert_called_once_with("owner-1", product_id, 3)
 
     @pytest.mark.asyncio
-    async def test_add_to_cart_accumulate_exceeds_stock(self, cart_repo, product_repo):
+    async def test_add_to_cart_accumulate_exceeds_stock(self, cart_repo, product_port):
         # 現有 7 件，再加 5 件 → 12 > 10
         existing = MagicMock()
         existing.quantity = 7
         cart_repo.get_item.return_value = existing
 
-        use_case = AddToCartUseCase(cart_repo, product_repo)
-        product_id = product_repo.get_by_id.return_value.id
+        use_case = AddToCartUseCase(cart_repo, product_port)
+        product_id = product_port.get_product_info.return_value.id
 
         with pytest.raises(InsufficientStockException):
             await use_case.execute("owner-1", product_id, 5)
@@ -63,10 +63,10 @@ class TestAddToCartUseCase:
 
     @pytest.mark.asyncio
     async def test_add_to_cart_product_not_found(self, cart_repo):
-        product_repo = AsyncMock()
-        product_repo.get_by_id.return_value = None
+        product_port = AsyncMock()
+        product_port.get_product_info.return_value = None
 
-        use_case = AddToCartUseCase(cart_repo, product_repo)
+        use_case = AddToCartUseCase(cart_repo, product_port)
 
         with pytest.raises(ValueError, match="not found"):
             await use_case.execute("owner-1", uuid4(), 1)
@@ -83,15 +83,15 @@ class TestUpdateCartItemQuantityUseCase:
         return repo
 
     @pytest.fixture
-    def product_repo(self):
-        repo = AsyncMock()
-        repo.get_by_id.return_value = _make_product(stock=10)
-        return repo
+    def product_port(self):
+        port = AsyncMock()
+        port.get_product_info.return_value = _make_product_snapshot(stock=10)
+        return port
 
     @pytest.mark.asyncio
-    async def test_update_quantity_exceeds_stock(self, cart_repo, product_repo):
-        use_case = UpdateCartItemQuantityUseCase(cart_repo, product_repo)
-        product_id = product_repo.get_by_id.return_value.id
+    async def test_update_quantity_exceeds_stock(self, cart_repo, product_port):
+        use_case = UpdateCartItemQuantityUseCase(cart_repo, product_port)
+        product_id = product_port.get_product_info.return_value.id
 
         with pytest.raises(InsufficientStockException):
             await use_case.execute("owner-1", product_id, 15)
@@ -99,9 +99,9 @@ class TestUpdateCartItemQuantityUseCase:
         cart_repo.update_quantity.assert_not_called()
 
     @pytest.mark.asyncio
-    async def test_update_quantity_success(self, cart_repo, product_repo):
-        use_case = UpdateCartItemQuantityUseCase(cart_repo, product_repo)
-        product_id = product_repo.get_by_id.return_value.id
+    async def test_update_quantity_success(self, cart_repo, product_port):
+        use_case = UpdateCartItemQuantityUseCase(cart_repo, product_port)
+        product_id = product_port.get_product_info.return_value.id
 
         await use_case.execute("owner-1", product_id, 5)
 

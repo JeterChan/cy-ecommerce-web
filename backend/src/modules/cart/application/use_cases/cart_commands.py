@@ -9,23 +9,23 @@ from typing import List
 
 from modules.cart.domain.repository import ICartRepository
 from modules.cart.domain.entities import CartItemResponse, CartItemCreate
-from modules.product.domain.repository import IProductRepository
+from modules.cart.domain.ports import IProductInfoPort
 from modules.cart.domain.exceptions import InsufficientStockException
 
 
 class AddToCartUseCase:
     """新增商品到購物車的業務邏輯"""
 
-    def __init__(self, repository: ICartRepository, product_repository: IProductRepository):
+    def __init__(self, repository: ICartRepository, product_port: IProductInfoPort):
         """
         初始化 Use Case
 
         Args:
             repository: CartRepository 實作
-            product_repository: ProductRepository 實作
+            product_port: 商品資訊 Port 實作
         """
         self.repository = repository
-        self.product_repository = product_repository
+        self.product_port = product_port
 
     async def execute(
         self,
@@ -58,7 +58,7 @@ class AddToCartUseCase:
             raise ValueError("Quantity must be greater than 0")
 
         # 1. 取得商品資訊 (一般的 SELECT)
-        product = await self.product_repository.get_by_id(product_id)
+        product = await self.product_port.get_product_info(product_id)
         if not product:
             raise ValueError(f"Product {product_id} not found")
 
@@ -82,9 +82,9 @@ class AddToCartUseCase:
 class UpdateCartItemQuantityUseCase:
     """更新購物車商品數量的業務邏輯"""
 
-    def __init__(self, repository: ICartRepository, product_repository: IProductRepository):
+    def __init__(self, repository: ICartRepository, product_port: IProductInfoPort):
         self.repository = repository
-        self.product_repository = product_repository
+        self.product_port = product_port
 
     async def execute(
         self,
@@ -112,7 +112,7 @@ class UpdateCartItemQuantityUseCase:
             raise ValueError("Quantity must be greater than 0")
 
         # 1. 取得商品資訊
-        product = await self.product_repository.get_by_id(product_id)
+        product = await self.product_port.get_product_info(product_id)
         if not product:
             raise ValueError(f"Product {product_id} not found")
 

@@ -19,7 +19,7 @@ from modules.order.application.dtos.admin_update_order_request import AdminUpdat
 from modules.order.application.use_cases.admin_list_orders import AdminListOrdersUseCase
 from modules.order.application.use_cases.admin_update_order import AdminUpdateOrderUseCase
 from modules.order.infrastructure.repositories.postgres_order_repository import PostgresOrderRepository
-from modules.product.infrastructure.repository import SqlAlchemyProductRepository
+from modules.order.infrastructure.adapters import OrderProductAdapter
 
 router = APIRouter(prefix="/admin/orders", tags=["Admin Orders"])
 
@@ -100,9 +100,9 @@ async def admin_update_order(
 ) -> AdminOrderResponse:
     """更新訂單狀態或管理員備註"""
     order_repo = PostgresOrderRepository(db)
-    product_repo = SqlAlchemyProductRepository(db)
-    
-    use_case = AdminUpdateOrderUseCase(db, order_repo, product_repo)
+    product_port = OrderProductAdapter(db)
+
+    use_case = AdminUpdateOrderUseCase(db, order_repo, product_port)
     
     try:
         updated_order = await use_case.execute(

@@ -49,8 +49,7 @@ from modules.auth.infrastructure.repository import UserRepository
 from modules.auth.infrastructure.password_hasher import BcryptPasswordHasher
 from modules.auth.domain.entities import UserEntity
 
-from modules.cart.application.services import CartMergeService
-from modules.cart.infrastructure.utils import get_guest_token_from_cookie
+from modules.auth.infrastructure.adapters import CartMergeAdapter
 
 
 router = APIRouter(prefix="/api/v1/auth", tags=["Authentication"])
@@ -242,17 +241,9 @@ async def login_user(
         use_case = LoginUserUseCase(user_repo, BcryptPasswordHasher())
         login_dto = await use_case.execute(data)
 
-        # 購物車合併邏輯
-        try:
-            guest_token = get_guest_token_from_cookie(request)
-            if guest_token:
-                merge_service = CartMergeService(db, redis)
-                await merge_service.merge_guest_to_member(
-                    guest_token=guest_token,
-                    user_id=login_dto.user.id
-                )
-        except Exception as e:
-            print(f"Cart merge failed: {str(e)}")
+        # 購物車合併邏輯（透過 Adapter 封裝，失敗不影響登入）
+        cart_merge_port = CartMergeAdapter(db, redis)
+        await cart_merge_port.merge_guest_cart(request, login_dto.user.id)
 
         return login_dto
 
