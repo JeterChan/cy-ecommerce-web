@@ -3,6 +3,8 @@ import pytest
 from unittest.mock import AsyncMock
 from uuid import uuid4
 
+from redis.exceptions import ConnectionError as RedisConnectionError
+
 from infrastructure.product_cache_service import (
     ProductCacheService,
     DETAIL_PREFIX,
@@ -47,7 +49,7 @@ class TestGetProductDetail:
 
     @pytest.mark.asyncio
     async def test_redis_error_returns_none(self, service, redis):
-        redis.get.side_effect = ConnectionError("Redis down")
+        redis.get.side_effect = RedisConnectionError("Redis down")
 
         result = await service.get_product_detail(uuid4())
 
@@ -73,7 +75,7 @@ class TestSetProductDetail:
 
     @pytest.mark.asyncio
     async def test_redis_error_does_not_raise(self, service, redis):
-        redis.set.side_effect = ConnectionError("Redis down")
+        redis.set.side_effect = RedisConnectionError("Redis down")
 
         await service.set_product_detail(uuid4(), {"name": "Test"})
         # Should not raise
@@ -93,7 +95,7 @@ class TestInvalidateProductDetail:
 
     @pytest.mark.asyncio
     async def test_redis_error_does_not_raise(self, service, redis):
-        redis.delete.side_effect = ConnectionError("Redis down")
+        redis.delete.side_effect = RedisConnectionError("Redis down")
 
         await service.invalidate_product_detail(uuid4())
 
@@ -156,7 +158,7 @@ class TestProductListCache:
 
     @pytest.mark.asyncio
     async def test_get_redis_error_returns_none(self, service, redis):
-        redis.get.side_effect = ConnectionError("Redis down")
+        redis.get.side_effect = RedisConnectionError("Redis down")
 
         result = await service.get_product_list(f"{LIST_PREFIX}key")
 
@@ -177,7 +179,7 @@ class TestProductListCache:
 
     @pytest.mark.asyncio
     async def test_set_redis_error_does_not_raise(self, service, redis):
-        redis.set.side_effect = ConnectionError("Redis down")
+        redis.set.side_effect = RedisConnectionError("Redis down")
 
         await service.set_product_list(f"{LIST_PREFIX}key", {"items": []})
 
@@ -217,6 +219,6 @@ class TestInvalidateAllProductLists:
 
     @pytest.mark.asyncio
     async def test_redis_error_does_not_raise(self, service, redis):
-        redis.scan.side_effect = ConnectionError("Redis down")
+        redis.scan.side_effect = RedisConnectionError("Redis down")
 
         await service.invalidate_all_product_lists()
