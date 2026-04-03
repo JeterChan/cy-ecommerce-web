@@ -31,11 +31,14 @@ class OrderProductAdapter(IProductPort):
 
     async def get_products_for_checkout(self, product_ids: List[UUID]) -> List[CheckoutProduct]:
         """取得結帳用商品（含悲觀鎖 FOR UPDATE），按 ID 排序防止死鎖"""
+        # populate_existing=True 確保 FOR UPDATE 鎖住的資料列會從資料庫重新載入，
+        # 避免 SQLAlchemy identity map 回傳過時的快取物件，導致 stock_quantity 不準確
         stmt = (
             select(ProductModel)
             .where(ProductModel.id.in_(product_ids))
             .with_for_update(of=ProductModel)
             .order_by(ProductModel.id)
+            .execution_options(populate_existing=True)
         )
         res = await self._db.execute(stmt)
         models = res.scalars().all()

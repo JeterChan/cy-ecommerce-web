@@ -38,6 +38,8 @@ class AddToCartUseCase:
         product = await self.product_port.get_product_info(product_id)
         if not product:
             raise ValueError(f"Product {product_id} not found")
+        if not product.is_active:
+            raise ValueError(f"Product {product_id} not available")
 
         existing_item = await self.repository.get_item(owner_id, product_id)
         current_quantity = existing_item.quantity if existing_item else 0
