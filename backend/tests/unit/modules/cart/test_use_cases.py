@@ -3,10 +3,8 @@ from unittest.mock import AsyncMock, MagicMock
 from decimal import Decimal
 from uuid import uuid4
 
-from modules.cart.application.use_cases.cart_commands import (
-    AddToCartUseCase,
-    UpdateCartItemQuantityUseCase,
-)
+from modules.cart.application.use_cases.add_to_cart import AddToCartUseCase
+from modules.cart.application.use_cases.update_cart_item_quantity import UpdateCartItemQuantityUseCase
 from modules.cart.domain.exceptions import InsufficientStockException
 from modules.cart.domain.ports import ProductSnapshot
 
