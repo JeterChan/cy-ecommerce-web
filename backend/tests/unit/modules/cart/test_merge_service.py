@@ -2,7 +2,7 @@ import pytest
 from unittest.mock import AsyncMock, MagicMock
 from uuid import uuid4
 
-from modules.cart.application.use_cases.cart_merge import MergeCartUseCase
+from modules.cart.application.use_cases.merge_cart import MergeCartUseCase
 
 
 class TestMergeCartUseCase:

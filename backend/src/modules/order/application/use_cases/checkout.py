@@ -1,8 +1,7 @@
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from uuid import UUID
-from typing import List, Dict, Optional, TYPE_CHECKING
+from typing import List, Optional, TYPE_CHECKING
 from decimal import Decimal
 from datetime import datetime
 import logging
@@ -16,6 +15,7 @@ from modules.order.domain.exceptions import (
 from modules.order.domain.repository import IOrderRepository, ICartAdapter
 from modules.order.domain.entities import Order, OrderItem
 from modules.order.domain.value_objects import OrderStatus
+from modules.order.domain.ports import IProductPort
 from modules.order.application.dtos.checkout_request import CheckoutRequest
 from modules.order.application.dtos.order_response import OrderResponse
 from modules.order.application.dtos.order_item_response import OrderItemResponse
@@ -23,8 +23,6 @@ from modules.order.application.dtos.order_item_response import OrderItemResponse
 if TYPE_CHECKING:
     from infrastructure.stock_redis_service import StockRedisService
 
-# Assuming these exist in other modules
-from modules.product.infrastructure.models import ProductModel
 
 class CheckoutUseCase:
     def __init__(
@@ -32,13 +30,13 @@ class CheckoutUseCase:
         db: AsyncSession,
         order_repo: IOrderRepository,
         cart_repo,
-        product_repo,
+        product_port: IProductPort,
         stock_service: Optional["StockRedisService"] = None,
     ):
         self.db = db
         self.order_repo = order_repo
         self.cart_repo = cart_repo
-        self.product_repo = product_repo
+        self.product_port = product_port
         self.stock_service = stock_service
 
     async def execute(self, user_id: UUID, request: CheckoutRequest) -> OrderResponse:
@@ -123,10 +121,8 @@ class CheckoutUseCase:
         """
         product_ids = [item.product_id for item in cart_items]
 
-        # 悲觀鎖定 (FOR UPDATE) 相關商品，並按照 ID 排序防止死鎖
-        stmt = select(ProductModel).where(ProductModel.id.in_(product_ids)).with_for_update(of=ProductModel).order_by(ProductModel.id)
-        res = await self.db.execute(stmt)
-        products = res.scalars().all()
+        # 透過 IProductPort 取得商品（含悲觀鎖 FOR UPDATE，按 ID 排序防止死鎖）
+        products = await self.product_port.get_products_for_checkout(product_ids)
         product_map = {p.id: p for p in products}
 
         # 建立購物車項目映射表，方便後續查找名稱
@@ -145,28 +141,27 @@ class CheckoutUseCase:
 
         # 驗證並扣除庫存
         for item in cart_items:
-            product_model = product_map[item.product_id]
+            product = product_map[item.product_id]
 
-            if product_model.stock_quantity < item.quantity:
+            if product.stock_quantity < item.quantity:
                 raise InsufficientStockException(
-                    product_name=product_model.name,
+                    product_name=product.name,
                     requested=item.quantity,
-                    available=product_model.stock_quantity
+                    available=product.stock_quantity
                 )
-            
-            item_total = Decimal(str(product_model.price)) * item.quantity
+
+            item_total = Decimal(str(product.price)) * item.quantity
             total_amount += item_total
 
-            # 扣除庫存 (直接修改 Model)
-            product_model.stock_quantity -= item.quantity
-            self.db.add(product_model)
+            # 透過 IProductPort 扣除庫存
+            await self.product_port.deduct_stock(item.product_id, item.quantity)
 
             order_items.append(
                 OrderItem(
-                    product_id=product_model.id,
-                    product_name=product_model.name,
+                    product_id=product.id,
+                    product_name=product.name,
                     quantity=item.quantity,
-                    unit_price=Decimal(str(product_model.price)),
+                    unit_price=Decimal(str(product.price)),
                     subtotal=item_total
                 )
             )
@@ -186,7 +181,7 @@ class CheckoutUseCase:
             note=request.note,
             items=order_items
         )
-        
+
         return await self.order_repo.create(order)
 
     def _generate_order_number(self, user_id: UUID) -> str:
@@ -195,12 +190,11 @@ class CheckoutUseCase:
         這種格式確保了同一使用者在同一微秒內幾乎不會產生重複編號。
         總長度為 20 位 (12 + 4 + 4)，符合資料庫 String(20) 限制。
         """
-        from datetime import datetime
         now = datetime.now()
         date_str = now.strftime("%y%m%d%H%M%S") # 12位
         micro_str = now.strftime("%f")[:4]      # 取微秒前4位
-        
+
         # 獲取 UUID 中的數字部分並取末 4 位
         user_num_str = "".join(filter(str.isdigit, str(user_id)))[-4:].zfill(4)
-        
+
         return f"{date_str}{micro_str}{user_num_str}"

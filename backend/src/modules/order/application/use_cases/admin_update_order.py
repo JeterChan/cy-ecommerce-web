@@ -3,18 +3,18 @@ from typing import Optional
 from sqlalchemy.ext.asyncio import AsyncSession
 from modules.order.domain.repository import IOrderRepository
 from modules.order.domain.value_objects import OrderStatus
-from modules.product.domain.repository import IProductRepository
+from modules.order.domain.ports import IProductPort
 
 class AdminUpdateOrderUseCase:
     def __init__(
         self,
         db: AsyncSession,
         order_repo: IOrderRepository,
-        product_repo: IProductRepository
+        product_port: IProductPort
     ):
         self.db = db
         self.order_repo = order_repo
-        self.product_repo = product_repo
+        self.product_port = product_port
 
     async def execute(
         self,
@@ -28,7 +28,7 @@ class AdminUpdateOrderUseCase:
         # 如果已經在交易中，直接執行內容；否則開啟新交易
         if self.db.in_transaction():
             return await self._do_execute(order_id, new_status, admin_note)
-        
+
         async with self.db.begin():
             return await self._do_execute(order_id, new_status, admin_note)
 
@@ -51,8 +51,8 @@ class AdminUpdateOrderUseCase:
                 # 如果是取消訂單，且原本是 PENDING 或 PAID，則回補庫存
                 if target_status == OrderStatus.CANCELLED and old_status in [OrderStatus.PENDING.value, OrderStatus.PAID.value]:
                     for item in order.items:
-                        await self.product_repo.atomic_adjust_stock(item.product_id, item.quantity)
-                
+                        await self.product_port.restore_stock(item.product_id, item.quantity)
+
                 # 基本的狀態跳轉檢查
                 if old_status == OrderStatus.CANCELLED.value and target_status != OrderStatus.CANCELLED:
                      raise ValueError("已取消的訂單不可恢復狀態")

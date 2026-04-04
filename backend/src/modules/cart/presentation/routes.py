@@ -37,7 +37,7 @@ from modules.cart.infrastructure.utils import (
 )
 from core.security import verify_token
 from modules.auth.infrastructure.repository import UserRepository
-from modules.product.infrastructure.repository import SqlAlchemyProductRepository
+from modules.cart.infrastructure.adapters import ProductInfoAdapter
 
 
 logger = logging.getLogger(__name__)
@@ -54,50 +54,40 @@ async def enrich_cart_items_with_product_info(
 ) -> List["CartItemResponse"]:
     """
     將購物車項目與商品信息結合
-    
+
     Args:
         items: 購物車項目列表
         db: 資料庫連接
-        
+
     Returns:
         List[CartItemResponse]: 富化後的購物車項目列表
     """
     if not items:
         return items
-    
-    product_repo = SqlAlchemyProductRepository(db)
+
+    product_port = ProductInfoAdapter(db)
     enriched_items = []
-    
+
     for item in items:
         try:
-            # 查詢商品信息
-            product = await product_repo.get_by_id(item.product_id)
-            
-            if product:
-                # 計算小計
-                product_price = float(product.price)
+            snapshot = await product_port.get_product_info(item.product_id)
+
+            if snapshot:
+                product_price = float(snapshot.price)
                 subtotal = product_price * item.quantity
-                
-                # 取得第一張圖片 URL
-                image_url = None
-                if product.images:
-                    primary_image = next((img for img in product.images if img.is_primary), None)
-                    image_url = (primary_image or product.images[0]).url if (primary_image or product.images) else None
-                
-                # 更新項目字段
-                item.product_name = product.name
+
+                item.product_name = snapshot.name
                 item.unit_price = product_price
                 item.subtotal = subtotal
-                item.image_url = image_url
+                item.image_url = snapshot.image_url
         except Exception as e:
-            # 商品查詢失敗時，使用預設值
             logger.error(f"Failed to enrich product info for {item.product_id}: {e}", exc_info=True)
             item.product_name = item.product_name or f"Unknown Product ({item.product_id})"
             item.unit_price = item.unit_price or 0.0
             item.subtotal = item.subtotal or 0.0
-        
+
         enriched_items.append(item)
-    
+
     return enriched_items
 
 
@@ -205,10 +195,10 @@ async def add_to_cart(
     - 訪客儲存在 Redis，會員儲存在 PostgreSQL
     """
     repository, owner_id = repo_and_id
-    product_repo = SqlAlchemyProductRepository(db)
+    product_port = ProductInfoAdapter(db)
 
     try:
-        use_case = AddToCartUseCase(repository, product_repo)
+        use_case = AddToCartUseCase(repository, product_port)
         result = await use_case.execute(
             owner_id=owner_id,
             product_id=item.product_id,
@@ -313,10 +303,10 @@ async def update_cart_item(
     - **quantity**: 新數量 (必填，大於 0)
     """
     repository, owner_id = repo_and_id
-    product_repo = SqlAlchemyProductRepository(db)
+    product_port = ProductInfoAdapter(db)
 
     try:
-        use_case = UpdateCartItemQuantityUseCase(repository, product_repo)
+        use_case = UpdateCartItemQuantityUseCase(repository, product_port)
         result = await use_case.execute(
             owner_id=owner_id,
             product_id=product_id,
