@@ -8,14 +8,15 @@ Unit Tests for RedisTokenManager
 - 測試資料清理
 """
 
-import pytest
-from unittest.mock import AsyncMock, MagicMock, patch
 import sys
+from unittest.mock import AsyncMock, MagicMock
+
+import pytest
 
 # Mock redis.asyncio 模組以避免 import 錯誤
 sys.modules["redis.asyncio"] = MagicMock()
 
-from infrastructure.redis.token_manager import RedisTokenManager
+from infrastructure.redis.token_manager import RedisTokenManager  # noqa: E402
 
 
 class TestRedisTokenManager:

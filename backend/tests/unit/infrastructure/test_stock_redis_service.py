@@ -55,7 +55,7 @@ class TestTryDeduct:
         redis.decrby.side_effect = [-3, 7]
 
         # Mock _load_stock_from_db
-        with patch.object(service, "_load_stock_from_db", return_value=10) as mock_load:
+        with patch.object(service, "_load_stock_from_db", return_value=10):
             success, remaining = await service.try_deduct(product_id, 3)
 
         assert success is True

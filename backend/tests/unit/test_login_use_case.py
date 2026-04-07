@@ -172,7 +172,7 @@ class MockUserRepository(IUserRepository):
 
         # Act & Assert
         with pytest.raises(Exception):  # Pydantic ValidationError
-            input_dto = LoginUserInputDTO(
+            LoginUserInputDTO(
                 email=user_data["user"].email, password=""  # 空密碼
             )
 

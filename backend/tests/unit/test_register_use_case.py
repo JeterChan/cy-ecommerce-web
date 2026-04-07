@@ -9,13 +9,11 @@ Unit Tests for RegisterUserUseCase
 
 import pytest
 from datetime import datetime
-from unittest.mock import AsyncMock
 import uuid
 
 from modules.auth.use_cases.register import RegisterUserUseCase
 from modules.auth.use_cases.dtos import (
     RegisterUserInputDTO,
-    RegisterUserOutputDTO,
 )
 from modules.auth.domain.entities.UserEntity import UserEntity
 from modules.auth.domain.repositories.i_user_repository import IUserRepository
@@ -227,7 +225,7 @@ class TestRegisterUserUseCase:
         )
 
         # Act
-        output_dto = await use_case.execute(input_dto)
+        await use_case.execute(input_dto)
 
         # Assert
         created_user = mock_repository.users[0]

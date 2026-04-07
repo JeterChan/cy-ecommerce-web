@@ -508,7 +508,7 @@ class TestRequestEmailChangeUseCase:
         existing_user: UserEntity,
     ):
         """正常流程：密碼正確且新 Email 未被使用，應儲存 tokens。"""
-        from unittest.mock import AsyncMock, MagicMock, patch
+        from unittest.mock import AsyncMock, patch
         from modules.auth.application.use_cases.request_email_change import (
             RequestEmailChangeUseCase,
         )
@@ -527,7 +527,7 @@ class TestRequestEmailChangeUseCase:
         # Mock Celery task to avoid Redis broker connection during tests
         with patch(
             "infrastructure.tasks.email_tasks.send_email_change_verification.delay"
-        ) as mock_delay:
+        ):
             await use_case.execute(existing_user.id, request)
 
         # 驗證 Redis setex 被呼叫（代表 tokens 已儲存）
@@ -732,7 +732,7 @@ class TestDeleteAccountUseCase:
         from modules.auth.application.use_cases.delete_account import (
             DeleteAccountUseCase,
         )
-        from datetime import datetime, timezone, timedelta
+        from datetime import datetime, timezone
 
         use_case = DeleteAccountUseCase(user_repository)
         await use_case.execute(existing_user.id)

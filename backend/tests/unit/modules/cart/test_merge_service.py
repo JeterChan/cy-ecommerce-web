@@ -18,7 +18,7 @@ class TestMergeCartUseCase:
     @pytest.mark.asyncio
     async def test_merge_empty_guest_cart_returns_user_cart(self, cart_repo):
         use_case = MergeCartUseCase(cart_repo)
-        result = await use_case.execute("user-1", [])
+        await use_case.execute("user-1", [])
 
         cart_repo.get_cart.assert_called_once_with("user-1")
         cart_repo.add_item.assert_not_called()
