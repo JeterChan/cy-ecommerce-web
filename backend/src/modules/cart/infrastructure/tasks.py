@@ -58,7 +58,7 @@ async def sync_member_cart_logic(user_id: str, task_instance=None):
         async_sessionmaker,
         AsyncSession,
     )
-    from sqlalchemy import select, delete, insert
+    from sqlalchemy import select, delete
     from sqlalchemy.dialects.postgresql import insert as pg_insert
 
     from modules.cart.infrastructure.models import CartModel, CartItemModel

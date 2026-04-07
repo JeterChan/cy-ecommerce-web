@@ -16,7 +16,6 @@ import uuid
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, delete
 from sqlalchemy.orm import selectinload
-from decimal import Decimal
 
 from modules.cart.domain.repository import ICartRepository
 from modules.cart.domain.entities import CartItemResponse, CartItemCreate

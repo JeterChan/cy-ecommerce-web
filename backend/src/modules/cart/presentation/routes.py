@@ -18,7 +18,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from modules.cart.infrastructure.repositories.redis_repository import (
     RedisCartRepository,
 )
-from modules.cart.infrastructure.repositories.sql_repository import SQLCartRepository
 from modules.cart.infrastructure.repositories.hybrid_repository import (
     HybridCartRepository,
 )

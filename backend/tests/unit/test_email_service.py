@@ -8,7 +8,7 @@ Unit Tests for Email Service
 """
 
 import pytest
-from unittest.mock import AsyncMock, patch, MagicMock
+from unittest.mock import patch, MagicMock
 import httpx
 
 from infrastructure.email.brevo_service import BrevoEmailService, EmailSendError

@@ -4,7 +4,6 @@ from fastapi.exceptions import RequestValidationError
 from contextlib import asynccontextmanager
 
 from infrastructure.database import init_redis, close_redis
-from infrastructure import models
 from infrastructure.config import settings
 
 from shared.exceptions.base import DomainException

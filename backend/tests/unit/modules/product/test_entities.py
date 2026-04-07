@@ -1,6 +1,5 @@
 import pytest
 from decimal import Decimal
-from uuid import uuid4
 
 from modules.product.domain.entities import Product, ProductImage, Category
 

@@ -5,7 +5,6 @@ from sqlalchemy import (
     Boolean,
     ForeignKey,
     DateTime,
-    Column,
     func,
     UUID,
 )

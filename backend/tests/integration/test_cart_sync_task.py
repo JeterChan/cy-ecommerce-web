@@ -1,9 +1,8 @@
 import pytest
 import uuid
-import asyncio
 from unittest.mock import patch, MagicMock, AsyncMock
 from contextlib import asynccontextmanager
-from sqlalchemy import select, text
+from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
 from sqlalchemy.pool import NullPool
 import pytest_asyncio
@@ -11,15 +10,12 @@ import os
 from redis.asyncio import Redis
 
 from infrastructure.database import Base
-from infrastructure.redis import redis_manager
 from modules.cart.infrastructure.repositories.hybrid_repository import (
     HybridCartRepository,
 )
 from modules.cart.infrastructure.tasks import (
-    sync_member_cart_task,
     sync_member_cart_logic,
 )
-from modules.cart.infrastructure.models import CartItemModel, CartModel
 from modules.product.infrastructure.models import ProductModel
 from modules.auth.infrastructure.models import UserModel
 from decimal import Decimal

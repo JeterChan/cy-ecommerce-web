@@ -7,7 +7,7 @@ Admin Product API Routes
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 from redis.asyncio import Redis
-from typing import List, Optional
+from typing import Optional
 from uuid import UUID, uuid4
 import math
 
@@ -26,7 +26,6 @@ from modules.product.application.dtos import (
     ProductCreateDTO,
     ProductUpdateDTO,
     ProductResponseDTO,
-    ProductListResponseDTO,
     ImagePresignRequest,
 )
 from infrastructure.s3 import s3_client

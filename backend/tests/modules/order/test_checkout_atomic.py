@@ -2,7 +2,6 @@ import pytest
 import pytest_asyncio
 import uuid
 import os
-from decimal import Decimal
 from httpx import AsyncClient, ASGITransport
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
 from redis.asyncio import Redis

@@ -7,8 +7,7 @@
 
 import json
 import pytest
-from decimal import Decimal
-from unittest.mock import AsyncMock, patch, MagicMock
+from unittest.mock import AsyncMock
 from uuid import uuid4
 
 from redis.exceptions import ConnectionError as RedisConnectionError
@@ -16,7 +15,6 @@ from redis.exceptions import ConnectionError as RedisConnectionError
 from infrastructure.product_cache_service import (
     ProductCacheService,
     DETAIL_PREFIX,
-    LIST_PREFIX,
 )
 
 # ── 商品詳情快取整合 ──
