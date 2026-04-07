@@ -4,6 +4,7 @@ from decimal import Decimal
 from uuid import UUID
 from typing import Optional
 
+
 class OrderItemResponse(BaseModel):
     id: UUID
     order_id: UUID
@@ -14,5 +15,5 @@ class OrderItemResponse(BaseModel):
     subtotal: Decimal
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None
-    
+
     model_config = ConfigDict(from_attributes=True)

@@ -30,15 +30,16 @@ class UpdateProductUseCase:
 
         update_data = data.model_dump(exclude_unset=True)
         for key, value in update_data.items():
-            if key == 'images':
+            if key == "images":
                 existing.images = [
                     ProductImage(
-                        url=img['url'],
-                        alt_text=img.get('alt_text'),
-                        is_primary=img.get('is_primary', False)
-                    ) for img in value
+                        url=img["url"],
+                        alt_text=img.get("alt_text"),
+                        is_primary=img.get("is_primary", False),
+                    )
+                    for img in value
                 ]
-            elif key == 'category_ids':
+            elif key == "category_ids":
                 existing.category_id = value[0] if value and len(value) > 0 else None
             else:
                 setattr(existing, key, value)

@@ -3,6 +3,7 @@ Product API Routes
 
 定義 Product 模組的 HTTP API 端點
 """
+
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 from redis.asyncio import Redis
@@ -22,7 +23,9 @@ from modules.product.application.use_cases import (
     ToggleProductActiveUseCase,
     AdjustProductStockUseCase,
 )
-from modules.product.infrastructure.category_repository import SqlAlchemyCategoryRepository
+from modules.product.infrastructure.category_repository import (
+    SqlAlchemyCategoryRepository,
+)
 from modules.product.application.dtos import (
     ProductCreateDTO,
     ProductUpdateDTO,
@@ -32,20 +35,20 @@ from modules.product.application.dtos import (
     CategoryResponseDTO,
 )
 
-
 router = APIRouter(prefix="/products", tags=["Products"])
 
 
 # ==================== 分類操作 ====================
 
+
 @router.get(
     "/categories",
     response_model=List[CategoryResponseDTO],
     summary="列出所有分類",
-    description="列出所有可用的商品分類"
+    description="列出所有可用的商品分類",
 )
 async def list_categories(
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
 ) -> List[CategoryResponseDTO]:
     """列出所有分類"""
     repo = SqlAlchemyCategoryRepository(db)
@@ -55,16 +58,16 @@ async def list_categories(
 
 # ==================== CRUD 操作 ====================
 
+
 @router.post(
     "",
     response_model=ProductResponseDTO,
     status_code=status.HTTP_201_CREATED,
     summary="建立商品",
-    description="建立新商品"
+    description="建立新商品",
 )
 async def create_product(
-    data: ProductCreateDTO,
-    db: AsyncSession = Depends(get_db)
+    data: ProductCreateDTO, db: AsyncSession = Depends(get_db)
 ) -> ProductResponseDTO:
     """
     建立新商品
@@ -78,17 +81,14 @@ async def create_product(
         product = await use_case.execute(data)
         return ProductResponseDTO.model_validate(product)
     except ValueError as e:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=str(e)
-        )
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 
 
 @router.get(
     "/{product_id}",
     response_model=ProductResponseDTO,
     summary="取得單一商品",
-    description="根據 UUID 取得商品詳細資訊"
+    description="根據 UUID 取得商品詳細資訊",
 )
 async def get_product(
     product_id: UUID,
@@ -113,23 +113,22 @@ async def get_product(
 
         return dto
     except ValueError as e:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=str(e)
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
 
 
 @router.get(
     "",
     response_model=ProductListResponseDTO,
     summary="列出商品",
-    description="取得商品清單，支援分頁與分類篩選"
+    description="取得商品清單，支援分頁與分類篩選",
 )
 async def list_products(
     skip: int = Query(default=0, ge=0, description="略過的筆數"),
     limit: int = Query(default=100, ge=1, le=1000, description="取得的筆數上限"),
     category_id: Optional[int] = Query(default=None, description="分類 ID 篩選"),
-    category_ids: Optional[List[int]] = Query(default=None, description="分類 ID 列表篩選"),
+    category_ids: Optional[List[int]] = Query(
+        default=None, description="分類 ID 列表篩選"
+    ),
     is_active: Optional[bool] = Query(default=None, description="篩選上架狀態"),
     db: AsyncSession = Depends(get_db),
     redis: Optional[Redis] = Depends(get_redis_optional),
@@ -145,8 +144,11 @@ async def list_products(
     """
     cache_service = ProductCacheService(redis)
     cache_key = ProductCacheService.build_list_cache_key(
-        skip=skip, limit=limit, category_id=category_id,
-        category_ids=category_ids, is_active=is_active,
+        skip=skip,
+        limit=limit,
+        category_id=category_id,
+        category_ids=category_ids,
+        is_active=is_active,
     )
 
     # Cache-Aside: 先查快取
@@ -160,14 +162,14 @@ async def list_products(
         limit=limit,
         category_id=category_id,
         category_ids=category_ids,
-        is_active=is_active
+        is_active=is_active,
     )
 
     dto = ProductListResponseDTO(
         items=[ProductResponseDTO.model_validate(p) for p in products],
         total=total,
         skip=skip,
-        limit=limit
+        limit=limit,
     )
 
     # 回寫快取
@@ -176,12 +178,11 @@ async def list_products(
     return dto
 
 
-
 @router.put(
     "/{product_id}",
     response_model=ProductResponseDTO,
     summary="更新商品",
-    description="更新商品資訊（部分更新）"
+    description="更新商品資訊（部分更新）",
 )
 async def update_product(
     product_id: UUID,
@@ -214,7 +215,7 @@ async def update_product(
     "/{product_id}",
     status_code=status.HTTP_204_NO_CONTENT,
     summary="刪除商品",
-    description="刪除指定的商品"
+    description="刪除指定的商品",
 )
 async def delete_product(
     product_id: UUID,
@@ -232,19 +233,17 @@ async def delete_product(
         )
         db.info["after_commit"].append(cache_service.invalidate_all_product_lists)
     except ValueError as e:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=str(e)
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
 
 
 # ==================== 業務操作 ====================
+
 
 @router.post(
     "/{product_id}/toggle-active",
     response_model=ProductResponseDTO,
     summary="切換商品上下架狀態",
-    description="切換商品的上架/下架狀態"
+    description="切換商品的上架/下架狀態",
 )
 async def toggle_product_active(
     product_id: UUID,
@@ -264,17 +263,14 @@ async def toggle_product_active(
 
         return ProductResponseDTO.model_validate(product)
     except ValueError as e:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=str(e)
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
 
 
 @router.post(
     "/{product_id}/adjust-stock",
     response_model=ProductResponseDTO,
     summary="調整商品庫存",
-    description="調整商品庫存數量"
+    description="調整商品庫存數量",
 )
 async def adjust_product_stock(
     product_id: UUID,
@@ -290,7 +286,9 @@ async def adjust_product_stock(
     """
     try:
         stock_service = StockRedisService(redis, db)
-        use_case = AdjustProductStockUseCase(SqlAlchemyProductRepository(db), stock_service)
+        use_case = AdjustProductStockUseCase(
+            SqlAlchemyProductRepository(db), stock_service
+        )
         product = await use_case.execute(product_id, data.quantity_change)
 
         cache_service = ProductCacheService(redis)
@@ -307,4 +305,3 @@ async def adjust_product_stock(
             else status.HTTP_400_BAD_REQUEST
         )
         raise HTTPException(status_code=status_code, detail=str(e))
-

@@ -10,13 +10,10 @@ from infrastructure.config import settings
 from shared.exceptions.base import DomainException
 from shared.exceptions.common import (
     ResourceNotFoundException,
-    BusinessRuleViolationException
+    BusinessRuleViolationException,
 )
 
-from core.exceptions import (
-    InvalidCredentialsError,
-    ValidationError
-)
+from core.exceptions import InvalidCredentialsError, ValidationError
 from core.exception_handlers import (
     resource_not_found_exception_handler,
     business_rule_violation_exception_handler,
@@ -29,11 +26,14 @@ from core.exception_handlers import (
 from modules.auth.presentation.routes import router as auth_router
 from modules.product.presentation.routes import router as product_router
 from modules.product.presentation.admin_routes import router as admin_product_router
-from modules.product.presentation.admin_dashboard_routes import router as admin_dashboard_router
+from modules.product.presentation.admin_dashboard_routes import (
+    router as admin_dashboard_router,
+)
 from modules.product.presentation.category_routes import router as admin_category_router
 from modules.cart.presentation.routes import router as cart_router
 from modules.order.presentation.routes import router as order_router
 from modules.order.presentation.admin_routes import router as admin_order_router
+
 
 @asynccontextmanager
 async def lifespan(application: FastAPI):
@@ -51,6 +51,8 @@ async def lifespan(application: FastAPI):
         print("Application shutdown")
         await close_redis()
         print("Redis connection closed")
+
+
 app = FastAPI(
     title="CyWeb E-commerce Backend",
     description="Modular Monolith API",
@@ -87,12 +89,18 @@ app.add_middleware(
 app.add_exception_handler(RequestValidationError, pydantic_validation_exception_handler)
 
 # 特定領域異常
-app.add_exception_handler(InvalidCredentialsError, invalid_credentials_exception_handler)
+app.add_exception_handler(
+    InvalidCredentialsError, invalid_credentials_exception_handler
+)
 app.add_exception_handler(ValidationError, validation_exception_handler)
 
 # 3. 通用領域異常（後備匹配）
-app.add_exception_handler(ResourceNotFoundException, resource_not_found_exception_handler)
-app.add_exception_handler(BusinessRuleViolationException, business_rule_violation_exception_handler)
+app.add_exception_handler(
+    ResourceNotFoundException, resource_not_found_exception_handler
+)
+app.add_exception_handler(
+    BusinessRuleViolationException, business_rule_violation_exception_handler
+)
 app.add_exception_handler(DomainException, domain_exception_handler)
 
 # Router 註冊
@@ -104,6 +112,7 @@ app.include_router(admin_category_router, prefix="/api/v1")
 app.include_router(cart_router, prefix="/api/v1")
 app.include_router(order_router, prefix="/api/v1")
 app.include_router(admin_order_router, prefix="/api/v1")
+
 
 @app.get("/api")
 async def root():

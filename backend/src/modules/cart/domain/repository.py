@@ -19,10 +19,7 @@ class ICartRepository(ABC):
 
     @abstractmethod
     async def add_item(
-        self,
-        owner_id: str,
-        product_id: uuid.UUID,
-        quantity: int
+        self, owner_id: str, product_id: uuid.UUID, quantity: int
     ) -> CartItemResponse:
         """
         新增商品到購物車
@@ -47,10 +44,7 @@ class ICartRepository(ABC):
 
     @abstractmethod
     async def update_quantity(
-        self,
-        owner_id: str,
-        product_id: uuid.UUID,
-        quantity: int
+        self, owner_id: str, product_id: uuid.UUID, quantity: int
     ) -> CartItemResponse:
         """
         更新商品數量
@@ -69,10 +63,7 @@ class ICartRepository(ABC):
         pass
 
     @abstractmethod
-    async def get_cart(
-        self,
-        owner_id: str
-    ) -> List[CartItemResponse]:
+    async def get_cart(self, owner_id: str) -> List[CartItemResponse]:
         """
         取得完整購物車
 
@@ -86,9 +77,7 @@ class ICartRepository(ABC):
 
     @abstractmethod
     async def get_item(
-        self,
-        owner_id: str,
-        product_id: uuid.UUID
+        self, owner_id: str, product_id: uuid.UUID
     ) -> Optional[CartItemResponse]:
         """
         查詢單一商品
@@ -103,11 +92,7 @@ class ICartRepository(ABC):
         pass
 
     @abstractmethod
-    async def remove_item(
-        self,
-        owner_id: str,
-        product_id: uuid.UUID
-    ) -> None:
+    async def remove_item(self, owner_id: str, product_id: uuid.UUID) -> None:
         """
         移除商品
 
@@ -118,10 +103,7 @@ class ICartRepository(ABC):
         pass
 
     @abstractmethod
-    async def clear_cart(
-        self,
-        owner_id: str
-    ) -> None:
+    async def clear_cart(self, owner_id: str) -> None:
         """
         清空購物車
 
@@ -132,9 +114,7 @@ class ICartRepository(ABC):
 
     @abstractmethod
     async def batch_add_items(
-        self,
-        owner_id: str,
-        items: List[CartItemCreate]
+        self, owner_id: str, items: List[CartItemCreate]
     ) -> List[CartItemResponse]:
         """
         批量新增商品 (merge cart 使用)
@@ -147,5 +127,3 @@ class ICartRepository(ABC):
             List[CartItemResponse]: 更新後的購物車項目列表
         """
         pass
-
-

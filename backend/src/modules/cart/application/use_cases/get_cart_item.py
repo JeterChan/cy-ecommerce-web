@@ -12,8 +12,6 @@ class GetCartItemUseCase:
         self.repository = repository
 
     async def execute(
-        self,
-        owner_id: str,
-        product_id: uuid.UUID
+        self, owner_id: str, product_id: uuid.UUID
     ) -> Optional[CartItemResponse]:
         return await self.repository.get_item(owner_id, product_id)

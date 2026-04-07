@@ -2,13 +2,13 @@
 購物車工具模組
 提供訪客 Token 產生與驗證功能
 """
+
 import uuid
 import secrets
 from typing import Optional
 from fastapi import Response, Request
 
 from infrastructure.config import settings
-
 
 # === 從配置讀取常數 ===
 GUEST_TOKEN_COOKIE_NAME = settings.GUEST_TOKEN_COOKIE_NAME
@@ -57,7 +57,7 @@ def set_guest_token_cookie(response: Response, token: str) -> None:
         path=GUEST_TOKEN_PATH,
         httponly=True,  # 防止 XSS
         secure=GUEST_TOKEN_SECURE,  # 從配置讀取
-        samesite=GUEST_TOKEN_SAMESITE  # 從配置讀取
+        samesite=GUEST_TOKEN_SAMESITE,  # 從配置讀取
     )
 
 
@@ -130,10 +130,7 @@ def clear_guest_token_cookie(response: Response) -> None:
     Args:
         response: FastAPI Response 物件
     """
-    response.delete_cookie(
-        key=GUEST_TOKEN_COOKIE_NAME,
-        path=GUEST_TOKEN_PATH
-    )
+    response.delete_cookie(key=GUEST_TOKEN_COOKIE_NAME, path=GUEST_TOKEN_PATH)
 
 
 def get_or_create_guest_token(request: Request, response: Response) -> str:
@@ -167,6 +164,7 @@ def get_or_create_guest_token(request: Request, response: Response) -> str:
 
 # === Redis Key 生成工具 ===
 
+
 def get_guest_cart_redis_key(guest_token: str) -> str:
     """
     生成訪客購物車的 Redis Key
@@ -195,4 +193,3 @@ def get_member_cart_redis_key(user_id: uuid.UUID) -> str:
         str: Redis Key
     """
     return f"cart:user:{user_id}"
-

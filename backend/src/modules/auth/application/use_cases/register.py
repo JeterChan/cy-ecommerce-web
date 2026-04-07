@@ -10,12 +10,15 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+
 class RegisterUserUseCase:
     """
     使用者註冊 Use Case
     """
 
-    def __init__(self, user_repository: IUserRepository, token_manager: RedisTokenManager):
+    def __init__(
+        self, user_repository: IUserRepository, token_manager: RedisTokenManager
+    ):
         self.user_repository = user_repository
         self.token_manager = token_manager
 
@@ -35,12 +38,14 @@ class RegisterUserUseCase:
             email=data.email,
             password_hash=hashed_password,
             is_active=True,
-            is_verified=False
+            is_verified=False,
         )
 
         # step 4: 儲存
         created_user = await self.user_repository.create(user)
-        logger.info(f"使用者帳號已建立 (id: {created_user.id}, email: {created_user.email})")
+        logger.info(
+            f"使用者帳號已建立 (id: {created_user.id}, email: {created_user.email})"
+        )
 
         # step 5: 生成驗證 Token 並存入 Redis
         token = self.token_manager.generate_token()
@@ -51,7 +56,7 @@ class RegisterUserUseCase:
         send_registration_verification.delay(
             to_email=str(created_user.email),
             username=created_user.username,
-            verification_url=verification_url
+            verification_url=verification_url,
         )
         logger.info(f"已發送註冊驗證信至 {created_user.email}")
 

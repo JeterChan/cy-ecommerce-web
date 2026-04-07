@@ -1,5 +1,6 @@
 from pydantic import BaseModel, EmailStr, Field, ConfigDict
 
+
 class LoginRequestDTO(BaseModel):
     email: EmailStr = Field(..., description="使用者信箱")
     password: str = Field(..., min_length=8, description="密碼")
@@ -10,7 +11,7 @@ class LoginRequestDTO(BaseModel):
             "example": {
                 "email": "user@example.com",
                 "password": "SecureP@ssw0rd",
-                "remember_me": True
+                "remember_me": True,
             }
         }
     )

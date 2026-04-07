@@ -4,11 +4,15 @@ from decimal import Decimal
 from uuid import uuid4
 
 from modules.order.application.use_cases.checkout import CheckoutUseCase
-from modules.order.application.use_cases.update_order_status import UpdateOrderStatusUseCase
-from modules.order.domain.exceptions import EmptyCartException, InsufficientStockException
+from modules.order.application.use_cases.update_order_status import (
+    UpdateOrderStatusUseCase,
+)
+from modules.order.domain.exceptions import (
+    EmptyCartException,
+    InsufficientStockException,
+)
 from modules.order.domain.value_objects import OrderStatus
 from modules.order.domain.entities import Order, OrderItem
-
 
 # ── CheckoutUseCase ──
 
@@ -41,10 +45,14 @@ class TestCheckoutUseCase:
         return svc
 
     @pytest.mark.asyncio
-    async def test_empty_cart_raises(self, db, order_repo, cart_repo, product_port, stock_service):
+    async def test_empty_cart_raises(
+        self, db, order_repo, cart_repo, product_port, stock_service
+    ):
         cart_repo.get_cart.return_value = []
 
-        use_case = CheckoutUseCase(db, order_repo, cart_repo, product_port, stock_service)
+        use_case = CheckoutUseCase(
+            db, order_repo, cart_repo, product_port, stock_service
+        )
 
         with pytest.raises(EmptyCartException):
             await use_case.execute(uuid4(), MagicMock())
@@ -61,7 +69,9 @@ class TestCheckoutUseCase:
         # 第一個成功，第二個失敗
         stock_service.try_deduct.side_effect = [(True, 8), (False, 0)]
 
-        use_case = CheckoutUseCase(db, order_repo, cart_repo, product_port, stock_service)
+        use_case = CheckoutUseCase(
+            db, order_repo, cart_repo, product_port, stock_service
+        )
 
         with pytest.raises(InsufficientStockException):
             await use_case.execute(uuid4(), MagicMock())

@@ -3,6 +3,7 @@ Email 非同步 Celery 任務
 
 負責非同步發送電子郵件（如 Email 變更驗證信、註冊驗證、密碼重設）。
 """
+
 import asyncio
 import logging
 
@@ -11,14 +12,17 @@ from infrastructure.config import settings
 
 logger = logging.getLogger(__name__)
 
+
 def get_email_service():
     from infrastructure.email.brevo_service import BrevoEmailService
+
     return BrevoEmailService(
         api_key=settings.BREVO_API_KEY,
         sender_email=settings.BREVO_SENDER_EMAIL,
         sender_name=settings.BREVO_SENDER_NAME,
         frontend_url=settings.FRONTEND_URL,
     )
+
 
 @celery_app.task(
     name="infrastructure.tasks.email_tasks.send_email_change_verification",
@@ -48,6 +52,7 @@ def send_email_change_verification(
         logger.error("❌ Email 發送失敗 (%s): %s", to_email, exc)
         raise self.retry(exc=exc)
 
+
 @celery_app.task(
     name="infrastructure.tasks.email_tasks.send_registration_verification",
     bind=True,
@@ -74,6 +79,7 @@ def send_registration_verification(
     except Exception as exc:
         logger.error("❌ 註冊驗證信發送失敗 (%s): %s", to_email, exc)
         raise self.retry(exc=exc)
+
 
 @celery_app.task(
     name="infrastructure.tasks.email_tasks.send_password_reset",

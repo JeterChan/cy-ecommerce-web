@@ -1,4 +1,5 @@
 """請求變更電子郵件 Use Case"""
+
 from uuid import UUID
 
 from modules.auth.domain.repository import IUserRepository

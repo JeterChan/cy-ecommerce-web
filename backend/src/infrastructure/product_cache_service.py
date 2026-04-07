@@ -9,6 +9,7 @@ Key patterns:
 - product:detail:{product_id}  — 商品詳情，TTL 30 分鐘
 - product:list:{params_hash}   — 商品列表，TTL 10 分鐘
 """
+
 import hashlib
 import json
 import logging
@@ -21,7 +22,7 @@ from redis.exceptions import RedisError
 logger = logging.getLogger(__name__)
 
 DETAIL_TTL = 60 * 30  # 30 分鐘
-LIST_TTL = 60 * 10    # 10 分鐘
+LIST_TTL = 60 * 10  # 10 分鐘
 
 DETAIL_PREFIX = "product:detail:"
 LIST_PREFIX = "product:list:"
@@ -36,28 +37,42 @@ class ProductCacheService:
     # 商品詳情快取
     # ------------------------------------------------------------------
 
-    async def get_product_detail(self, product_id: uuid.UUID) -> Optional[Dict[str, Any]]:
+    async def get_product_detail(
+        self, product_id: uuid.UUID
+    ) -> Optional[Dict[str, Any]]:
         """從 Redis 讀取商品詳情 JSON，cache miss 或 Redis 不可用時回傳 None"""
         if self.redis is None:
             return None
         try:
             data = await self.redis.get(f"{DETAIL_PREFIX}{product_id}")
         except RedisError:
-            logger.warning("Redis get_product_detail failed for %s", product_id, exc_info=True)
+            logger.warning(
+                "Redis get_product_detail failed for %s", product_id, exc_info=True
+            )
             return None
         if data is None:
             return None
         try:
             return json.loads(data)
         except json.JSONDecodeError:
-            logger.error("JSON decode failed in get_product_detail for %s", product_id, exc_info=True)
+            logger.error(
+                "JSON decode failed in get_product_detail for %s",
+                product_id,
+                exc_info=True,
+            )
             try:
                 await self.redis.delete(f"{DETAIL_PREFIX}{product_id}")
             except RedisError:
-                logger.warning("Redis delete failed during decode recovery for %s", product_id, exc_info=True)
+                logger.warning(
+                    "Redis delete failed during decode recovery for %s",
+                    product_id,
+                    exc_info=True,
+                )
             return None
 
-    async def set_product_detail(self, product_id: uuid.UUID, dto_dict: Dict[str, Any]) -> None:
+    async def set_product_detail(
+        self, product_id: uuid.UUID, dto_dict: Dict[str, Any]
+    ) -> None:
         """將商品詳情寫入 Redis，TTL 30 分鐘；Redis 不可用時靜默跳過"""
         if self.redis is None:
             return
@@ -69,7 +84,9 @@ class ProductCacheService:
                 ex=DETAIL_TTL,
             )
         except RedisError:
-            logger.warning("Redis set_product_detail failed for %s", product_id, exc_info=True)
+            logger.warning(
+                "Redis set_product_detail failed for %s", product_id, exc_info=True
+            )
 
     async def invalidate_product_detail(self, product_id: uuid.UUID) -> None:
         """刪除指定商品的詳情快取；Redis 不可用時靜默跳過"""
@@ -78,7 +95,11 @@ class ProductCacheService:
         try:
             await self.redis.delete(f"{DETAIL_PREFIX}{product_id}")
         except RedisError:
-            logger.warning("Redis invalidate_product_detail failed for %s", product_id, exc_info=True)
+            logger.warning(
+                "Redis invalidate_product_detail failed for %s",
+                product_id,
+                exc_info=True,
+            )
 
     # ------------------------------------------------------------------
     # 商品列表快取
@@ -102,18 +123,28 @@ class ProductCacheService:
         try:
             data = await self.redis.get(cache_key)
         except RedisError:
-            logger.warning("Redis get_product_list failed for %s", cache_key, exc_info=True)
+            logger.warning(
+                "Redis get_product_list failed for %s", cache_key, exc_info=True
+            )
             return None
         if data is None:
             return None
         try:
             return json.loads(data)
         except json.JSONDecodeError:
-            logger.error("JSON decode failed in get_product_list for %s", cache_key, exc_info=True)
+            logger.error(
+                "JSON decode failed in get_product_list for %s",
+                cache_key,
+                exc_info=True,
+            )
             try:
                 await self.redis.delete(cache_key)
             except RedisError:
-                logger.warning("Redis delete failed during decode recovery for %s", cache_key, exc_info=True)
+                logger.warning(
+                    "Redis delete failed during decode recovery for %s",
+                    cache_key,
+                    exc_info=True,
+                )
             return None
 
     async def set_product_list(self, cache_key: str, data: Dict[str, Any]) -> None:
@@ -128,7 +159,9 @@ class ProductCacheService:
                 ex=LIST_TTL,
             )
         except RedisError:
-            logger.warning("Redis set_product_list failed for %s", cache_key, exc_info=True)
+            logger.warning(
+                "Redis set_product_list failed for %s", cache_key, exc_info=True
+            )
 
     async def invalidate_all_product_lists(self) -> None:
         """使用 SCAN 刪除所有 product:list:* 的 key；Redis 不可用時靜默跳過"""
@@ -137,7 +170,9 @@ class ProductCacheService:
         try:
             cursor = 0
             while True:
-                cursor, keys = await self.redis.scan(cursor, match=f"{LIST_PREFIX}*", count=100)
+                cursor, keys = await self.redis.scan(
+                    cursor, match=f"{LIST_PREFIX}*", count=100
+                )
                 if keys:
                     await self.redis.delete(*keys)
                 if cursor == 0:

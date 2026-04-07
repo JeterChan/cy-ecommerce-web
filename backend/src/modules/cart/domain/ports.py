@@ -19,6 +19,7 @@ class ProductSnapshot:
 
     Cart 模組對商品資訊的本地表示，避免直接依賴 Product 模組的 Entity。
     """
+
     id: UUID
     name: str
     price: Decimal

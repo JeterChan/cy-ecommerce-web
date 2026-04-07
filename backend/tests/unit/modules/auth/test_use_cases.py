@@ -16,11 +16,19 @@ from modules.auth.application.use_cases import (
 from modules.auth.application.dtos import RegisterRequestDTO, LoginRequestDTO
 from modules.auth.application.dtos.update_profile_request import UpdateProfileRequest
 from modules.auth.domain.entities import UserEntity
-from core.exceptions import DuplicateEmailError, InvalidCredentialsError, UserNotRegisteredError, EmailNotVerifiedError, ValidationError
+from core.exceptions import (
+    DuplicateEmailError,
+    InvalidCredentialsError,
+    UserNotRegisteredError,
+    EmailNotVerifiedError,
+    ValidationError,
+)
+
 
 @pytest.fixture
 def user_repo():
     return AsyncMock()
+
 
 @pytest.fixture
 def token_manager():
@@ -32,27 +40,29 @@ def token_manager():
     mock.get_user_id_by_reset_token = AsyncMock()
     return mock
 
+
 @pytest.mark.asyncio
 async def test_register_user_use_case_success(user_repo, token_manager):
     # Arrange
     user_repo.exists_by_email.return_value = False
     user_repo.create.side_effect = lambda u: u
-    
+
     use_case = RegisterUserUseCase(user_repo, token_manager)
     data = RegisterRequestDTO(
-        username="testuser",
-        email="test@example.com",
-        password="Password123!"
+        username="testuser", email="test@example.com", password="Password123!"
     )
 
     # Act
-    with patch("modules.auth.application.use_cases.register.send_registration_verification") as mock_email_task:
+    with patch(
+        "modules.auth.application.use_cases.register.send_registration_verification"
+    ) as mock_email_task:
         result = await use_case.execute(data)
 
     # Assert
     assert result.username == "testuser"
     user_repo.create.assert_called_once()
     token_manager.store_verification_token.assert_called_once()
+
 
 @pytest.mark.asyncio
 async def test_login_user_use_case_unverified(user_repo, password_hasher):
@@ -72,20 +82,21 @@ async def test_login_user_use_case_unverified(user_repo, password_hasher):
         await use_case.execute(data)
     assert "請先完成信箱驗證" in str(exc.value)
 
+
 @pytest.mark.asyncio
 async def test_verify_email_use_case_success(user_repo, token_manager):
     # Arrange
     user_id = str(uuid4())
     token_manager.get_user_id_by_verify_token.return_value = user_id
-    
+
     mock_user = MagicMock(spec=UserEntity)
     mock_user.id = user_id
     mock_user.email = "test@example.com"
     mock_user.is_verified = False
-    
+
     user_repo.get_by_id.return_value = mock_user
     user_repo.update.return_value = mock_user
-    
+
     use_case = VerifyEmailUseCase(user_repo, token_manager)
 
     # Act
@@ -96,6 +107,7 @@ async def test_verify_email_use_case_success(user_repo, token_manager):
     assert mock_user.is_verified is True
     user_repo.update.assert_called_once()
 
+
 @pytest.mark.asyncio
 async def test_forgot_password_use_case_success(user_repo, token_manager):
     # Arrange
@@ -104,16 +116,19 @@ async def test_forgot_password_use_case_success(user_repo, token_manager):
     mock_user.email = "test@example.com"
     mock_user.username = "test"
     user_repo.get_by_email.return_value = mock_user
-    
+
     use_case = ForgotPasswordUseCase(user_repo, token_manager)
 
     # Act
-    with patch("modules.auth.application.use_cases.forgot_password.send_password_reset") as mock_email_task:
+    with patch(
+        "modules.auth.application.use_cases.forgot_password.send_password_reset"
+    ) as mock_email_task:
         result = await use_case.execute("test@example.com")
 
     # Assert
     assert result is True
     token_manager.store_reset_token.assert_called_once()
+
 
 @pytest.mark.asyncio
 async def test_forgot_password_use_case_not_found(user_repo, token_manager):
@@ -124,6 +139,7 @@ async def test_forgot_password_use_case_not_found(user_repo, token_manager):
     # Act & Assert
     with pytest.raises(UserNotRegisteredError):
         await use_case.execute("nonexistent@example.com")
+
 
 @pytest.mark.asyncio
 async def test_change_password_use_case_wrong_password(user_repo, password_hasher):
@@ -138,6 +154,7 @@ async def test_change_password_use_case_wrong_password(user_repo, password_hashe
     # Act & Assert
     with pytest.raises(InvalidCredentialsError):
         await use_case.execute(uuid4(), "wrong", "new123")
+
 
 @pytest.mark.asyncio
 async def test_delete_account_use_case_success(user_repo, password_hasher):

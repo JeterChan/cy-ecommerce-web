@@ -30,7 +30,6 @@ from modules.auth.domain.entities.UserEntity import UserEntity
 from core.exceptions import UserNotFoundError
 from core.security import get_password_hash
 
-
 # ==================== Test Database Configuration ====================
 
 TEST_DB_USER = os.getenv("TEST_DB_USER", "user")
@@ -196,6 +195,7 @@ class TestGetProfileUseCase:
         assert isinstance(result.user_id, str)
         # 驗證是合法的 UUID 字串格式
         from uuid import UUID
+
         parsed = UUID(result.user_id)
         assert parsed == existing_user.id
 
@@ -301,6 +301,7 @@ class TestUserProfileResponseDTO:
 
 
 # ==================== HTTP Endpoint Tests ====================
+
 
 @pytest.mark.integration
 @pytest.mark.asyncio
@@ -418,6 +419,7 @@ class TestGetProfileEndpoint:
 
 # ==================== UpdateProfile Tests ====================
 
+
 @pytest.mark.integration
 @pytest.mark.asyncio
 class TestUpdateProfileUseCase:
@@ -429,7 +431,9 @@ class TestUpdateProfileUseCase:
         existing_user: UserEntity,
     ):
         """更新 phone 和 address，其他欄位不受影響。"""
-        from modules.auth.application.use_cases.update_profile import UpdateProfileUseCase
+        from modules.auth.application.use_cases.update_profile import (
+            UpdateProfileUseCase,
+        )
         from modules.auth.application.dtos.inputs import UpdateProfileRequest
 
         use_case = UpdateProfileUseCase(user_repository)
@@ -449,7 +453,9 @@ class TestUpdateProfileUseCase:
         existing_user: UserEntity,
     ):
         """更新載具資訊。"""
-        from modules.auth.application.use_cases.update_profile import UpdateProfileUseCase
+        from modules.auth.application.use_cases.update_profile import (
+            UpdateProfileUseCase,
+        )
         from modules.auth.application.dtos.inputs import UpdateProfileRequest
 
         use_case = UpdateProfileUseCase(user_repository)
@@ -476,7 +482,9 @@ class TestUpdateProfileUseCase:
         user_repository: UserRepository,
     ):
         """更新不存在的使用者應拋出 UserNotFoundError。"""
-        from modules.auth.application.use_cases.update_profile import UpdateProfileUseCase
+        from modules.auth.application.use_cases.update_profile import (
+            UpdateProfileUseCase,
+        )
         from modules.auth.application.dtos.inputs import UpdateProfileRequest
 
         use_case = UpdateProfileUseCase(user_repository)
@@ -487,6 +495,7 @@ class TestUpdateProfileUseCase:
 
 
 # ==================== RequestEmailChange Tests ====================
+
 
 @pytest.mark.integration
 @pytest.mark.asyncio
@@ -500,7 +509,9 @@ class TestRequestEmailChangeUseCase:
     ):
         """正常流程：密碼正確且新 Email 未被使用，應儲存 tokens。"""
         from unittest.mock import AsyncMock, MagicMock, patch
-        from modules.auth.application.use_cases.request_email_change import RequestEmailChangeUseCase
+        from modules.auth.application.use_cases.request_email_change import (
+            RequestEmailChangeUseCase,
+        )
         from modules.auth.application.dtos.inputs import EmailChangeRequest
         from infrastructure.redis.token_manager import RedisTokenManager
 
@@ -529,7 +540,9 @@ class TestRequestEmailChangeUseCase:
     ):
         """密碼錯誤時應拋出 InvalidCredentialsError。"""
         from unittest.mock import AsyncMock
-        from modules.auth.application.use_cases.request_email_change import RequestEmailChangeUseCase
+        from modules.auth.application.use_cases.request_email_change import (
+            RequestEmailChangeUseCase,
+        )
         from modules.auth.application.dtos.inputs import EmailChangeRequest
         from infrastructure.redis.token_manager import RedisTokenManager
         from core.exceptions import InvalidCredentialsError
@@ -554,7 +567,9 @@ class TestRequestEmailChangeUseCase:
     ):
         """新 Email 已被使用時應拋出 ValidationError。"""
         from unittest.mock import AsyncMock
-        from modules.auth.application.use_cases.request_email_change import RequestEmailChangeUseCase
+        from modules.auth.application.use_cases.request_email_change import (
+            RequestEmailChangeUseCase,
+        )
         from modules.auth.application.dtos.inputs import EmailChangeRequest
         from infrastructure.redis.token_manager import RedisTokenManager
         from core.exceptions import ValidationError
@@ -575,6 +590,7 @@ class TestRequestEmailChangeUseCase:
 
 # ==================== VerifyEmailChange Tests ====================
 
+
 @pytest.mark.integration
 @pytest.mark.asyncio
 class TestVerifyEmailChangeUseCase:
@@ -587,19 +603,26 @@ class TestVerifyEmailChangeUseCase:
     ):
         """驗證舊 Email 後，若新 Email 尚未驗證，應回傳 pending 狀態。"""
         from unittest.mock import AsyncMock
-        from modules.auth.application.use_cases.verify_email_change import VerifyEmailChangeUseCase
-        from modules.auth.application.dtos.inputs import VerifyEmailChangeRequest, EmailVerifyType
+        from modules.auth.application.use_cases.verify_email_change import (
+            VerifyEmailChangeUseCase,
+        )
+        from modules.auth.application.dtos.inputs import (
+            VerifyEmailChangeRequest,
+            EmailVerifyType,
+        )
         from infrastructure.redis.token_manager import RedisTokenManager
 
         old_token = "valid_old_token_abc"
         mock_redis = AsyncMock()
 
         # mock: old token 存在且正確（Redis decode_responses=True 回傳 str）
-        mock_redis.get = AsyncMock(side_effect=lambda key: (
-            old_token if "old_token" in key
-            else "false" if "old_verified" in key or "new_verified" in key
-            else None
-        ))
+        mock_redis.get = AsyncMock(
+            side_effect=lambda key: (
+                old_token
+                if "old_token" in key
+                else "false" if "old_verified" in key or "new_verified" in key else None
+            )
+        )
         mock_redis.ttl = AsyncMock(return_value=86000)
 
         token_manager = RedisTokenManager(mock_redis)
@@ -617,8 +640,13 @@ class TestVerifyEmailChangeUseCase:
     ):
         """無效 Token 應拋出 ValidationError。"""
         from unittest.mock import AsyncMock
-        from modules.auth.application.use_cases.verify_email_change import VerifyEmailChangeUseCase
-        from modules.auth.application.dtos.inputs import VerifyEmailChangeRequest, EmailVerifyType
+        from modules.auth.application.use_cases.verify_email_change import (
+            VerifyEmailChangeUseCase,
+        )
+        from modules.auth.application.dtos.inputs import (
+            VerifyEmailChangeRequest,
+            EmailVerifyType,
+        )
         from infrastructure.redis.token_manager import RedisTokenManager
         from core.exceptions import ValidationError
 
@@ -628,13 +656,16 @@ class TestVerifyEmailChangeUseCase:
         token_manager = RedisTokenManager(mock_redis)
         use_case = VerifyEmailChangeUseCase(user_repository, token_manager)
 
-        request = VerifyEmailChangeRequest(token="invalid_token", type=EmailVerifyType.NEW)
+        request = VerifyEmailChangeRequest(
+            token="invalid_token", type=EmailVerifyType.NEW
+        )
 
         with pytest.raises(ValidationError):
             await use_case.execute(str(existing_user.id), request)
 
 
 # ==================== DeleteAccount Tests ====================
+
 
 @pytest.mark.integration
 @pytest.mark.asyncio
@@ -647,7 +678,9 @@ class TestDeleteAccountUseCase:
         existing_user: UserEntity,
     ):
         """軟刪除後，is_active 應為 False 且 deleted_at 應被設定。"""
-        from modules.auth.application.use_cases.delete_account import DeleteAccountUseCase
+        from modules.auth.application.use_cases.delete_account import (
+            DeleteAccountUseCase,
+        )
 
         use_case = DeleteAccountUseCase(user_repository)
         await use_case.execute(existing_user.id)
@@ -665,7 +698,9 @@ class TestDeleteAccountUseCase:
         async_session: AsyncSession,
     ):
         """軟刪除後，使用者應無法登入（is_active=False）。"""
-        from modules.auth.application.use_cases.delete_account import DeleteAccountUseCase
+        from modules.auth.application.use_cases.delete_account import (
+            DeleteAccountUseCase,
+        )
 
         use_case = DeleteAccountUseCase(user_repository)
         await use_case.execute(existing_user.id)
@@ -679,7 +714,9 @@ class TestDeleteAccountUseCase:
         user_repository: UserRepository,
     ):
         """刪除不存在的使用者應拋出 UserNotFoundError。"""
-        from modules.auth.application.use_cases.delete_account import DeleteAccountUseCase
+        from modules.auth.application.use_cases.delete_account import (
+            DeleteAccountUseCase,
+        )
 
         use_case = DeleteAccountUseCase(user_repository)
 
@@ -692,7 +729,9 @@ class TestDeleteAccountUseCase:
         existing_user: UserEntity,
     ):
         """軟刪除後，deleted_at 應為近期時間戳（1 分鐘內）。"""
-        from modules.auth.application.use_cases.delete_account import DeleteAccountUseCase
+        from modules.auth.application.use_cases.delete_account import (
+            DeleteAccountUseCase,
+        )
         from datetime import datetime, timezone, timedelta
 
         use_case = DeleteAccountUseCase(user_repository)
@@ -705,8 +744,3 @@ class TestDeleteAccountUseCase:
         now = datetime.now(timezone.utc)
         diff = abs((now - updated_user.deleted_at).total_seconds())
         assert diff < 60, f"deleted_at 時間差異過大：{diff} 秒"
-
-
-
-
-

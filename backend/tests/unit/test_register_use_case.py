@@ -21,8 +21,8 @@ from modules.auth.domain.entities.UserEntity import UserEntity
 from modules.auth.domain.repositories.i_user_repository import IUserRepository
 from core.exceptions import DuplicateEmailError
 
-
 # ==================== Mock Repository ====================
+
 
 class MockUserRepository(IUserRepository):
     """Mock User Repository for Unit Testing"""
@@ -30,7 +30,7 @@ class MockUserRepository(IUserRepository):
     def __init__(self):
         """
         Initialize the mock repository with an empty in-memory list for storing UserEntity instances.
-        
+
         The list is exposed as `self.users` and used by the repository's CRUD methods within tests.
         """
         self.users = []
@@ -38,15 +38,15 @@ class MockUserRepository(IUserRepository):
     async def create(self, user: UserEntity) -> UserEntity:
         """
         Create and store a new user in the mock repository.
-        
+
         If the provided user has no id, created_at, or updated_at, this method assigns an id (UUID) and UTC timestamps. Raises DuplicateEmailError when a user with the same email already exists.
-        
+
         Parameters:
             user (UserEntity): User entity to persist; may omit id/created_at/updated_at to have them set automatically.
-        
+
         Returns:
             UserEntity: The stored user, including any assigned id and timestamps.
-        
+
         Raises:
             DuplicateEmailError: If a user with the same email is already present.
         """
@@ -68,10 +68,10 @@ class MockUserRepository(IUserRepository):
     async def get_by_id(self, user_id: int) -> UserEntity | None:
         """
         Retrieve the first user with the given identifier from the in-memory repository.
-        
+
         Parameters:
             user_id (int): Identifier of the user to retrieve.
-        
+
         Returns:
             UserEntity | None: The matching user entity if found, otherwise None.
         """
@@ -80,7 +80,7 @@ class MockUserRepository(IUserRepository):
     async def get_by_email(self, email: str) -> UserEntity | None:
         """
         Finds a user by exact email address.
-        
+
         Returns:
             UserEntity | None: The matching user if found, `None` otherwise.
         """
@@ -89,10 +89,10 @@ class MockUserRepository(IUserRepository):
     async def get_by_username(self, username: str) -> UserEntity | None:
         """
         Retrieve the first user whose username exactly matches the given username.
-        
+
         Parameters:
             username (str): Username to match; comparison is exact and case-sensitive.
-        
+
         Returns:
             UserEntity | None: `UserEntity` if a matching user is found, `None` otherwise.
         """
@@ -101,11 +101,11 @@ class MockUserRepository(IUserRepository):
     async def get_all(self, skip: int = 0, limit: int = 100) -> list[UserEntity]:
         """
         Get a slice of stored users starting at index `skip` with at most `limit` entries.
-        
+
         Parameters:
             skip (int): Zero-based index of the first user to include.
             limit (int): Maximum number of users to return.
-        
+
         Returns:
             list[UserEntity]: Users from `skip` up to `skip + limit`.
         """
@@ -114,14 +114,14 @@ class MockUserRepository(IUserRepository):
     async def update(self, user_id: int, user_data: dict) -> UserEntity:
         """
         Update attributes of an existing user with the provided data.
-        
+
         Parameters:
             user_id (int): Identifier of the user to update.
             user_data (dict): Mapping of attribute names to new values to apply to the user.
-        
+
         Returns:
             UserEntity: The updated user entity with the applied changes.
-        
+
         Raises:
             ValueError: If no user exists with the given `user_id`.
         """
@@ -135,10 +135,10 @@ class MockUserRepository(IUserRepository):
     async def delete(self, user_id: int) -> bool:
         """
         Delete a user with the given id from the in-memory repository.
-        
+
         Parameters:
             user_id (int): Identifier of the user to remove.
-        
+
         Returns:
             `True` if a user with the given id was found and deleted, `False` otherwise.
         """
@@ -151,10 +151,10 @@ class MockUserRepository(IUserRepository):
     async def exists_by_email(self, email: str) -> bool:
         """
         Check whether a user with the given email exists in the repository.
-        
+
         Parameters:
             email (str): Email address to check.
-        
+
         Returns:
             bool: `True` if a user with the specified email exists, `False` otherwise.
         """
@@ -162,6 +162,7 @@ class MockUserRepository(IUserRepository):
 
 
 # ==================== Test Cases ====================
+
 
 @pytest.mark.asyncio
 class TestRegisterUserUseCase:
@@ -171,7 +172,7 @@ class TestRegisterUserUseCase:
     def mock_repository(self):
         """
         Provide a MockUserRepository instance for tests.
-        
+
         Returns:
             MockUserRepository: An in-memory repository instance implementing IUserRepository for use in unit tests.
         """
@@ -181,10 +182,10 @@ class TestRegisterUserUseCase:
     def use_case(self, mock_repository):
         """
         Provide a RegisterUserUseCase instance configured with the given mock repository.
-        
+
         Parameters:
             mock_repository: A mock implementation of the user repository used for dependency injection in tests.
-        
+
         Returns:
             A RegisterUserUseCase wired to the provided repository.
         """
@@ -301,7 +302,7 @@ class TestRegisterUserUseCase:
     async def test_register_user_invalid_email_format(self, use_case):
         """
         Validates that RegisterUserInputDTO rejects improperly formatted email addresses.
-        
+
         Asserts that constructing the input DTO with an invalid email raises a ValueError containing the word "email".
         """
         # Act & Assert
@@ -352,10 +353,12 @@ class TestRegisterUserUseCase:
 
     # ==================== Edge Cases ====================
 
-    async def test_register_user_username_normalized_to_lowercase(self, use_case, mock_repository):
+    async def test_register_user_username_normalized_to_lowercase(
+        self, use_case, mock_repository
+    ):
         """
         Verifies that registering a user normalizes the username to lowercase.
-        
+
         Asserts the returned DTO and the repository-stored user both have the username converted to lowercase.
         """
         # Arrange
@@ -390,7 +393,7 @@ class TestRegisterUserUseCase:
     async def test_register_user_password_minimum_length(self, use_case):
         """
         Verifies that the registration input enforces a minimum password length of 8 characters.
-        
+
         Asserts that constructing RegisterUserInputDTO with a 7-character password raises a ValueError, and that an 8-character password is accepted and preserved.
         """
         # Act & Assert - 7 個字元應失敗
@@ -411,6 +414,7 @@ class TestRegisterUserUseCase:
 
 
 # ==================== DTO Validation Tests ====================
+
 
 class TestRegisterUserInputDTO:
     """RegisterUserInputDTO 的驗證測試"""

@@ -13,7 +13,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import sys
 
 # Mock redis.asyncio 模組以避免 import 錯誤
-sys.modules['redis.asyncio'] = MagicMock()
+sys.modules["redis.asyncio"] = MagicMock()
 
 from infrastructure.redis.token_manager import RedisTokenManager
 
@@ -52,7 +52,6 @@ class TestRedisTokenManager:
         assert len(token1) > 30
         assert len(token2) > 30
 
-
     async def test_store_email_change_tokens(self, token_manager, mock_redis):
         """測試儲存信箱變更 tokens"""
         user_id = 123
@@ -64,7 +63,7 @@ class TestRedisTokenManager:
             user_id=user_id,
             old_token=old_token,
             new_token=new_token,
-            new_email=new_email
+            new_email=new_email,
         )
 
         # 驗證 Redis setex 被呼叫 5 次（5 個 key）
@@ -80,21 +79,21 @@ class TestRedisTokenManager:
         assert "email_change:123:old_verified" in stored_keys
         assert "email_change:123:new_verified" in stored_keys
 
-
-    async def test_store_email_change_tokens_custom_ttl(self, token_manager, mock_redis):
+    async def test_store_email_change_tokens_custom_ttl(
+        self, token_manager, mock_redis
+    ):
         """測試使用自訂 TTL 儲存 tokens"""
         await token_manager.store_email_change_tokens(
             user_id=456,
             old_token="token1",
             new_token="token2",
             new_email="test@example.com",
-            ttl=3600  # 1 小時
+            ttl=3600,  # 1 小時
         )
 
         # 驗證所有 setex 使用自訂 TTL
         for call in mock_redis.setex.call_args_list:
             assert call[0][1] == 3600  # TTL 參數
-
 
     async def test_verify_token_success(self, token_manager, mock_redis):
         """測試驗證 token 成功"""
@@ -105,14 +104,11 @@ class TestRedisTokenManager:
         mock_redis.get.return_value = token.encode()
 
         result = await token_manager.verify_token(
-            user_id=user_id,
-            token=token,
-            token_type="old"
+            user_id=user_id, token=token, token_type="old"
         )
 
         assert result is True
         mock_redis.get.assert_called_once_with("email_change:123:old_token")
-
 
     async def test_verify_token_invalid(self, token_manager, mock_redis):
         """測試驗證 token 失敗（token 不符）"""
@@ -124,13 +120,10 @@ class TestRedisTokenManager:
         mock_redis.get.return_value = stored_token.encode()
 
         result = await token_manager.verify_token(
-            user_id=user_id,
-            token=provided_token,
-            token_type="old"
+            user_id=user_id, token=provided_token, token_type="old"
         )
 
         assert result is False
-
 
     async def test_verify_token_expired(self, token_manager, mock_redis):
         """測試驗證 token 失敗（token 已過期）"""
@@ -140,13 +133,10 @@ class TestRedisTokenManager:
         mock_redis.get.return_value = None
 
         result = await token_manager.verify_token(
-            user_id=user_id,
-            token="any_token",
-            token_type="new"
+            user_id=user_id, token="any_token", token_type="new"
         )
 
         assert result is False
-
 
     async def test_mark_as_verified(self, token_manager, mock_redis):
         """測試標記為已驗證"""
@@ -155,21 +145,15 @@ class TestRedisTokenManager:
         # Mock Redis ttl 返回值
         mock_redis.ttl.return_value = 3600
 
-        await token_manager.mark_as_verified(
-            user_id=user_id,
-            token_type="old"
-        )
+        await token_manager.mark_as_verified(user_id=user_id, token_type="old")
 
         # 驗證 ttl 被呼叫
         mock_redis.ttl.assert_called_once_with("email_change:123:old_verified")
 
         # 驗證 setex 被呼叫，值為 "true"
         mock_redis.setex.assert_called_once_with(
-            "email_change:123:old_verified",
-            3600,
-            "true"
+            "email_change:123:old_verified", 3600, "true"
         )
-
 
     async def test_mark_as_verified_expired_ttl(self, token_manager, mock_redis):
         """測試標記為已驗證（TTL 已過期，使用預設值）"""
@@ -178,18 +162,12 @@ class TestRedisTokenManager:
         # Mock Redis ttl 返回 -1（key 不存在）
         mock_redis.ttl.return_value = -1
 
-        await token_manager.mark_as_verified(
-            user_id=user_id,
-            token_type="new"
-        )
+        await token_manager.mark_as_verified(user_id=user_id, token_type="new")
 
         # 驗證使用預設 TTL
         mock_redis.setex.assert_called_once_with(
-            "email_change:123:new_verified",
-            86400,  # default_ttl
-            "true"
+            "email_change:123:new_verified", 86400, "true"  # default_ttl
         )
-
 
     async def test_check_both_verified_true(self, token_manager, mock_redis):
         """測試檢查兩個信箱都已驗證"""
@@ -203,7 +181,6 @@ class TestRedisTokenManager:
         assert result is True
         assert mock_redis.get.call_count == 2
 
-
     async def test_check_both_verified_only_old(self, token_manager, mock_redis):
         """測試只有舊信箱已驗證"""
         user_id = 123
@@ -214,7 +191,6 @@ class TestRedisTokenManager:
         result = await token_manager.check_both_verified(user_id)
 
         assert result is False
-
 
     async def test_check_both_verified_only_new(self, token_manager, mock_redis):
         """測試只有新信箱已驗證"""
@@ -227,7 +203,6 @@ class TestRedisTokenManager:
 
         assert result is False
 
-
     async def test_check_both_verified_none(self, token_manager, mock_redis):
         """測試兩個信箱都未驗證"""
         user_id = 123
@@ -239,7 +214,6 @@ class TestRedisTokenManager:
 
         assert result is False
 
-
     async def test_check_both_verified_missing_keys(self, token_manager, mock_redis):
         """測試 key 不存在的情況"""
         user_id = 123
@@ -250,7 +224,6 @@ class TestRedisTokenManager:
         result = await token_manager.check_both_verified(user_id)
 
         assert result is False
-
 
     async def test_get_pending_email(self, token_manager, mock_redis):
         """測試取得待變更的新信箱"""
@@ -265,7 +238,6 @@ class TestRedisTokenManager:
         assert result == new_email
         mock_redis.get.assert_called_once_with("email_change:123:pending_email")
 
-
     async def test_get_pending_email_not_found(self, token_manager, mock_redis):
         """測試取得待變更信箱（不存在）"""
         user_id = 123
@@ -276,7 +248,6 @@ class TestRedisTokenManager:
         result = await token_manager.get_pending_email(user_id)
 
         assert result is None
-
 
     async def test_cleanup_email_change(self, token_manager, mock_redis):
         """測試清理所有信箱變更資料"""
@@ -294,4 +265,3 @@ class TestRedisTokenManager:
         assert "email_change:123:pending_email" in deleted_keys
         assert "email_change:123:old_verified" in deleted_keys
         assert "email_change:123:new_verified" in deleted_keys
-

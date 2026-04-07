@@ -20,6 +20,7 @@ class CheckoutProduct:
     Order 模組對商品資訊的本地表示，
     包含結帳流程所需的所有欄位。
     """
+
     id: UUID
     name: str
     price: Decimal
@@ -37,7 +38,9 @@ class IProductPort(ABC):
     """
 
     @abstractmethod
-    async def get_products_for_checkout(self, product_ids: List[UUID]) -> List[CheckoutProduct]:
+    async def get_products_for_checkout(
+        self, product_ids: List[UUID]
+    ) -> List[CheckoutProduct]:
         """
         取得結帳用商品（含悲觀鎖 FOR UPDATE）
 

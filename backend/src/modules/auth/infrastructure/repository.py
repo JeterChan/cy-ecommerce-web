@@ -8,6 +8,7 @@ from modules.auth.domain.entities import UserEntity
 from modules.auth.infrastructure.models import UserModel
 from core.exceptions import DuplicateEmailError, UserNotFoundError
 
+
 class UserRepository(IUserRepository):
     """
     使用者資料存取層實作 (SQLAlchemy)

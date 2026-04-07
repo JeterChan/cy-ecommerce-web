@@ -8,6 +8,7 @@
   docker exec ecommerce_api python -m load_tests.seed_load_test --num-users 100 --stock 10
   docker exec ecommerce_api python -m load_tests.seed_load_test --reset-only --stock 10
 """
+
 import asyncio
 import argparse
 import json
@@ -38,9 +39,17 @@ OUTPUT_FILE = "/app/load_tests/users.json"
 
 def parse_args():
     parser = argparse.ArgumentParser(description="Seed load test data")
-    parser.add_argument("--num-users", type=int, default=100, help="Number of test users (default: 100)")
-    parser.add_argument("--stock", type=int, default=10, help="Product stock quantity (default: 10)")
-    parser.add_argument("--reset-only", action="store_true", help="Only reset stock and carts (skip user creation)")
+    parser.add_argument(
+        "--num-users", type=int, default=100, help="Number of test users (default: 100)"
+    )
+    parser.add_argument(
+        "--stock", type=int, default=10, help="Product stock quantity (default: 10)"
+    )
+    parser.add_argument(
+        "--reset-only",
+        action="store_true",
+        help="Only reset stock and carts (skip user creation)",
+    )
     return parser.parse_args()
 
 
@@ -131,28 +140,34 @@ async def seed(args):
     # === 4. 生成 JWT token ===
     users_data = []
     for user in users:
-        token = create_access_token({
-            "sub": user.email,
-            "user_id": str(user.id),
-            "role": "user",
-        })
-        users_data.append({
-            "user_id": str(user.id),
-            "email": user.email,
-            "token": token,
-        })
+        token = create_access_token(
+            {
+                "sub": user.email,
+                "user_id": str(user.id),
+                "role": "user",
+            }
+        )
+        users_data.append(
+            {
+                "user_id": str(user.id),
+                "email": user.email,
+                "token": token,
+            }
+        )
 
     print(f"Generated {len(users_data)} JWT tokens")
 
     # === 5. Redis 購物車批量寫入 ===
     now = datetime.now(timezone.utc).isoformat()
     product_id_str = str(PRODUCT_ID)
-    cart_data = json.dumps({
-        "product_id": product_id_str,
-        "quantity": 1,
-        "created_at": now,
-        "updated_at": now,
-    })
+    cart_data = json.dumps(
+        {
+            "product_id": product_id_str,
+            "quantity": 1,
+            "created_at": now,
+            "updated_at": now,
+        }
+    )
 
     # 先清除舊的購物車
     pipe = redis_client.pipeline(transaction=False)
@@ -182,15 +197,13 @@ async def seed(args):
             """),
             {"pid": str(PRODUCT_ID)},
         )
-        await session.execute(
-            text("""
+        await session.execute(text("""
                 DELETE FROM orders WHERE id NOT IN (
                     SELECT DISTINCT order_id FROM order_items
                 ) AND user_id IN (
                     SELECT id FROM users WHERE email LIKE 'loadtest_%@test.com'
                 )
-            """)
-        )
+            """))
         await session.commit()
         print("Cleaned up old loadtest orders")
 

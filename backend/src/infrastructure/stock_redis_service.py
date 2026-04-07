@@ -4,6 +4,7 @@ Redis 庫存預扣服務
 使用 Redis DECRBY 原子操作在 DB 事務之前過濾庫存不足的請求。
 Key pattern: stock:{product_id}，value 為整數庫存量。
 """
+
 import uuid
 import logging
 from typing import Tuple, Optional
@@ -35,7 +36,9 @@ class StockRedisService:
         val = await self.redis.get(self._key(product_id))
         return int(val) if val is not None else None
 
-    async def try_deduct(self, product_id: uuid.UUID, quantity: int) -> Tuple[bool, int]:
+    async def try_deduct(
+        self, product_id: uuid.UUID, quantity: int
+    ) -> Tuple[bool, int]:
         """
         原子預扣庫存。
 

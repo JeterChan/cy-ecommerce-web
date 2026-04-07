@@ -3,6 +3,7 @@ from typing import Optional
 from datetime import datetime
 import uuid
 
+
 class CartItemResponseDTO(BaseModel):
     id: uuid.UUID
     product_id: uuid.UUID

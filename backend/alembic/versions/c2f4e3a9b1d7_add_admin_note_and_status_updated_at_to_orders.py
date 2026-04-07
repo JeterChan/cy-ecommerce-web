@@ -9,7 +9,6 @@ from typing import Sequence, Union
 
 from alembic import op
 
-
 # revision identifiers, used by Alembic.
 revision: str = "c2f4e3a9b1d7"
 down_revision: Union[str, Sequence[str], None] = "98975f86325b"
@@ -20,22 +19,17 @@ depends_on: Union[str, Sequence[str], None] = None
 def upgrade() -> None:
     """Upgrade schema."""
     # Keep migration idempotent for environments where schema may drift from Alembic history.
-    op.execute(
-        """
+    op.execute("""
         ALTER TABLE orders
         ADD COLUMN IF NOT EXISTS admin_note VARCHAR(1000)
-        """
-    )
-    op.execute(
-        """
+        """)
+    op.execute("""
         ALTER TABLE orders
         ADD COLUMN IF NOT EXISTS status_updated_at TIMESTAMPTZ
-        """
-    )
+        """)
 
     # Ensure enum values exist for current domain model.
-    op.execute(
-        """
+    op.execute("""
         DO $$
         BEGIN
             IF EXISTS (SELECT 1 FROM pg_type WHERE typname = 'orderstatus') THEN
@@ -59,23 +53,18 @@ def upgrade() -> None:
             END IF;
         END
         $$;
-        """
-    )
+        """)
 
 
 def downgrade() -> None:
     """Downgrade schema."""
-    op.execute(
-        """
+    op.execute("""
         ALTER TABLE orders
         DROP COLUMN IF EXISTS status_updated_at
-        """
-    )
-    op.execute(
-        """
+        """)
+    op.execute("""
         ALTER TABLE orders
         DROP COLUMN IF EXISTS admin_note
-        """
-    )
+        """)
 
     # Enum value removal is intentionally not attempted for PostgreSQL compatibility.

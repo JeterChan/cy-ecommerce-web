@@ -16,9 +16,7 @@ class MergeCartUseCase:
         self.repository = repository
 
     async def execute(
-        self,
-        owner_id: str,
-        guest_items: List[dict]
+        self, owner_id: str, guest_items: List[dict]
     ) -> List[CartItemResponse]:
         """
         執行購物車合併
@@ -37,8 +35,12 @@ class MergeCartUseCase:
 
         for item in guest_items:
             try:
-                product_id = uuid.UUID(item.get('product_id')) if isinstance(item.get('product_id'), str) else item.get('product_id')
-                quantity = item.get('quantity', 0)
+                product_id = (
+                    uuid.UUID(item.get("product_id"))
+                    if isinstance(item.get("product_id"), str)
+                    else item.get("product_id")
+                )
+                quantity = item.get("quantity", 0)
 
                 if quantity <= 0:
                     continue
@@ -47,7 +49,9 @@ class MergeCartUseCase:
 
                 if existing_item:
                     new_quantity = existing_item.quantity + quantity
-                    await self.repository.update_quantity(owner_id, product_id, new_quantity)
+                    await self.repository.update_quantity(
+                        owner_id, product_id, new_quantity
+                    )
                 else:
                     await self.repository.add_item(owner_id, product_id, quantity)
 

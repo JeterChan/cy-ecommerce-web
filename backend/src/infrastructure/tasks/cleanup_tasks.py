@@ -3,6 +3,7 @@
 
 每日執行：永久刪除超過 30 天的軟刪除帳戶。
 """
+
 import logging
 from datetime import datetime, timezone, timedelta
 
@@ -27,15 +28,23 @@ def hard_delete_expired_accounts() -> dict:
     """
     import asyncio
     from sqlalchemy import delete as sa_delete
-    from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncSession
+    from sqlalchemy.ext.asyncio import (
+        create_async_engine,
+        async_sessionmaker,
+        AsyncSession,
+    )
     from infrastructure.config import settings
     from modules.auth.infrastructure.models import UserModel
 
     async def _run() -> int:
-        cutoff_date = datetime.now(timezone.utc) - timedelta(days=HARD_DELETE_AFTER_DAYS)
+        cutoff_date = datetime.now(timezone.utc) - timedelta(
+            days=HARD_DELETE_AFTER_DAYS
+        )
 
         engine = create_async_engine(settings.database_url)
-        SessionLocal = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
+        SessionLocal = async_sessionmaker(
+            engine, class_=AsyncSession, expire_on_commit=False
+        )
 
         async with SessionLocal() as session:
             stmt = sa_delete(UserModel).where(

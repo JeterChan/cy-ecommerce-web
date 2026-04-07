@@ -65,7 +65,9 @@ class TestTryDeduct:
         redis.set.assert_called_once_with(f"stock:{product_id}", 10)
 
     @pytest.mark.asyncio
-    async def test_key_not_exists_lazy_init_still_insufficient(self, service, redis, db):
+    async def test_key_not_exists_lazy_init_still_insufficient(
+        self, service, redis, db
+    ):
         product_id = uuid4()
         redis.exists.return_value = 0
         # 第一次 decrby: -5，重試 decrby: -2（載入 3，扣 5）

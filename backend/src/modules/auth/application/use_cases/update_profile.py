@@ -1,4 +1,5 @@
 """更新使用者個人檔案 Use Case"""
+
 from uuid import UUID
 from modules.auth.domain.repository import IUserRepository
 from modules.auth.application.dtos import UpdateProfileRequest, UpdateProfileResponse
@@ -6,6 +7,7 @@ from core.exceptions import UserNotFoundError, ValidationError
 import logging
 
 logger = logging.getLogger(__name__)
+
 
 class UpdateProfileUseCase:
     """更新使用者個人檔案 Use Case"""
@@ -26,10 +28,14 @@ class UpdateProfileUseCase:
         # 處理使用者名稱變更
         if request.username is not None and request.username != user.username:
             if await self.user_repository.exists_by_username(request.username):
-                logger.warning(f"更新個人檔案失敗：使用者名稱已存在 (username: {request.username})")
+                logger.warning(
+                    f"更新個人檔案失敗：使用者名稱已存在 (username: {request.username})"
+                )
                 raise ValidationError("使用者名稱已存在")
             user.username = request.username
-            logger.info(f"使用者名稱已變更 (id: {user_id}, new_username: {request.username})")
+            logger.info(
+                f"使用者名稱已變更 (id: {user_id}, new_username: {request.username})"
+            )
 
         # 更新其他欄位 (Partial Update)
         if request.phone is not None:
