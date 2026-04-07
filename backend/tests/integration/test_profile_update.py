@@ -3,22 +3,24 @@
 測試範圍：更新使用者名稱 -> 檢查唯一性 -> 變更密碼 -> 以新密碼登入
 """
 
-import pytest
-import pytest_asyncio
-from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
 import os
 from uuid import uuid4
 
-from src.infrastructure.database import Base
-from src.modules.auth.domain.entities.UserEntity import UserEntity
-from src.modules.auth.infrastructure.repositories.user_repository import UserRepository
-from src.modules.auth.application.use_cases.update_profile import UpdateProfileUseCase
-from src.modules.auth.application.use_cases.change_password import ChangePasswordUseCase
-from src.modules.auth.use_cases.login import LoginUserUseCase
-from src.modules.auth.application.dtos import UpdateProfileRequest, LoginRequestDTO
-from src.core.exceptions import InvalidCredentialsError, ValidationError
+import pytest
+import pytest_asyncio
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
-# Test Database Configuration
+from core.exceptions import InvalidCredentialsError, ValidationError
+from core.security import get_password_hash
+from infrastructure.database import Base
+from modules.auth.application.dtos import LoginRequestDTO, UpdateProfileRequest
+from modules.auth.application.use_cases.change_password import ChangePasswordUseCase
+from modules.auth.application.use_cases.login import LoginUserUseCase
+from modules.auth.application.use_cases.update_profile import UpdateProfileUseCase
+from modules.auth.domain.entities import UserEntity
+from modules.auth.infrastructure.password_hasher import BcryptPasswordHasher
+from modules.auth.infrastructure.repository import UserRepository
+
 TEST_DATABASE_URL = os.getenv(
     "TEST_DATABASE_URL",
     "postgresql+asyncpg://user:password@localhost:5432/test_ecommerce_db",
@@ -45,16 +47,14 @@ async def async_session():
 async def test_profile_update_and_password_change_flow(async_session):
     # Arrange
     user_repo = UserRepository(async_session)
+    password_hasher = BcryptPasswordHasher()
     update_use_case = UpdateProfileUseCase(user_repo)
     change_pass_use_case = ChangePasswordUseCase(user_repo)
-    login_use_case = LoginUserUseCase(user_repo)
+    login_use_case = LoginUserUseCase(user_repo, password_hasher)
 
     email = "profile_test@example.com"
     password = "OldPassword123!"
     username = "original_user"
-
-    # 建立初始使用者
-    from src.core.security import get_password_hash
 
     user = UserEntity(
         id=uuid4(),

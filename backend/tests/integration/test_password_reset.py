@@ -3,24 +3,25 @@
 測試範圍：請求重設 -> 生成 Token -> 使用 Token 重設密碼 -> 以新密碼登入
 """
 
+import os
+from unittest.mock import patch
+
 import pytest
 import pytest_asyncio
-from unittest.mock import patch
-from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
 from redis.asyncio import Redis
-import os
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
-from src.infrastructure.database import Base
-from src.modules.auth.use_cases.register import RegisterUserUseCase
-from src.modules.auth.use_cases.login import LoginUserUseCase
-from src.modules.auth.application.use_cases.forgot_password import ForgotPasswordUseCase
-from src.modules.auth.application.use_cases.reset_password import ResetPasswordUseCase
-from src.modules.auth.application.dtos import RegisterRequestDTO, LoginRequestDTO
-from src.modules.auth.infrastructure.repositories.user_repository import UserRepository
-from src.infrastructure.redis.token_manager import RedisTokenManager
-from src.core.exceptions import InvalidCredentialsError
+from core.exceptions import InvalidCredentialsError
+from infrastructure.database import Base
+from infrastructure.redis.token_manager import RedisTokenManager
+from modules.auth.application.dtos import LoginRequestDTO, RegisterRequestDTO
+from modules.auth.application.use_cases.forgot_password import ForgotPasswordUseCase
+from modules.auth.application.use_cases.login import LoginUserUseCase
+from modules.auth.application.use_cases.register import RegisterUserUseCase
+from modules.auth.application.use_cases.reset_password import ResetPasswordUseCase
+from modules.auth.infrastructure.password_hasher import BcryptPasswordHasher
+from modules.auth.infrastructure.repository import UserRepository
 
-# Test Database/Redis Configuration
 TEST_DATABASE_URL = os.getenv(
     "TEST_DATABASE_URL",
     "postgresql+asyncpg://user:password@localhost:5432/test_ecommerce_db",
@@ -49,24 +50,24 @@ async def redis_client():
     client = Redis.from_url(TEST_REDIS_URL)
     await client.flushdb()
     yield client
-    await client.close()
+    await client.aclose()
 
 
 @pytest.mark.asyncio
 async def test_password_reset_flow_integration(async_session, redis_client):
     # Arrange
     user_repo = UserRepository(async_session)
+    password_hasher = BcryptPasswordHasher()
     token_manager = RedisTokenManager(redis_client)
 
-    # Mock Celery delay to avoid real email sending
     with patch(
-        "src.modules.auth.use_cases.register.send_registration_verification.delay"
+        "modules.auth.application.use_cases.register.send_registration_verification"
     ), patch(
-        "src.modules.auth.application.use_cases.forgot_password.send_password_reset.delay"
+        "modules.auth.application.use_cases.forgot_password.send_password_reset.delay"
     ) as mock_reset_task:
 
         register_use_case = RegisterUserUseCase(user_repo, token_manager)
-        login_use_case = LoginUserUseCase(user_repo)
+        login_use_case = LoginUserUseCase(user_repo, password_hasher)
         forgot_use_case = ForgotPasswordUseCase(user_repo, token_manager)
         reset_use_case = ResetPasswordUseCase(user_repo, token_manager)
 
@@ -75,13 +76,13 @@ async def test_password_reset_flow_integration(async_session, redis_client):
         new_password = "NewPassword456!"
         username = "reset_user"
 
-        # 1. 註冊並手動驗證（繞過 US1 的驗證步驟以專注於 US2）
+        # 1. 註冊
         reg_input = RegisterRequestDTO(
             username=username, email=email, password=old_password
         )
         await register_use_case.execute(reg_input)
 
-        # 從 DB 取得 User 並手動標記為已驗證
+        # 手動標記為已驗證
         user = await user_repo.get_by_email(email)
         user.is_verified = True
         await user_repo.update(user)
@@ -99,12 +100,12 @@ async def test_password_reset_flow_integration(async_session, redis_client):
         reset_result = await reset_use_case.execute(token, new_password)
         assert reset_result is True
 
-        # 4. 嘗試以舊密碼登入 -> 應失敗
+        # 4. 以舊密碼登入 -> 應失敗
         login_input_old = LoginRequestDTO(email=email, password=old_password)
         with pytest.raises(InvalidCredentialsError):
             await login_use_case.execute(login_input_old)
 
-        # 5. 嘗試以新密碼登入 -> 應成功
+        # 5. 以新密碼登入 -> 應成功
         login_input_new = LoginRequestDTO(email=email, password=new_password)
         login_output = await login_use_case.execute(login_input_new)
         assert login_output.access_token is not None

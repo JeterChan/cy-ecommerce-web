@@ -10,7 +10,7 @@ Unit Tests for UserEntity Profile Fields
 from datetime import datetime, timezone
 import uuid
 
-from modules.auth.domain.entities.UserEntity import UserEntity
+from modules.auth.domain.entities import UserEntity
 
 
 class TestUserEntityProfileFields:
