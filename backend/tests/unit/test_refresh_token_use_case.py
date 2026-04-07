@@ -19,7 +19,6 @@ from modules.auth.application.use_cases.refresh_token import RefreshTokenUseCase
 from modules.auth.domain.entities import UserEntity
 from modules.auth.domain.repository import IUserRepository
 
-
 # ==================== Mock Repository ====================
 
 
