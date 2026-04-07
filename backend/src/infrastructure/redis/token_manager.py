@@ -2,8 +2,10 @@ import secrets
 from redis.asyncio import Redis
 from typing import Optional
 
+
 class RedisTokenManager:
     """用於 Auth 流程中的 Token 管理 (Email 驗證, 密碼重設, 信箱變更)"""
+
     def __init__(self, redis_client: Redis):
         self.redis = redis_client
         self.default_ttl = 86400  # 24 小時
@@ -14,7 +16,9 @@ class RedisTokenManager:
 
     # --- 註冊驗證與密碼重設 (New) ---
 
-    async def store_verification_token(self, user_id: str, token: str, ttl: int = 86400) -> None:
+    async def store_verification_token(
+        self, user_id: str, token: str, ttl: int = 86400
+    ) -> None:
         """儲存註冊驗證 Token (預設 24h)"""
         key = f"auth:verify:{token}"
         await self.redis.setex(key, ttl, user_id)
@@ -30,7 +34,9 @@ class RedisTokenManager:
             return user_id
         return None
 
-    async def store_reset_token(self, user_id: str, token: str, ttl: int = 3600) -> None:
+    async def store_reset_token(
+        self, user_id: str, token: str, ttl: int = 3600
+    ) -> None:
         """儲存密碼重設 Token (預設 1h)"""
         key = f"auth:reset:{token}"
         await self.redis.setex(key, ttl, user_id)
@@ -54,7 +60,7 @@ class RedisTokenManager:
         old_token: str,
         new_token: str,
         new_email: str,
-        ttl: int | None = None
+        ttl: int | None = None,
     ) -> None:
         ttl = ttl or self.default_ttl
         prefix = f"email_change:{user_id}"

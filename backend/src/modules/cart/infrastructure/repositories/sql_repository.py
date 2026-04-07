@@ -60,9 +60,7 @@ class SQLCartRepository(ICartRepository):
         return cart
 
     async def _find_item(
-        self,
-        cart_id: uuid.UUID,
-        product_id: uuid.UUID
+        self, cart_id: uuid.UUID, product_id: uuid.UUID
     ) -> Optional[CartItemModel]:
         """
         查詢購物車中的特定商品
@@ -75,8 +73,7 @@ class SQLCartRepository(ICartRepository):
             Optional[CartItemModel]: 購物車項目，若不存在則回傳 None
         """
         stmt = select(CartItemModel).where(
-            CartItemModel.cart_id == cart_id,
-            CartItemModel.product_id == product_id
+            CartItemModel.cart_id == cart_id, CartItemModel.product_id == product_id
         )
         result = await self.db.execute(stmt)
         return result.scalar_one_or_none()
@@ -94,35 +91,40 @@ class SQLCartRepository(ICartRepository):
         # 查詢商品信息
         product_repo = SqlAlchemyProductRepository(self.db)
         product = await product_repo.get_by_id(item.product_id)
-        
+
         # 計算小計
         product_price = float(product.price) if product else 0.0
         subtotal = product_price * item.quantity
-        
+
         # 取得第一張圖片 URL
         image_url = None
         if product and product.images:
-            primary_image = next((img for img in product.images if img.is_primary), None)
-            image_url = (primary_image or product.images[0]).url if (primary_image or product.images) else None
-        
+            primary_image = next(
+                (img for img in product.images if img.is_primary), None
+            )
+            image_url = (
+                (primary_image or product.images[0]).url
+                if (primary_image or product.images)
+                else None
+            )
+
         return CartItemResponse(
             id=item.id,
             cart_id=item.cart_id,
             product_id=item.product_id,
             quantity=item.quantity,
-            product_name=product.name if product else f"Unknown Product ({item.product_id})",
+            product_name=(
+                product.name if product else f"Unknown Product ({item.product_id})"
+            ),
             unit_price=product_price,
             subtotal=subtotal,
             image_url=image_url,
             created_at=item.created_at,
-            updated_at=item.updated_at
+            updated_at=item.updated_at,
         )
 
     async def add_item(
-        self,
-        owner_id: str,
-        product_id: uuid.UUID,
-        quantity: int
+        self, owner_id: str, product_id: uuid.UUID, quantity: int
     ) -> CartItemResponse:
         """
         新增商品到購物車（若已存在則累加數量）
@@ -158,9 +160,7 @@ class SQLCartRepository(ICartRepository):
         else:
             # 新增商品
             new_item = CartItemModel(
-                cart_id=cart.id,
-                product_id=product_id,
-                quantity=quantity
+                cart_id=cart.id, product_id=product_id, quantity=quantity
             )
             self.db.add(new_item)
             await self.db.flush()
@@ -168,10 +168,7 @@ class SQLCartRepository(ICartRepository):
             return await self._to_response(new_item)
 
     async def update_quantity(
-        self,
-        owner_id: str,
-        product_id: uuid.UUID,
-        quantity: int
+        self, owner_id: str, product_id: uuid.UUID, quantity: int
     ) -> CartItemResponse:
         """
         更新商品數量
@@ -207,10 +204,7 @@ class SQLCartRepository(ICartRepository):
 
         return await self._to_response(item)
 
-    async def get_cart(
-        self,
-        owner_id: str
-    ) -> List[CartItemResponse]:
+    async def get_cart(self, owner_id: str) -> List[CartItemResponse]:
         """
         取得購物車所有商品
 
@@ -223,10 +217,10 @@ class SQLCartRepository(ICartRepository):
         user_id = uuid.UUID(owner_id)
 
         # 查詢購物車（含所有項目）
-        stmt = select(CartModel).where(
-            CartModel.user_id == user_id
-        ).options(
-            selectinload(CartModel.items)  # 預先載入 items
+        stmt = (
+            select(CartModel)
+            .where(CartModel.user_id == user_id)
+            .options(selectinload(CartModel.items))  # 預先載入 items
         )
         result = await self.db.execute(stmt)
         cart = result.scalar_one_or_none()
@@ -238,9 +232,7 @@ class SQLCartRepository(ICartRepository):
         return [await self._to_response(item) for item in cart.items]
 
     async def get_item(
-        self,
-        owner_id: str,
-        product_id: uuid.UUID
+        self, owner_id: str, product_id: uuid.UUID
     ) -> Optional[CartItemResponse]:
         """
         查詢單一商品
@@ -262,11 +254,7 @@ class SQLCartRepository(ICartRepository):
 
         return await self._to_response(item) if item else None
 
-    async def remove_item(
-        self,
-        owner_id: str,
-        product_id: uuid.UUID
-    ) -> None:
+    async def remove_item(self, owner_id: str, product_id: uuid.UUID) -> None:
         """
         移除商品
 
@@ -281,16 +269,12 @@ class SQLCartRepository(ICartRepository):
 
         # 刪除商品
         stmt = delete(CartItemModel).where(
-            CartItemModel.cart_id == cart.id,
-            CartItemModel.product_id == product_id
+            CartItemModel.cart_id == cart.id, CartItemModel.product_id == product_id
         )
         await self.db.execute(stmt)
         await self.db.flush()
 
-    async def clear_cart(
-        self,
-        owner_id: str
-    ) -> None:
+    async def clear_cart(self, owner_id: str) -> None:
         """
         清空購物車
 
@@ -308,9 +292,7 @@ class SQLCartRepository(ICartRepository):
         await self.db.flush()
 
     async def batch_add_items(
-        self,
-        owner_id: str,
-        items: List[CartItemCreate]
+        self, owner_id: str, items: List[CartItemCreate]
     ) -> List[CartItemResponse]:
         """
         批量新增商品（merge cart 使用）
@@ -324,12 +306,7 @@ class SQLCartRepository(ICartRepository):
         """
         result = []
         for item in items:
-            updated_item = await self.add_item(
-                owner_id,
-                item.product_id,
-                item.quantity
-            )
+            updated_item = await self.add_item(owner_id, item.product_id, item.quantity)
             result.append(updated_item)
 
         return result
-

@@ -32,7 +32,6 @@ from modules.auth.infrastructure.repositories.user_repository import UserReposit
 from modules.auth.domain.entities.UserEntity import UserEntity
 from core.security import get_password_hash, create_access_token
 
-
 # ──────────────────────────────────────────────
 # 測試資料庫設定
 # ──────────────────────────────────────────────
@@ -72,7 +71,9 @@ async def async_engine():
 @pytest_asyncio.fixture(scope="function")
 async def async_session(async_engine) -> AsyncSession:
     """提供測試用 AsyncSession，測試後 rollback 未提交的殘餘變更。"""
-    factory = async_sessionmaker(async_engine, class_=AsyncSession, expire_on_commit=False)
+    factory = async_sessionmaker(
+        async_engine, class_=AsyncSession, expire_on_commit=False
+    )
     async with factory() as session:
         yield session
         await session.rollback()
@@ -294,7 +295,9 @@ class TestCeleryEmailTaskIntegration:
         """Celery 任務成功執行：驗證 BrevoEmailService 以正確參數呼叫 Brevo。"""
         from infrastructure.tasks.email_tasks import send_email_change_verification
 
-        with patch("httpx.AsyncClient.post", return_value=self._make_success_mock()) as mock_post:
+        with patch(
+            "httpx.AsyncClient.post", return_value=self._make_success_mock()
+        ) as mock_post:
             result = send_email_change_verification.apply(
                 args=[
                     "recipient@example.com",
@@ -316,7 +319,9 @@ class TestCeleryEmailTaskIntegration:
         """Celery 任務：email_type='new' 時發送新信箱驗證主旨。"""
         from infrastructure.tasks.email_tasks import send_email_change_verification
 
-        with patch("httpx.AsyncClient.post", return_value=self._make_success_mock()) as mock_post:
+        with patch(
+            "httpx.AsyncClient.post", return_value=self._make_success_mock()
+        ) as mock_post:
             result = send_email_change_verification.apply(
                 args=[
                     "new@example.com",
@@ -354,9 +359,16 @@ class TestCeleryEmailTaskIntegration:
         from infrastructure.tasks.email_tasks import send_email_change_verification
         from infrastructure.config import settings
 
-        with patch("httpx.AsyncClient.post", return_value=self._make_success_mock()) as mock_post:
+        with patch(
+            "httpx.AsyncClient.post", return_value=self._make_success_mock()
+        ) as mock_post:
             send_email_change_verification.apply(
-                args=["test@example.com", "TestUser", "http://localhost:5173/verify", "old"]
+                args=[
+                    "test@example.com",
+                    "TestUser",
+                    "http://localhost:5173/verify",
+                    "old",
+                ]
             )
 
         payload = mock_post.call_args.kwargs["json"]
@@ -410,6 +422,7 @@ class TestEmailChangeAPIFlow:
     @staticmethod
     def _clear_overrides():
         from main import app
+
         app.dependency_overrides.clear()
 
     # ── 測試案例 ──
@@ -517,10 +530,14 @@ class TestEmailChangeAPIFlow:
             assert "舊 Email 已驗證" in data["message"]
 
             # Redis old_verified 應已標記為 true
-            old_verified = await redis_client.get(f"email_change:{user_id}:old_verified")
+            old_verified = await redis_client.get(
+                f"email_change:{user_id}:old_verified"
+            )
             assert old_verified == "true"
             # 新信箱尚未驗證
-            new_verified = await redis_client.get(f"email_change:{user_id}:new_verified")
+            new_verified = await redis_client.get(
+                f"email_change:{user_id}:new_verified"
+            )
             assert new_verified == "false"
 
         finally:
@@ -679,7 +696,10 @@ class TestEmailChangeAPIFlow:
                 response = await client.post(
                     "/api/v1/auth/me/email/change",
                     headers={"Authorization": f"Bearer {access_token}"},
-                    json={"new_email": "another@example.com", "password": "WrongPass123!"},
+                    json={
+                        "new_email": "another@example.com",
+                        "password": "WrongPass123!",
+                    },
                 )
 
             assert response.status_code == 401
@@ -720,7 +740,10 @@ class TestEmailChangeAPIFlow:
                 response = await client.post(
                     "/api/v1/auth/me/email/change",
                     headers={"Authorization": f"Bearer {access_token}"},
-                    json={"new_email": "taken@example.com", "password": "SecurePass123!"},
+                    json={
+                        "new_email": "taken@example.com",
+                        "password": "SecurePass123!",
+                    },
                 )
 
             assert response.status_code == 409

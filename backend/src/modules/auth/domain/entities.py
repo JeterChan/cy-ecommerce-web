@@ -3,8 +3,10 @@ from pydantic import EmailStr
 from datetime import datetime, timezone
 from typing import Optional
 
+
 class UserEntity(BaseEntity):
     """User Domain Entity - 包含業務邏輯"""
+
     email: EmailStr
     username: str
     password_hash: str

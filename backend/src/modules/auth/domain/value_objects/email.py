@@ -13,6 +13,7 @@ class Email:
     - 規範化 Email（統一轉為小寫）
     - 確保 Email 在建立時就是有效的
     """
+
     value: str
 
     def __post_init__(self):
@@ -22,7 +23,7 @@ class Email:
             raise ValueError(f"Email 格式不符合標準: {', '.join(error_msgs)}")
 
         # 規範化：統一轉為小寫
-        object.__setattr__(self, 'value', self.value.lower().strip())
+        object.__setattr__(self, "value", self.value.lower().strip())
 
     def _validate(self) -> List[str]:
         """
@@ -45,7 +46,7 @@ class Email:
             error_msgs.append("Email 長度不能超過 255 個字元")
 
         # 基本 Email 格式驗證（簡化版）
-        email_pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
+        email_pattern = r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$"
         if not re.match(email_pattern, email):
             error_msgs.append("Email 格式不正確")
 
@@ -57,4 +58,3 @@ class Email:
 
     def __repr__(self) -> str:
         return f"Email('{self.value}')"
-

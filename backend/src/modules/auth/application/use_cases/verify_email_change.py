@@ -1,4 +1,5 @@
 """驗證電子郵件變更 Use Case"""
+
 from modules.auth.domain.repository import IUserRepository
 from modules.auth.application.dtos import VerifyEmailChangeRequest
 from infrastructure.redis.token_manager import RedisTokenManager
@@ -65,6 +66,7 @@ class VerifyEmailChangeUseCase:
 
             # 更新資料庫
             from uuid import UUID
+
             user = await self.user_repository.get_by_id(UUID(user_id))
             if user is None:
                 raise ValidationError("使用者不存在")

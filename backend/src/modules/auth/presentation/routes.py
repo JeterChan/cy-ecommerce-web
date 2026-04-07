@@ -3,6 +3,7 @@ Auth API Routes
 
 定義 Auth 模組的 HTTP API 端點
 """
+
 from fastapi import APIRouter, Depends, HTTPException, status, Request
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -11,7 +12,13 @@ from redis.asyncio import Redis
 from infrastructure.database import get_db, get_redis
 from infrastructure.redis.token_manager import RedisTokenManager
 from core.security import verify_token
-from core.exceptions import InvalidCredentialsError, EmailNotVerifiedError, DuplicateEmailError, UserNotRegisteredError, UserNotFoundError
+from core.exceptions import (
+    InvalidCredentialsError,
+    EmailNotVerifiedError,
+    DuplicateEmailError,
+    UserNotRegisteredError,
+    UserNotFoundError,
+)
 
 from modules.auth.application.use_cases import (
     RegisterUserUseCase,
@@ -51,16 +58,16 @@ from modules.auth.domain.entities import UserEntity
 
 from modules.auth.infrastructure.adapters import CartMergeAdapter
 
-
 router = APIRouter(prefix="/api/v1/auth", tags=["Authentication"])
 security = HTTPBearer()
 
 
 # ==================== Dependency Functions ====================
 
+
 async def get_current_user(
     credentials: HTTPAuthorizationCredentials = Depends(security),
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
 ) -> UserEntity:
     token = credentials.credentials
     payload = verify_token(token, token_type="access")
@@ -84,45 +91,43 @@ async def get_current_user(
 
     if user is None:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="使用者不存在或已被刪除"
+            status_code=status.HTTP_404_NOT_FOUND, detail="使用者不存在或已被刪除"
         )
-    
+
     # 強制檢查信箱驗證狀態
     if not user.is_verified:
         raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="請先完成信箱驗證"
+            status_code=status.HTTP_403_FORBIDDEN, detail="請先完成信箱驗證"
         )
 
     return user
 
 
 async def require_admin(
-    current_user: UserEntity = Depends(get_current_user)
+    current_user: UserEntity = Depends(get_current_user),
 ) -> UserEntity:
     """驗證當前使用者是否為管理員"""
     if current_user.role != "admin":
         raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="權限不足，僅限管理員操作"
+            status_code=status.HTTP_403_FORBIDDEN, detail="權限不足，僅限管理員操作"
         )
     return current_user
 
 
 # ==================== API Endpoints ====================
 
+
 @router.post(
     "/register",
     status_code=status.HTTP_201_CREATED,
     response_model=UserResponseDTO,
     summary="註冊新使用者",
-    description="建立新的使用者帳號並發送驗證信"
+    description="建立新的使用者帳號並發送驗證信",
 )
 async def register_user(
     data: RegisterRequestDTO,
     db: AsyncSession = Depends(get_db),
-    redis: Redis = Depends(get_redis)
+    redis: Redis = Depends(get_redis),
 ) -> UserResponseDTO:
     try:
         user_repo = UserRepository(db)
@@ -138,12 +143,10 @@ async def register_user(
     "/email-verify",
     status_code=status.HTTP_200_OK,
     summary="驗證註冊信箱",
-    description="透過信件中的 Token 驗證並啟用帳號"
+    description="透過信件中的 Token 驗證並啟用帳號",
 )
 async def verify_user_email(
-    token: str,
-    db: AsyncSession = Depends(get_db),
-    redis: Redis = Depends(get_redis)
+    token: str, db: AsyncSession = Depends(get_db), redis: Redis = Depends(get_redis)
 ) -> dict:
     try:
         user_repo = UserRepository(db)
@@ -161,12 +164,12 @@ async def verify_user_email(
     "/forgot-password",
     status_code=status.HTTP_202_ACCEPTED,
     summary="請求重設密碼",
-    description="向指定的 Email 發送密碼重設連結"
+    description="向指定的 Email 發送密碼重設連結",
 )
 async def forgot_password(
     data: ForgotPasswordRequest,
     db: AsyncSession = Depends(get_db),
-    redis: Redis = Depends(get_redis)
+    redis: Redis = Depends(get_redis),
 ) -> dict:
     try:
         user_repo = UserRepository(db)
@@ -182,12 +185,12 @@ async def forgot_password(
     "/reset-password",
     status_code=status.HTTP_200_OK,
     summary="重設密碼",
-    description="透過 Token 設定新密碼"
+    description="透過 Token 設定新密碼",
 )
 async def reset_password(
     data: ResetPasswordRequest,
     db: AsyncSession = Depends(get_db),
-    redis: Redis = Depends(get_redis)
+    redis: Redis = Depends(get_redis),
 ) -> dict:
     try:
         user_repo = UserRepository(db)
@@ -205,12 +208,12 @@ async def reset_password(
     "/me/change-password",
     status_code=status.HTTP_200_OK,
     summary="變更密碼",
-    description="登入狀態下變更目前密碼"
+    description="登入狀態下變更目前密碼",
 )
 async def change_password(
     data: ChangePasswordRequest,
     current_user: UserEntity = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
 ) -> dict:
     try:
         user_repo = UserRepository(db)
@@ -228,13 +231,13 @@ async def change_password(
     status_code=status.HTTP_200_OK,
     response_model=LoginResponseDTO,
     summary="使用者登入",
-    description="使用 Email 和密碼登入"
+    description="使用 Email 和密碼登入",
 )
 async def login_user(
     data: LoginRequestDTO,
     request: Request,
     db: AsyncSession = Depends(get_db),
-    redis: Redis = Depends(get_redis)
+    redis: Redis = Depends(get_redis),
 ) -> LoginResponseDTO:
     try:
         user_repo = UserRepository(db)
@@ -260,11 +263,10 @@ async def login_user(
     "/refresh",
     status_code=status.HTTP_200_OK,
     response_model=TokenResponseDTO,
-    summary="刷新 Access Token"
+    summary="刷新 Access Token",
 )
 async def refresh_token(
-    data: RefreshTokenRequestDTO,
-    db: AsyncSession = Depends(get_db)
+    data: RefreshTokenRequestDTO, db: AsyncSession = Depends(get_db)
 ) -> TokenResponseDTO:
     try:
         user_repo = UserRepository(db)
@@ -278,10 +280,10 @@ async def refresh_token(
     "/me",
     status_code=status.HTTP_200_OK,
     response_model=UserResponseDTO,
-    summary="取得當前使用者資訊"
+    summary="取得當前使用者資訊",
 )
 async def get_me(
-    current_user: UserEntity = Depends(get_current_user)
+    current_user: UserEntity = Depends(get_current_user),
 ) -> UserResponseDTO:
     return UserResponseDTO(
         id=current_user.id,
@@ -298,11 +300,11 @@ async def get_me(
     "/me/profile",
     status_code=status.HTTP_200_OK,
     response_model=UserProfileResponse,
-    summary="取得使用者個人檔案"
+    summary="取得使用者個人檔案",
 )
 async def get_my_profile(
     current_user: UserEntity = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
 ) -> UserProfileResponse:
     try:
         user_repo = UserRepository(db)
@@ -316,7 +318,7 @@ async def get_my_profile(
     "/me/profile",
     status_code=status.HTTP_200_OK,
     response_model=UpdateProfileResponse,
-    summary="更新使用者個人檔案"
+    summary="更新使用者個人檔案",
 )
 async def update_my_profile(
     data: UpdateProfileRequest,
@@ -324,6 +326,7 @@ async def update_my_profile(
     db: AsyncSession = Depends(get_db),
 ) -> UpdateProfileResponse:
     from core.exceptions import ValidationError as DomainValidationError
+
     try:
         user_repo = UserRepository(db)
         use_case = UpdateProfileUseCase(user_repo)
@@ -331,13 +334,13 @@ async def update_my_profile(
     except UserNotFoundError as e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
     except DomainValidationError as e:
-        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(e))
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(e)
+        )
 
 
 @router.post(
-    "/me/email/change",
-    status_code=status.HTTP_202_ACCEPTED,
-    summary="請求變更電子郵件"
+    "/me/email/change", status_code=status.HTTP_202_ACCEPTED, summary="請求變更電子郵件"
 )
 async def request_email_change(
     data: EmailChangeRequest,
@@ -347,10 +350,13 @@ async def request_email_change(
 ) -> dict:
     from infrastructure.redis.token_manager import RedisTokenManager
     from core.exceptions import ValidationError as DomainValidationError
+
     try:
         user_repo = UserRepository(db)
         token_manager = RedisTokenManager(redis)
-        use_case = RequestEmailChangeUseCase(user_repo, token_manager, BcryptPasswordHasher())
+        use_case = RequestEmailChangeUseCase(
+            user_repo, token_manager, BcryptPasswordHasher()
+        )
         await use_case.execute(current_user.id, data)
         return {"message": "驗證信已發送至新舊 Email，請分別點擊連結完成驗證"}
     except UserNotFoundError as e:
@@ -362,9 +368,7 @@ async def request_email_change(
 
 
 @router.get(
-    "/me/email/verify",
-    status_code=status.HTTP_200_OK,
-    summary="驗證 Email 變更"
+    "/me/email/verify", status_code=status.HTTP_200_OK, summary="驗證 Email 變更"
 )
 async def verify_email_change(
     token: str,
@@ -375,6 +379,7 @@ async def verify_email_change(
 ) -> dict:
     from infrastructure.redis.token_manager import RedisTokenManager
     from core.exceptions import ValidationError as DomainValidationError
+
     try:
         user_repo = UserRepository(db)
         token_manager = RedisTokenManager(redis)
@@ -385,17 +390,14 @@ async def verify_email_change(
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 
 
-@router.delete(
-    "/me",
-    status_code=status.HTTP_200_OK,
-    summary="刪除帳戶"
-)
+@router.delete("/me", status_code=status.HTTP_200_OK, summary="刪除帳戶")
 async def delete_account(
     data: DeleteAccountRequest,
     current_user: UserEntity = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ) -> dict:
     from modules.auth.application.use_cases.delete_account import DeleteAccountUseCase
+
     try:
         user_repo = UserRepository(db)
         use_case = DeleteAccountUseCase(user_repo, BcryptPasswordHasher())

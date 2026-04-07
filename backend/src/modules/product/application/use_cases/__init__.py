@@ -3,6 +3,7 @@ Product Use Cases
 
 匯出所有 Product 相關的 Use Cases
 """
+
 from .create_product import CreateProductUseCase
 from .update_product import UpdateProductUseCase
 from .delete_product import DeleteProductUseCase
@@ -26,4 +27,3 @@ __all__ = [
     "ListProductsAdminUseCase",
     "GetDashboardStatsUseCase",
 ]
-

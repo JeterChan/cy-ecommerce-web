@@ -21,8 +21,8 @@ from modules.auth.domain.repositories.i_user_repository import IUserRepository
 from core.exceptions import InvalidCredentialsError
 from core.security import get_password_hash, verify_token, create_refresh_token
 
-
 # ==================== Mock Repository ====================
+
 
 class MockUserRepository(IUserRepository):
     """Mock User Repository for Unit Testing"""
@@ -64,6 +64,7 @@ class MockUserRepository(IUserRepository):
 
 
 # ==================== Test Cases ====================
+
 
 @pytest.mark.asyncio
 class TestRefreshTokenUseCase:
@@ -216,4 +217,3 @@ class TestRefreshTokenUseCase:
             await use_case.execute(input_dto)
 
         assert "帳號或密碼錯誤" in str(exc_info.value)
-

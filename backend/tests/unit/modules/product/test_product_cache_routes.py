@@ -4,6 +4,7 @@
 驗證 route handler 層的 Cache-Aside 讀取與 Write-Invalidate 寫入失效邏輯。
 使用 mock 避免真實 DB/Redis 連線。
 """
+
 import json
 import pytest
 from decimal import Decimal
@@ -12,8 +13,11 @@ from uuid import uuid4
 
 from redis.exceptions import ConnectionError as RedisConnectionError
 
-from infrastructure.product_cache_service import ProductCacheService, DETAIL_PREFIX, LIST_PREFIX
-
+from infrastructure.product_cache_service import (
+    ProductCacheService,
+    DETAIL_PREFIX,
+    LIST_PREFIX,
+)
 
 # ── 商品詳情快取整合 ──
 

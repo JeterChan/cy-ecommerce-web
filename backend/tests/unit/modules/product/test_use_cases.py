@@ -5,9 +5,13 @@ from uuid import uuid4
 
 from modules.product.domain.entities import Product, ProductImage
 from modules.product.application.use_cases.create_product import CreateProductUseCase
-from modules.product.application.use_cases.adjust_product_stock import AdjustProductStockUseCase
-from modules.product.application.dtos.product_create_dto import ProductCreateDTO, ProductImageCreateDTO
-
+from modules.product.application.use_cases.adjust_product_stock import (
+    AdjustProductStockUseCase,
+)
+from modules.product.application.dtos.product_create_dto import (
+    ProductCreateDTO,
+    ProductImageCreateDTO,
+)
 
 # ── CreateProductUseCase ──
 
@@ -32,21 +36,29 @@ class TestCreateProductUseCase:
         return AsyncMock()
 
     @pytest.mark.asyncio
-    async def test_create_product_success_with_redis_init(self, product_repo, stock_service):
+    async def test_create_product_success_with_redis_init(
+        self, product_repo, stock_service
+    ):
         use_case = CreateProductUseCase(product_repo, stock_service)
         dto = ProductCreateDTO(
             name="測試商品",
             description="描述",
             price=Decimal("199.00"),
             stock_quantity=50,
-            images=[ProductImageCreateDTO(url="https://example.com/img.jpg", is_primary=True)],
+            images=[
+                ProductImageCreateDTO(
+                    url="https://example.com/img.jpg", is_primary=True
+                )
+            ],
             category_ids=[1],
         )
 
         result = await use_case.execute(dto)
 
         product_repo.create.assert_called_once()
-        stock_service.init_stock.assert_called_once_with(result.id, result.stock_quantity)
+        stock_service.init_stock.assert_called_once_with(
+            result.id, result.stock_quantity
+        )
 
     @pytest.mark.asyncio
     async def test_create_product_without_stock_service(self, product_repo):
@@ -56,7 +68,11 @@ class TestCreateProductUseCase:
             description="描述",
             price=Decimal("199.00"),
             stock_quantity=50,
-            images=[ProductImageCreateDTO(url="https://example.com/img.jpg", is_primary=True)],
+            images=[
+                ProductImageCreateDTO(
+                    url="https://example.com/img.jpg", is_primary=True
+                )
+            ],
         )
 
         result = await use_case.execute(dto)

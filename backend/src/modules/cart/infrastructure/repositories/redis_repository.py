@@ -46,8 +46,13 @@ class RedisCartRepository(ICartRepository):
         """
         return f"cart:{owner_id}"
 
-    def _serialize_item(self, product_id: uuid.UUID, quantity: int,
-                        created_at: datetime, updated_at: datetime) -> str:
+    def _serialize_item(
+        self,
+        product_id: uuid.UUID,
+        quantity: int,
+        created_at: datetime,
+        updated_at: datetime,
+    ) -> str:
         """
         將購物車項目序列化為 JSON
 
@@ -64,7 +69,7 @@ class RedisCartRepository(ICartRepository):
             "product_id": str(product_id),
             "quantity": quantity,
             "created_at": created_at.isoformat(),
-            "updated_at": updated_at.isoformat()
+            "updated_at": updated_at.isoformat(),
         }
         return json.dumps(data)
 
@@ -83,14 +88,11 @@ class RedisCartRepository(ICartRepository):
             "product_id": uuid.UUID(data["product_id"]),
             "quantity": data["quantity"],
             "created_at": datetime.fromisoformat(data["created_at"]),
-            "updated_at": datetime.fromisoformat(data["updated_at"])
+            "updated_at": datetime.fromisoformat(data["updated_at"]),
         }
 
     async def add_item(
-        self,
-        owner_id: str,
-        product_id: uuid.UUID,
-        quantity: int
+        self, owner_id: str, product_id: uuid.UUID, quantity: int
     ) -> CartItemResponse:
         """
         新增商品到購物車（若已存在則累加數量）
@@ -130,7 +132,9 @@ class RedisCartRepository(ICartRepository):
             updated_at = now
 
         # 儲存至 Redis Hash
-        serialized = self._serialize_item(product_id, new_quantity, created_at, updated_at)
+        serialized = self._serialize_item(
+            product_id, new_quantity, created_at, updated_at
+        )
         await self.redis.hset(key, product_id_str, serialized)
 
         # 設定過期時間
@@ -146,14 +150,11 @@ class RedisCartRepository(ICartRepository):
             product_id=product_id,
             quantity=new_quantity,
             created_at=created_at,
-            updated_at=updated_at
+            updated_at=updated_at,
         )
 
     async def update_quantity(
-        self,
-        owner_id: str,
-        product_id: uuid.UUID,
-        quantity: int
+        self, owner_id: str, product_id: uuid.UUID, quantity: int
     ) -> CartItemResponse:
         """
         更新商品數量
@@ -198,14 +199,10 @@ class RedisCartRepository(ICartRepository):
             product_id=product_id,
             quantity=quantity,
             created_at=created_at,
-            updated_at=updated_at
+            updated_at=updated_at,
         )
 
-    async def remove_item(
-        self,
-        owner_id: str,
-        product_id: uuid.UUID
-    ) -> None:
+    async def remove_item(self, owner_id: str, product_id: uuid.UUID) -> None:
         """
         移除商品
 
@@ -217,10 +214,7 @@ class RedisCartRepository(ICartRepository):
         product_id_str = str(product_id)
         await self.redis.hdel(key, product_id_str)
 
-    async def get_cart(
-        self,
-        owner_id: str
-    ) -> List[CartItemResponse]:
+    async def get_cart(self, owner_id: str) -> List[CartItemResponse]:
         """
         取得購物車所有商品
 
@@ -243,21 +237,21 @@ class RedisCartRepository(ICartRepository):
             data = self._deserialize_item(raw_data)
             item_id = uuid.uuid5(uuid.NAMESPACE_DNS, f"{owner_id}:{product_id_str}")
 
-            items.append(CartItemResponse(
-                id=item_id,
-                cart_id=cart_id,
-                product_id=data["product_id"],
-                quantity=data["quantity"],
-                created_at=data["created_at"],
-                updated_at=data["updated_at"]
-            ))
+            items.append(
+                CartItemResponse(
+                    id=item_id,
+                    cart_id=cart_id,
+                    product_id=data["product_id"],
+                    quantity=data["quantity"],
+                    created_at=data["created_at"],
+                    updated_at=data["updated_at"],
+                )
+            )
 
         return items
 
     async def get_item(
-        self,
-        owner_id: str,
-        product_id: uuid.UUID
+        self, owner_id: str, product_id: uuid.UUID
     ) -> Optional[CartItemResponse]:
         """
         查詢單一商品
@@ -286,13 +280,10 @@ class RedisCartRepository(ICartRepository):
             product_id=data["product_id"],
             quantity=data["quantity"],
             created_at=data["created_at"],
-            updated_at=data["updated_at"]
+            updated_at=data["updated_at"],
         )
 
-    async def clear_cart(
-        self,
-        owner_id: str
-    ) -> None:
+    async def clear_cart(self, owner_id: str) -> None:
         """
         清空購物車
 
@@ -303,9 +294,7 @@ class RedisCartRepository(ICartRepository):
         await self.redis.delete(key)
 
     async def batch_add_items(
-        self,
-        owner_id: str,
-        items: List[CartItemCreate]
+        self, owner_id: str, items: List[CartItemCreate]
     ) -> List[CartItemResponse]:
         """
         批量新增商品（merge cart 使用）
@@ -321,20 +310,20 @@ class RedisCartRepository(ICartRepository):
         key = self._cart_key(owner_id)
         now = datetime.now(timezone.utc)
         result = []
-        
+
         # 1. 使用 Pipeline 一次讀取所有商品的現有狀態 (HGET)
         async with self.redis.pipeline(transaction=True) as pipe:
             for item in items:
                 pipe.hget(key, str(item.product_id))
             existing_values = await pipe.execute()
-        
+
         # 2. 在記憶體中計算新狀態
-        updates = {} # product_id_str -> serialized_data
-        
+        updates = {}  # product_id_str -> serialized_data
+
         for i, item in enumerate(items):
             product_id_str = str(item.product_id)
             existing = existing_values[i]
-            
+
             if existing:
                 # 累加數量
                 data = self._deserialize_item(existing)
@@ -346,33 +335,34 @@ class RedisCartRepository(ICartRepository):
                 new_quantity = item.quantity
                 created_at = now
                 updated_at = now
-                
+
             serialized = self._serialize_item(
                 item.product_id, new_quantity, created_at, updated_at
             )
             updates[product_id_str] = serialized
-            
+
             # 建構回傳物件
             item_id = uuid.uuid5(uuid.NAMESPACE_DNS, f"{owner_id}:{product_id_str}")
             cart_id = uuid.uuid5(uuid.NAMESPACE_DNS, owner_id)
-            
-            result.append(CartItemResponse(
-                id=item_id,
-                cart_id=cart_id,
-                product_id=item.product_id,
-                quantity=new_quantity,
-                created_at=created_at,
-                updated_at=updated_at
-            ))
-            
+
+            result.append(
+                CartItemResponse(
+                    id=item_id,
+                    cart_id=cart_id,
+                    product_id=item.product_id,
+                    quantity=new_quantity,
+                    created_at=created_at,
+                    updated_at=updated_at,
+                )
+            )
+
         # 3. 使用 Pipeline 一次寫入所有更新 (HSET) 並設定過期時間
         if updates:
             async with self.redis.pipeline(transaction=True) as pipe:
-                # 雖然 hset 支援多個 mapping, 但 python redis client 的 hset 
+                # 雖然 hset 支援多個 mapping, 但 python redis client 的 hset
                 # 可以直接傳入 mapping 字典 {field: value, ...}
                 pipe.hset(key, mapping=updates)
                 pipe.expire(key, self.ttl)
                 await pipe.execute()
 
         return result
-

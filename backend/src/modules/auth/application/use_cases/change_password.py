@@ -1,4 +1,5 @@
 """變更密碼 Use Case (登入狀態下)"""
+
 from uuid import UUID
 from modules.auth.domain.repository import IUserRepository
 from modules.auth.domain.services.password_hasher import IPasswordHasher
@@ -8,14 +9,19 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+
 class ChangePasswordUseCase:
     """變更密碼 Use Case"""
 
-    def __init__(self, user_repository: IUserRepository, password_hasher: IPasswordHasher):
+    def __init__(
+        self, user_repository: IUserRepository, password_hasher: IPasswordHasher
+    ):
         self.user_repository = user_repository
         self.password_hasher = password_hasher
 
-    async def execute(self, user_id: UUID, old_password: str, new_password: str) -> bool:
+    async def execute(
+        self, user_id: UUID, old_password: str, new_password: str
+    ) -> bool:
         """
         執行密碼變更
 
@@ -43,6 +49,6 @@ class ChangePasswordUseCase:
         # 更新密碼
         user.password_hash = get_password_hash(new_password)
         await self.user_repository.update(user)
-        
+
         logger.info(f"使用者密碼變更成功 (id: {user_id})")
         return True

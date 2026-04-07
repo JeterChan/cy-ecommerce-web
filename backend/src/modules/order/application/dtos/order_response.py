@@ -5,6 +5,7 @@ from typing import List, Optional
 from uuid import UUID
 from modules.order.application.dtos.order_item_response import OrderItemResponse
 
+
 class OrderResponse(BaseModel):
     id: UUID
     order_number: str
@@ -21,5 +22,5 @@ class OrderResponse(BaseModel):
     created_at: datetime
     updated_at: datetime
     status_updated_at: Optional[datetime] = None
-    
+
     model_config = ConfigDict(from_attributes=True)

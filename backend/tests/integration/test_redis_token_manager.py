@@ -28,7 +28,6 @@ import asyncio
 from redis.asyncio import Redis
 from infrastructure.redis.token_manager import RedisTokenManager
 
-
 # ==================== Fixtures ====================
 
 
@@ -38,7 +37,7 @@ async def redis_client():
     redis = await Redis.from_url(
         "redis://localhost:6379/15",  # 使用 DB 15 作為測試資料庫
         encoding="utf-8",
-        decode_responses=True
+        decode_responses=True,
     )
 
     # 清空測試資料庫
@@ -78,9 +77,7 @@ class TestRedisTokenManagerIntegration:
             assert isinstance(token, str), "Token 應為字串"
 
     async def test_store_and_retrieve_email_change_tokens(
-        self,
-        token_manager,
-        redis_client
+        self, token_manager, redis_client
     ):
         """測試儲存和讀取信箱變更 tokens"""
         user_id = 123
@@ -93,7 +90,7 @@ class TestRedisTokenManagerIntegration:
             user_id=user_id,
             old_token=old_token,
             new_token=new_token,
-            new_email=new_email
+            new_email=new_email,
         )
 
         # 驗證 Redis 中確實儲存了 5 個 keys
@@ -126,7 +123,7 @@ class TestRedisTokenManagerIntegration:
             user_id=user_id,
             old_token=old_token,
             new_token=new_token,
-            new_email="test@example.com"
+            new_email="test@example.com",
         )
 
         # 驗證舊信箱 token
@@ -147,7 +144,7 @@ class TestRedisTokenManagerIntegration:
             user_id=user_id,
             old_token=correct_token,
             new_token="some_new_token",
-            new_email="test@example.com"
+            new_email="test@example.com",
         )
 
         # 使用錯誤的 token 驗證
@@ -160,9 +157,7 @@ class TestRedisTokenManagerIntegration:
         any_token = "any_token"
 
         is_valid = await token_manager.verify_token(
-            non_existent_user_id,
-            any_token,
-            "old"
+            non_existent_user_id, any_token, "old"
         )
         assert is_valid is False
 
@@ -176,7 +171,7 @@ class TestRedisTokenManagerIntegration:
             user_id=user_id,
             old_token=old_token,
             new_token=new_token,
-            new_email="test@example.com"
+            new_email="test@example.com",
         )
 
         # 初始狀態：兩個都未驗證
@@ -203,10 +198,7 @@ class TestRedisTokenManagerIntegration:
         new_email = "pending@example.com"
 
         await token_manager.store_email_change_tokens(
-            user_id=user_id,
-            old_token="token1",
-            new_token="token2",
-            new_email=new_email
+            user_id=user_id, old_token="token1", new_token="token2", new_email=new_email
         )
 
         retrieved_email = await token_manager.get_pending_email(user_id)
@@ -227,7 +219,7 @@ class TestRedisTokenManagerIntegration:
             user_id=user_id,
             old_token="token1",
             new_token="token2",
-            new_email="cleanup@example.com"
+            new_email="cleanup@example.com",
         )
 
         # 確認資料已儲存
@@ -251,7 +243,7 @@ class TestRedisTokenManagerIntegration:
             old_token="token1",
             new_token="token2",
             new_email="ttl@example.com",
-            ttl=short_ttl
+            ttl=short_ttl,
         )
 
         # 立即檢查：資料應該存在
@@ -275,7 +267,7 @@ class TestRedisTokenManagerIntegration:
             old_token="token1",
             new_token="token2",
             new_email="custom@example.com",
-            ttl=custom_ttl
+            ttl=custom_ttl,
         )
 
         # 檢查 TTL 是否正確設定
@@ -297,7 +289,7 @@ class TestRedisTokenManagerIntegration:
             user_id=user_id,
             old_token=old_token,
             new_token=new_token,
-            new_email=new_email
+            new_email=new_email,
         )
 
         # Step 3: 模擬使用者點擊舊信箱驗證連結
@@ -342,7 +334,7 @@ class TestRedisTokenManagerIntegration:
                 user_id=user_id,
                 old_token=f"old_token_{user_id}",
                 new_token=f"new_token_{user_id}",
-                new_email=f"user{user_id}@example.com"
+                new_email=f"user{user_id}@example.com",
             )
             tasks.append(task)
 
@@ -354,17 +346,11 @@ class TestRedisTokenManagerIntegration:
             assert pending_email == f"user{user_id}@example.com"
 
             is_valid = await token_manager.verify_token(
-                user_id,
-                f"old_token_{user_id}",
-                "old"
+                user_id, f"old_token_{user_id}", "old"
             )
             assert is_valid is True
 
-    async def test_mark_as_verified_preserves_ttl(
-        self,
-        token_manager,
-        redis_client
-    ):
+    async def test_mark_as_verified_preserves_ttl(self, token_manager, redis_client):
         """測試標記為已驗證時保留原有的 TTL"""
         user_id = 888
         custom_ttl = 7200  # 2 小時
@@ -374,7 +360,7 @@ class TestRedisTokenManagerIntegration:
             old_token="token1",
             new_token="token2",
             new_email="ttl_test@example.com",
-            ttl=custom_ttl
+            ttl=custom_ttl,
         )
 
         # 標記為已驗證
@@ -384,4 +370,3 @@ class TestRedisTokenManagerIntegration:
         ttl = await redis_client.ttl(f"email_change:{user_id}:old_verified")
         assert ttl > 7000  # 至少保留大部分的 TTL
         assert ttl <= custom_ttl
-

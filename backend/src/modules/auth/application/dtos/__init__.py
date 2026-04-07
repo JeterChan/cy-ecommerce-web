@@ -1,6 +1,7 @@
 """
 Auth DTOs (Data Transfer Objects)
 """
+
 from .register_request import RegisterRequestDTO
 from .login_request import LoginRequestDTO
 from .refresh_token_request import RefreshTokenRequestDTO

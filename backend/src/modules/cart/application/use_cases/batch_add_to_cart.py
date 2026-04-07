@@ -11,9 +11,7 @@ class BatchAddToCartUseCase:
         self.repository = repository
 
     async def execute(
-        self,
-        owner_id: str,
-        items: List[CartItemCreate]
+        self, owner_id: str, items: List[CartItemCreate]
     ) -> List[CartItemResponse]:
         """
         執行批量新增商品到購物車

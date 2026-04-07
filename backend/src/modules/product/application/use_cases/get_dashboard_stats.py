@@ -18,6 +18,6 @@ class GetDashboardStatsUseCase:
         return DashboardStatsDTO(
             total_products=total_products,
             low_stock_count=low_stock_count,
-            today_orders=today_stats['count'],
-            today_sales=today_stats['total_sales'],
+            today_orders=today_stats["count"],
+            today_sales=today_stats["total_sales"],
         )

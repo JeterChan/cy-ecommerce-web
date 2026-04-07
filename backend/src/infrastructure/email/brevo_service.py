@@ -1,12 +1,12 @@
 import httpx
 import logging
 
-
 logger = logging.getLogger(__name__)
 
 
 class EmailSendError(Exception):
     """郵件發送失敗例外"""
+
     pass
 
 
@@ -18,7 +18,7 @@ class BrevoEmailService:
         api_key: str,
         sender_email: str,
         sender_name: str,
-        frontend_url: str | None = None
+        frontend_url: str | None = None,
     ):
         self.api_key = api_key
         self.sender_email = sender_email
@@ -26,7 +26,9 @@ class BrevoEmailService:
         self.frontend_url = frontend_url or "http://localhost:5173"
         self.api_url = "https://api.brevo.com/v3/smtp/email"
 
-    async def send_email_verification(self, to_email: str, username: str, verification_url: str, email_type: str) -> None:
+    async def send_email_verification(
+        self, to_email: str, username: str, verification_url: str, email_type: str
+    ) -> None:
         """發送電子郵件變更驗證信 (Existing)"""
         if email_type == "old":
             subject = "驗證您的舊電子郵件地址"
@@ -38,40 +40,50 @@ class BrevoEmailService:
             raise ValueError(f"不支援的 email_type: {email_type}")
         await self._send_via_api(to_email, subject, html_content)
 
-    async def send_registration_verification(self, to_email: str, username: str, verification_url: str) -> None:
+    async def send_registration_verification(
+        self, to_email: str, username: str, verification_url: str
+    ) -> None:
         """發送註冊信箱驗證信"""
         subject = "歡迎註冊！請驗證您的電子郵件地址"
         html_content = self._render_registration_template(username, verification_url)
         await self._send_via_api(to_email, subject, html_content)
 
-    async def send_password_reset(self, to_email: str, username: str, reset_url: str) -> None:
+    async def send_password_reset(
+        self, to_email: str, username: str, reset_url: str
+    ) -> None:
         """發送密碼重設信"""
         subject = "重設您的密碼"
         html_content = self._render_password_reset_template(username, reset_url)
         await self._send_via_api(to_email, subject, html_content)
 
-    async def _send_via_api(self, to_email: str, subject: str, html_content: str) -> None:
+    async def _send_via_api(
+        self, to_email: str, subject: str, html_content: str
+    ) -> None:
         headers = {
             "accept": "application/json",
             "api-key": self.api_key,
-            "content-type": "application/json"
+            "content-type": "application/json",
         }
         payload = {
             "sender": {"name": self.sender_name, "email": self.sender_email},
             "to": [{"email": to_email}],
             "subject": subject,
-            "htmlContent": html_content
+            "htmlContent": html_content,
         }
         try:
             async with httpx.AsyncClient(timeout=10.0) as client:
-                response = await client.post(self.api_url, json=payload, headers=headers)
+                response = await client.post(
+                    self.api_url, json=payload, headers=headers
+                )
                 response.raise_for_status()
                 logger.info(f"成功發送郵件至 {to_email}, 主旨: {subject}")
         except Exception as e:
             logger.error(f"郵件發送失敗: {str(e)}")
             raise EmailSendError(f"郵件發送失敗: {str(e)}") from e
 
-    def _render_registration_template(self, username: str, verification_url: str) -> str:
+    def _render_registration_template(
+        self, username: str, verification_url: str
+    ) -> str:
         return f"""
         <!DOCTYPE html>
         <html>

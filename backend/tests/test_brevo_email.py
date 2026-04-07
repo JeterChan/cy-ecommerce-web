@@ -23,7 +23,7 @@ async def test_send_email():
         api_key=api_key,
         sender_email=os.getenv("BREVO_SENDER_EMAIL"),
         sender_name=os.getenv("BREVO_SENDER_NAME"),
-        frontend_url=os.getenv("FRONTEND_URL")
+        frontend_url=os.getenv("FRONTEND_URL"),
     )
 
     # 測試收件人（改成你的測試信箱）
@@ -38,7 +38,7 @@ async def test_send_email():
             to_email=test_email,
             username=test_username,
             verification_url=test_verification_url,
-            email_type="old"
+            email_type="old",
         )
         print("✅ 舊信箱驗證郵件發送成功！")
 
@@ -51,7 +51,7 @@ async def test_send_email():
             to_email=test_email,
             username=test_username,
             verification_url=test_verification_url,
-            email_type="new"
+            email_type="new",
         )
         print("✅ 新信箱驗證郵件發送成功！")
 

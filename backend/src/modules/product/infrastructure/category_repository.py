@@ -39,7 +39,9 @@ class SqlAlchemyCategoryRepository:
         await self.db.refresh(model)
         return self._to_entity(model)
 
-    async def update(self, category_id: int, name: Optional[str], slug: Optional[str]) -> Optional[Category]:
+    async def update(
+        self, category_id: int, name: Optional[str], slug: Optional[str]
+    ) -> Optional[Category]:
         stmt = select(CategoryModel).where(CategoryModel.id == category_id)
         result = await self.db.execute(stmt)
         model = result.scalar_one_or_none()

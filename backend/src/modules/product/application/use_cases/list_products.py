@@ -15,7 +15,7 @@ class ListProductsUseCase:
         limit: int = 100,
         category_id: Optional[int] = None,
         category_ids: Optional[List[int]] = None,
-        is_active: Optional[bool] = None
+        is_active: Optional[bool] = None,
     ) -> tuple[List[Product], int]:
         """
         執行列出商品清單
@@ -35,5 +35,5 @@ class ListProductsUseCase:
             limit=limit,
             category_id=category_id,
             category_ids=category_ids,
-            is_active=is_active
+            is_active=is_active,
         )

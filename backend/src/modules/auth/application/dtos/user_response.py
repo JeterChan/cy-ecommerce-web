@@ -3,8 +3,10 @@ from uuid import UUID
 from datetime import datetime
 from typing import Optional
 
+
 class UserResponseDTO(BaseModel):
     """使用者資料的回應 DTO"""
+
     id: UUID = Field(..., description="使用者 ID")
     email: EmailStr = Field(..., description="使用者信箱")
     username: str = Field(..., description="使用者名稱")
@@ -18,5 +20,5 @@ class UserResponseDTO(BaseModel):
         json_encoders={
             UUID: str,
             datetime: lambda v: v.isoformat() if v else None,
-        }
+        },
     )

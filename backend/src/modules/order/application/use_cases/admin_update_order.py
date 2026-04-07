@@ -5,12 +5,10 @@ from modules.order.domain.repository import IOrderRepository
 from modules.order.domain.value_objects import OrderStatus
 from modules.order.domain.ports import IProductPort
 
+
 class AdminUpdateOrderUseCase:
     def __init__(
-        self,
-        db: AsyncSession,
-        order_repo: IOrderRepository,
-        product_port: IProductPort
+        self, db: AsyncSession, order_repo: IOrderRepository, product_port: IProductPort
     ):
         self.db = db
         self.order_repo = order_repo
@@ -20,7 +18,7 @@ class AdminUpdateOrderUseCase:
         self,
         order_id: UUID,
         new_status: Optional[str] = None,
-        admin_note: Optional[str] = None
+        admin_note: Optional[str] = None,
     ):
         """
         管理員更新訂單。支援更新狀態與內部備註。
@@ -32,7 +30,9 @@ class AdminUpdateOrderUseCase:
         async with self.db.begin():
             return await self._do_execute(order_id, new_status, admin_note)
 
-    async def _do_execute(self, order_id: UUID, new_status: Optional[str], admin_note: Optional[str]):
+    async def _do_execute(
+        self, order_id: UUID, new_status: Optional[str], admin_note: Optional[str]
+    ):
         order = await self.order_repo.get_by_id(order_id)
         if not order:
             raise ValueError("訂單不存在")
@@ -49,13 +49,21 @@ class AdminUpdateOrderUseCase:
 
             if old_status != target_status.value:
                 # 如果是取消訂單，且原本是 PENDING 或 PAID，則回補庫存
-                if target_status == OrderStatus.CANCELLED and old_status in [OrderStatus.PENDING.value, OrderStatus.PAID.value]:
+                if target_status == OrderStatus.CANCELLED and old_status in [
+                    OrderStatus.PENDING.value,
+                    OrderStatus.PAID.value,
+                ]:
                     for item in order.items:
-                        await self.product_port.restore_stock(item.product_id, item.quantity)
+                        await self.product_port.restore_stock(
+                            item.product_id, item.quantity
+                        )
 
                 # 基本的狀態跳轉檢查
-                if old_status == OrderStatus.CANCELLED.value and target_status != OrderStatus.CANCELLED:
-                     raise ValueError("已取消的訂單不可恢復狀態")
+                if (
+                    old_status == OrderStatus.CANCELLED.value
+                    and target_status != OrderStatus.CANCELLED
+                ):
+                    raise ValueError("已取消的訂單不可恢復狀態")
 
                 order.status = target_status.value
 

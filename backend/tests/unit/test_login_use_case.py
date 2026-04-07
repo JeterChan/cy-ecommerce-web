@@ -21,8 +21,8 @@ from modules.auth.domain.repositories.i_user_repository import IUserRepository
 from core.exceptions import InvalidCredentialsError, UserNotRegisteredError
 from core.security import get_password_hash, verify_token
 
-
 # ==================== Mock Repository ====================
+
 
 class MockUserRepository(IUserRepository):
     """Mock User Repository for Unit Testing"""
@@ -61,6 +61,7 @@ class MockUserRepository(IUserRepository):
     async def exists_by_email(self, email: str) -> bool:
         """檢查 email 是否存在"""
         return any(u.email.lower() == email.lower() for u in self.users)
+
     """LoginUserUseCase 的單元測試"""
 
     @pytest.fixture
@@ -89,10 +90,7 @@ class MockUserRepository(IUserRepository):
         created_user = await mock_repository.create(user)
 
         # 返回使用者資料和明文密碼
-        return {
-            "user": created_user,
-            "password": password
-        }
+        return {"user": created_user, "password": password}
 
     # ==================== 成功案例 ====================
 
@@ -101,8 +99,7 @@ class MockUserRepository(IUserRepository):
         # Arrange
         user_data = registered_user
         input_dto = LoginUserInputDTO(
-            email=user_data["user"].email,
-            password=user_data["password"]
+            email=user_data["user"].email, password=user_data["password"]
         )
 
         # Act
@@ -129,8 +126,7 @@ class MockUserRepository(IUserRepository):
         # Arrange
         user_data = registered_user
         input_dto = LoginUserInputDTO(
-            email="JOHN@EXAMPLE.COM",  # 大寫
-            password=user_data["password"]
+            email="JOHN@EXAMPLE.COM", password=user_data["password"]  # 大寫
         )
 
         # Act
@@ -146,8 +142,7 @@ class MockUserRepository(IUserRepository):
         """測試使用者不存在時登入失敗"""
         # Arrange
         input_dto = LoginUserInputDTO(
-            email="notexist@example.com",
-            password="AnyPassword123!"
+            email="notexist@example.com", password="AnyPassword123!"
         )
 
         # Act & Assert
@@ -161,8 +156,7 @@ class MockUserRepository(IUserRepository):
         # Arrange
         user_data = registered_user
         input_dto = LoginUserInputDTO(
-            email=user_data["user"].email,
-            password="WrongPassword123!"  # 錯誤的密碼
+            email=user_data["user"].email, password="WrongPassword123!"  # 錯誤的密碼
         )
 
         # Act & Assert
@@ -179,8 +173,7 @@ class MockUserRepository(IUserRepository):
         # Act & Assert
         with pytest.raises(Exception):  # Pydantic ValidationError
             input_dto = LoginUserInputDTO(
-                email=user_data["user"].email,
-                password=""  # 空密碼
+                email=user_data["user"].email, password=""  # 空密碼
             )
 
     # ==================== Token 驗證測試 ====================
@@ -190,8 +183,7 @@ class MockUserRepository(IUserRepository):
         # Arrange
         user_data = registered_user
         input_dto = LoginUserInputDTO(
-            email=user_data["user"].email,
-            password=user_data["password"]
+            email=user_data["user"].email, password=user_data["password"]
         )
 
         # Act
@@ -210,8 +202,7 @@ class MockUserRepository(IUserRepository):
         # Arrange
         user_data = registered_user
         input_dto = LoginUserInputDTO(
-            email=user_data["user"].email,
-            password=user_data["password"]
+            email=user_data["user"].email, password=user_data["password"]
         )
 
         # Act
@@ -224,13 +215,14 @@ class MockUserRepository(IUserRepository):
 
     # ==================== 多次登入測試 ====================
 
-    async def test_multiple_logins_generate_different_tokens(self, use_case, registered_user):
+    async def test_multiple_logins_generate_different_tokens(
+        self, use_case, registered_user
+    ):
         """測試多次登入產生不同的 Token"""
         # Arrange
         user_data = registered_user
         input_dto = LoginUserInputDTO(
-            email=user_data["user"].email,
-            password=user_data["password"]
+            email=user_data["user"].email, password=user_data["password"]
         )
 
         # Act
@@ -242,4 +234,3 @@ class MockUserRepository(IUserRepository):
         # 主要驗證都是有效的 Token
         assert verify_token(output_dto1.access_token, token_type="access") is not None
         assert verify_token(output_dto2.access_token, token_type="access") is not None
-

@@ -14,7 +14,9 @@ import uuid
 from sqlalchemy.ext.asyncio import AsyncSession
 from redis.asyncio import Redis
 
-from modules.cart.infrastructure.repositories.redis_repository import RedisCartRepository
+from modules.cart.infrastructure.repositories.redis_repository import (
+    RedisCartRepository,
+)
 from modules.cart.infrastructure.repositories.sql_repository import SQLCartRepository
 from modules.cart.domain.entities import CartItemCreate
 
@@ -44,11 +46,7 @@ class CartMergeService:
         self.redis_repo = RedisCartRepository(redis)
         self.sql_repo = SQLCartRepository(db)
 
-    async def merge_guest_to_member(
-        self,
-        guest_token: str,
-        user_id: uuid.UUID
-    ) -> dict:
+    async def merge_guest_to_member(self, guest_token: str, user_id: uuid.UUID) -> dict:
         """
         將訪客購物車合併到會員購物車
 
@@ -78,7 +76,7 @@ class CartMergeService:
             "success": False,
             "merged_items": 0,
             "total_quantity": 0,
-            "errors": []
+            "errors": [],
         }
 
         try:
@@ -92,10 +90,7 @@ class CartMergeService:
 
             # 2. 準備批量新增的資料
             items_to_merge = [
-                CartItemCreate(
-                    product_id=item.product_id,
-                    quantity=item.quantity
-                )
+                CartItemCreate(product_id=item.product_id, quantity=item.quantity)
                 for item in guest_items
             ]
 
@@ -103,8 +98,7 @@ class CartMergeService:
             # SQLCartRepository.batch_add_items 會自動處理重複商品（數量累加）
             owner_id = str(user_id)
             merged_items = await self.sql_repo.batch_add_items(
-                owner_id=owner_id,
-                items=items_to_merge
+                owner_id=owner_id, items=items_to_merge
             )
 
             # 4. 統計結果
@@ -127,11 +121,7 @@ class CartMergeService:
 
         return result
 
-    async def get_merge_preview(
-        self,
-        guest_token: str,
-        user_id: uuid.UUID
-    ) -> dict:
+    async def get_merge_preview(self, guest_token: str, user_id: uuid.UUID) -> dict:
         """
         預覽合併結果（不實際執行）
 
@@ -156,12 +146,11 @@ class CartMergeService:
             return {
                 "guest_items_count": len(guest_items),
                 "guest_total_quantity": sum(item.quantity for item in guest_items),
-                "has_items": len(guest_items) > 0
+                "has_items": len(guest_items) > 0,
             }
         except Exception:
             return {
                 "guest_items_count": 0,
                 "guest_total_quantity": 0,
-                "has_items": False
+                "has_items": False,
             }
-

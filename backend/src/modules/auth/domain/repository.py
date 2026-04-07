@@ -3,6 +3,7 @@ from typing import Optional, List
 
 from modules.auth.domain.entities import UserEntity
 
+
 class IUserRepository(ABC):
     """
     User Data 存取介面 (抽象層)

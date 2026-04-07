@@ -6,6 +6,7 @@ from pydantic import computed_field, field_validator
 # .env 位於 config.py 上三層（src/infrastructure/ → src/ → backend/）
 _ENV_FILE = Path(__file__).parent.parent.parent / ".env"
 
+
 class Settings(BaseSettings):
     # 1. 基礎設定
     PROJECT_NAME: str
@@ -61,27 +62,27 @@ class Settings(BaseSettings):
     def database_url(self) -> str:
         """
         Builds the SQLAlchemy+asyncpg PostgreSQL connection URL from the current settings.
-        
+
         Returns:
             str: Connection URL formatted as "postgresql+asyncpg://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}".
         """
         if self.DATABASE_URL:
             # Handle Render/Heroku postgres:// scheme for asyncpg
             return self.DATABASE_URL.replace("postgres://", "postgresql+asyncpg://")
-            
+
         return f"postgresql+asyncpg://{self.DB_USER}:{self.DB_PASSWORD}@{self.DB_HOST}:{self.DB_PORT}/{self.DB_NAME}"
 
     @computed_field
     @property
     def redis_url(self) -> str:
         """
-        Returns the Redis connection URL. 
+        Returns the Redis connection URL.
         If REDIS_URL env var is set, uses it.
         Otherwise, constructs it from host/port/db/password.
         """
         if self.REDIS_URL:
             return self.REDIS_URL
-            
+
         _password = f":{self.REDIS_PASSWORD}@" if self.REDIS_PASSWORD else ""
         return f"redis://{_password}{self.REDIS_HOST}:{self.REDIS_PORT}/{self.REDIS_DB}"
 
@@ -90,8 +91,9 @@ class Settings(BaseSettings):
         "env_file": str(_ENV_FILE),
         "env_file_encoding": "utf-8",
         "case_sensitive": True,
-        "extra": "ignore"  # 忽略額外的環境變數（不報錯）
+        "extra": "ignore",  # 忽略額外的環境變數（不報錯）
     }
+
 
 # 實例化
 settings = Settings()

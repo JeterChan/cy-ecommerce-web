@@ -1,4 +1,5 @@
 """驗證信箱 Use Case"""
+
 from modules.auth.domain.repository import IUserRepository
 from infrastructure.redis.token_manager import RedisTokenManager
 from core.exceptions import UserNotFoundError
@@ -6,13 +7,12 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+
 class VerifyEmailUseCase:
     """驗證信箱 Use Case"""
 
     def __init__(
-        self, 
-        user_repository: IUserRepository,
-        token_manager: RedisTokenManager
+        self, user_repository: IUserRepository, token_manager: RedisTokenManager
     ):
         self.user_repository = user_repository
         self.token_manager = token_manager
@@ -45,6 +45,6 @@ class VerifyEmailUseCase:
         user.is_verified = True
         user.is_active = True
         await self.user_repository.update(user)
-        
+
         logger.info(f"使用者信箱驗證成功 (id: {user_id}, email: {user.email})")
         return True

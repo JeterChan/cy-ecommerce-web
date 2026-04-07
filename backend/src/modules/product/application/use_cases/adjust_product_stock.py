@@ -11,7 +11,11 @@ if TYPE_CHECKING:
 class AdjustProductStockUseCase:
     """調整商品庫存的業務邏輯"""
 
-    def __init__(self, repo: IProductRepository, stock_service: Optional["StockRedisService"] = None):
+    def __init__(
+        self,
+        repo: IProductRepository,
+        stock_service: Optional["StockRedisService"] = None,
+    ):
         self.repo = repo
         self.stock_service = stock_service
 

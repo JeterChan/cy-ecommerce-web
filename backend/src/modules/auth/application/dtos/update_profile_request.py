@@ -1,8 +1,11 @@
 from typing import Optional
 from pydantic import BaseModel, Field, field_validator
 
+
 class UpdateProfileRequest(BaseModel):
-    username: Optional[str] = Field(None, min_length=3, max_length=50, description="使用者名稱")
+    username: Optional[str] = Field(
+        None, min_length=3, max_length=50, description="使用者名稱"
+    )
     phone: Optional[str] = Field(None, max_length=20, description="聯絡電話")
     address: Optional[str] = Field(None, max_length=500, description="郵寄地址")
     carrier_type: Optional[str] = Field(None, max_length=50, description="載具類型")

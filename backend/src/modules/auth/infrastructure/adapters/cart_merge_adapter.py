@@ -38,8 +38,7 @@ class CartMergeAdapter(ICartMergePort):
             if guest_token:
                 merge_service = CartMergeService(self._db, self._redis)
                 await merge_service.merge_guest_to_member(
-                    guest_token=guest_token,
-                    user_id=user_id
+                    guest_token=guest_token, user_id=user_id
                 )
         except Exception as e:
             logger.warning(f"Cart merge failed: {e}")

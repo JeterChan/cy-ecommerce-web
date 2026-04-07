@@ -4,15 +4,19 @@ from decimal import Decimal
 from uuid import uuid4
 
 from modules.cart.application.use_cases.add_to_cart import AddToCartUseCase
-from modules.cart.application.use_cases.update_cart_item_quantity import UpdateCartItemQuantityUseCase
+from modules.cart.application.use_cases.update_cart_item_quantity import (
+    UpdateCartItemQuantityUseCase,
+)
 from modules.cart.domain.exceptions import InsufficientStockException
 from modules.cart.domain.ports import ProductSnapshot
 
 
 def _make_product_snapshot(stock=10, **kw):
     defaults = dict(
-        id=uuid4(), name="測試商品",
-        price=Decimal("100"), stock_quantity=stock,
+        id=uuid4(),
+        name="測試商品",
+        price=Decimal("100"),
+        stock_quantity=stock,
     )
     defaults.update(kw)
     return ProductSnapshot(**defaults)

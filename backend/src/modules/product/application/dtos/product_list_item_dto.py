@@ -2,6 +2,7 @@ from pydantic import BaseModel, ConfigDict
 from decimal import Decimal
 from typing import Optional
 
+
 class ProductListItemDTO(BaseModel):
     id: int
     name: str

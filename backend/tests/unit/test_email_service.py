@@ -27,7 +27,7 @@ class TestBrevoEmailService:
             api_key="test_api_key",
             sender_email="noreply@example.com",
             sender_name="測試平台",
-            frontend_url="http://localhost:5173"
+            frontend_url="http://localhost:5173",
         )
 
     def test_initialization(self, email_service):
@@ -42,7 +42,7 @@ class TestBrevoEmailService:
         """測試舊信箱驗證郵件模板"""
         html = email_service._render_old_email_template(
             username="TestUser",
-            verification_url="http://example.com/verify?token=abc123"
+            verification_url="http://example.com/verify?token=abc123",
         )
 
         assert "TestUser" in html
@@ -54,14 +54,13 @@ class TestBrevoEmailService:
         """測試新信箱驗證郵件模板"""
         html = email_service._render_new_email_template(
             username="TestUser",
-            verification_url="http://example.com/verify?token=xyz789"
+            verification_url="http://example.com/verify?token=xyz789",
         )
 
         assert "TestUser" in html
         assert "http://example.com/verify?token=xyz789" in html
         assert "驗證新電子郵件" in html
         assert "24 小時後失效" in html
-
 
     async def test_send_email_verification_old_type(self, email_service):
         """測試發送舊信箱驗證郵件"""
@@ -76,7 +75,7 @@ class TestBrevoEmailService:
                 to_email="user@old.com",
                 username="TestUser",
                 verification_url="http://example.com/verify?token=abc123",
-                email_type="old"
+                email_type="old",
             )
 
             # 驗證 API 被呼叫
@@ -86,7 +85,6 @@ class TestBrevoEmailService:
             assert call_kwargs["json"]["to"][0]["email"] == "user@old.com"
             assert call_kwargs["json"]["subject"] == "驗證您的舊電子郵件地址"
             assert "TestUser" in call_kwargs["json"]["htmlContent"]
-
 
     async def test_send_email_verification_new_type(self, email_service):
         """測試發送新信箱驗證郵件"""
@@ -101,7 +99,7 @@ class TestBrevoEmailService:
                 to_email="user@new.com",
                 username="TestUser",
                 verification_url="http://example.com/verify?token=xyz789",
-                email_type="new"
+                email_type="new",
             )
 
             # 驗證 API 被呼叫
@@ -111,7 +109,6 @@ class TestBrevoEmailService:
             assert call_kwargs["json"]["to"][0]["email"] == "user@new.com"
             assert call_kwargs["json"]["subject"] == "驗證您的新電子郵件地址"
 
-
     async def test_send_email_verification_invalid_type(self, email_service):
         """測試不支援的 email_type"""
         with pytest.raises(ValueError, match="不支援的 email_type"):
@@ -119,9 +116,8 @@ class TestBrevoEmailService:
                 to_email="user@example.com",
                 username="TestUser",
                 verification_url="http://example.com/verify",
-                email_type="invalid"
+                email_type="invalid",
             )
-
 
     async def test_send_via_api_success(self, email_service):
         """測試 API 呼叫成功"""
@@ -135,7 +131,7 @@ class TestBrevoEmailService:
             await email_service._send_via_api(
                 to_email="test@example.com",
                 subject="測試主旨",
-                html_content="<p>測試內容</p>"
+                html_content="<p>測試內容</p>",
             )
 
             # 驗證呼叫參數
@@ -147,7 +143,6 @@ class TestBrevoEmailService:
             assert call_kwargs["json"]["htmlContent"] == "<p>測試內容</p>"
             assert call_kwargs["headers"]["api-key"] == "test_api_key"
 
-
     async def test_send_via_api_http_error(self, email_service):
         """測試 API 回應錯誤"""
         with patch("httpx.AsyncClient.post") as mock_post:
@@ -157,18 +152,15 @@ class TestBrevoEmailService:
             mock_response.text = "Bad Request"
             mock_post.return_value = mock_response
             mock_response.raise_for_status.side_effect = httpx.HTTPStatusError(
-                "Bad Request",
-                request=MagicMock(),
-                response=mock_response
+                "Bad Request", request=MagicMock(), response=mock_response
             )
 
             with pytest.raises(EmailSendError, match="API 錯誤 400"):
                 await email_service._send_via_api(
                     to_email="test@example.com",
                     subject="測試",
-                    html_content="<p>測試</p>"
+                    html_content="<p>測試</p>",
                 )
-
 
     async def test_send_via_api_network_error(self, email_service):
         """測試網路錯誤"""
@@ -180,9 +172,8 @@ class TestBrevoEmailService:
                 await email_service._send_via_api(
                     to_email="test@example.com",
                     subject="測試",
-                    html_content="<p>測試</p>"
+                    html_content="<p>測試</p>",
                 )
-
 
     async def test_send_via_api_unexpected_error(self, email_service):
         """測試未預期錯誤"""
@@ -194,6 +185,5 @@ class TestBrevoEmailService:
                 await email_service._send_via_api(
                     to_email="test@example.com",
                     subject="測試",
-                    html_content="<p>測試</p>"
+                    html_content="<p>測試</p>",
                 )
-

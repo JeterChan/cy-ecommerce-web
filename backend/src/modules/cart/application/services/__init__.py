@@ -7,4 +7,3 @@ Cart Application Services
 from modules.cart.application.services.merge_service import CartMergeService
 
 __all__ = ["CartMergeService"]
-

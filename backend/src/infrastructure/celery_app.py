@@ -1,4 +1,5 @@
 """Celery Application 實例"""
+
 from celery import Celery
 from infrastructure.config import settings
 

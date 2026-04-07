@@ -43,7 +43,11 @@ class ProductInfoAdapter(IProductInfoPort):
         image_url = None
         if product.images:
             primary = next((img for img in product.images if img.is_primary), None)
-            image_url = (primary or product.images[0]).url if (primary or product.images) else None
+            image_url = (
+                (primary or product.images[0]).url
+                if (primary or product.images)
+                else None
+            )
 
         return ProductSnapshot(
             id=product.id,

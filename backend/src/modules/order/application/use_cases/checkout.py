@@ -10,7 +10,7 @@ logger = logging.getLogger(__name__)
 
 from modules.order.domain.exceptions import (
     InsufficientStockException,
-    EmptyCartException
+    EmptyCartException,
 )
 from modules.order.domain.repository import IOrderRepository, ICartAdapter
 from modules.order.domain.entities import Order, OrderItem
@@ -46,7 +46,7 @@ class CheckoutUseCase:
         owner_id = str(user_id)
 
         # 1. 讀取 Redis 購物車 (外部操作，不需要在 DB 事務內)
-        if hasattr(self.cart_repo, 'get_cart'):
+        if hasattr(self.cart_repo, "get_cart"):
             cart_items = await self.cart_repo.get_cart(owner_id)
         else:
             cart_items = await self.cart_repo.get_cart_items(owner_id)
@@ -59,7 +59,9 @@ class CheckoutUseCase:
         if self.stock_service:
             try:
                 for item in cart_items:
-                    success, _ = await self.stock_service.try_deduct(item.product_id, item.quantity)
+                    success, _ = await self.stock_service.try_deduct(
+                        item.product_id, item.quantity
+                    )
                     if not success:
                         # 回滾所有已成功預扣的商品
                         for pid, qty in deducted_items:
@@ -87,15 +89,25 @@ class CheckoutUseCase:
                 try:
                     if not self.db.in_transaction():
                         async with self.db.begin():
-                            created_order = await self._perform_checkout(user_id, cart_items, request)
+                            created_order = await self._perform_checkout(
+                                user_id, cart_items, request
+                            )
                     else:
-                        created_order = await self._perform_checkout(user_id, cart_items, request)
+                        created_order = await self._perform_checkout(
+                            user_id, cart_items, request
+                        )
                         await self.db.flush()
                     break
                 except IntegrityError as e:
                     last_err = e
-                    if "order_number" in str(e).lower() and not self.db.in_transaction() and attempt < max_retries - 1:
-                        logger.warning(f"訂單編號碰撞 (attempt {attempt + 1}), 正在重新產生並重試...")
+                    if (
+                        "order_number" in str(e).lower()
+                        and not self.db.in_transaction()
+                        and attempt < max_retries - 1
+                    ):
+                        logger.warning(
+                            f"訂單編號碰撞 (attempt {attempt + 1}), 正在重新產生並重試..."
+                        )
                         await self.db.rollback()
                         continue
                     raise e
@@ -115,7 +127,9 @@ class CheckoutUseCase:
         # 5. 轉換為 Response DTO
         return OrderResponse.model_validate(created_order)
 
-    async def _perform_checkout(self, user_id: UUID, cart_items: list, request: CheckoutRequest) -> Order:
+    async def _perform_checkout(
+        self, user_id: UUID, cart_items: list, request: CheckoutRequest
+    ) -> Order:
         """
         在資料庫事務內執行的核心結帳邏輯
         """
@@ -133,8 +147,10 @@ class CheckoutUseCase:
             if pid not in product_map or not product_map[pid].is_active:
                 # 嘗試從購物車項目中獲取名稱，避免顯示 UUID
                 item = cart_item_map.get(pid)
-                product_name = getattr(item, 'name', '未知商品') if item else '未知商品'
-                raise ValueError(f"商品 '{product_name}' 不存在或已下架，請重新確認購物車")
+                product_name = getattr(item, "name", "未知商品") if item else "未知商品"
+                raise ValueError(
+                    f"商品 '{product_name}' 不存在或已下架，請重新確認購物車"
+                )
 
         total_amount = Decimal("0.0")
         order_items = []
@@ -147,7 +163,7 @@ class CheckoutUseCase:
                 raise InsufficientStockException(
                     product_name=product.name,
                     requested=item.quantity,
-                    available=product.stock_quantity
+                    available=product.stock_quantity,
                 )
 
             item_total = Decimal(str(product.price)) * item.quantity
@@ -162,7 +178,7 @@ class CheckoutUseCase:
                     product_name=product.name,
                     quantity=item.quantity,
                     unit_price=Decimal(str(product.price)),
-                    subtotal=item_total
+                    subtotal=item_total,
                 )
             )
 
@@ -172,14 +188,14 @@ class CheckoutUseCase:
             user_id=user_id,
             order_number=order_number,
             total_amount=total_amount,
-            shipping_fee=Decimal("0.0"), # MVP 暫定 0
+            shipping_fee=Decimal("0.0"),  # MVP 暫定 0
             status=OrderStatus.PENDING.value,
             recipient_name=request.recipient_name,
             recipient_phone=request.recipient_phone,
             shipping_address=request.shipping_address,
             payment_method=request.payment_method,
             note=request.note,
-            items=order_items
+            items=order_items,
         )
 
         return await self.order_repo.create(order)
@@ -191,8 +207,8 @@ class CheckoutUseCase:
         總長度為 20 位 (12 + 4 + 4)，符合資料庫 String(20) 限制。
         """
         now = datetime.now()
-        date_str = now.strftime("%y%m%d%H%M%S") # 12位
-        micro_str = now.strftime("%f")[:4]      # 取微秒前4位
+        date_str = now.strftime("%y%m%d%H%M%S")  # 12位
+        micro_str = now.strftime("%f")[:4]  # 取微秒前4位
 
         # 獲取 UUID 中的數字部分並取末 4 位
         user_num_str = "".join(filter(str.isdigit, str(user_id)))[-4:].zfill(4)

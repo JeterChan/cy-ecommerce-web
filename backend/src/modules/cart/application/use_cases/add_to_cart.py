@@ -14,10 +14,7 @@ class AddToCartUseCase:
         self.product_port = product_port
 
     async def execute(
-        self,
-        owner_id: str,
-        product_id: uuid.UUID,
-        quantity: int
+        self, owner_id: str, product_id: uuid.UUID, quantity: int
     ) -> CartItemResponse:
         """
         執行新增商品到購物車
@@ -49,7 +46,7 @@ class AddToCartUseCase:
             raise InsufficientStockException(
                 product_name=product.name,
                 requested=new_total_quantity,
-                available=product.stock_quantity
+                available=product.stock_quantity,
             )
 
         return await self.repository.add_item(owner_id, product_id, quantity)

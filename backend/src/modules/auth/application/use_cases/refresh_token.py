@@ -38,7 +38,4 @@ class RefreshTokenUseCase:
         }
         access_token = create_access_token(data=token_data)
 
-        return TokenResponseDTO(
-            access_token=access_token,
-            token_type="bearer"
-        )
+        return TokenResponseDTO(access_token=access_token, token_type="bearer")

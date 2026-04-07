@@ -29,7 +29,9 @@ class OrderProductAdapter(IProductPort):
         self._db = db
         self._product_repo = SqlAlchemyProductRepository(db)
 
-    async def get_products_for_checkout(self, product_ids: List[UUID]) -> List[CheckoutProduct]:
+    async def get_products_for_checkout(
+        self, product_ids: List[UUID]
+    ) -> List[CheckoutProduct]:
         """取得結帳用商品（含悲觀鎖 FOR UPDATE），按 ID 排序防止死鎖"""
         # populate_existing=True 確保 FOR UPDATE 鎖住的資料列會從資料庫重新載入，
         # 避免 SQLAlchemy identity map 回傳過時的快取物件，導致 stock_quantity 不準確

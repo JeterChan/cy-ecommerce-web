@@ -68,5 +68,8 @@ class OrderCartAdapter(ICartAdapter):
     @classmethod
     def for_member(cls, redis: Redis, db: AsyncSession) -> "OrderCartAdapter":
         """建立會員用購物車適配器（HybridCartRepository）"""
-        from modules.cart.infrastructure.repositories.hybrid_repository import HybridCartRepository
+        from modules.cart.infrastructure.repositories.hybrid_repository import (
+            HybridCartRepository,
+        )
+
         return cls(HybridCartRepository(redis, db))

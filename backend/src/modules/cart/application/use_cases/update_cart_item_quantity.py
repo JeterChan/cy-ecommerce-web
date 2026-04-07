@@ -14,10 +14,7 @@ class UpdateCartItemQuantityUseCase:
         self.product_port = product_port
 
     async def execute(
-        self,
-        owner_id: str,
-        product_id: uuid.UUID,
-        quantity: int
+        self, owner_id: str, product_id: uuid.UUID, quantity: int
     ) -> CartItemResponse:
         """
         執行更新購物車商品數量
@@ -37,7 +34,7 @@ class UpdateCartItemQuantityUseCase:
             raise InsufficientStockException(
                 product_name=product.name,
                 requested=quantity,
-                available=product.stock_quantity
+                available=product.stock_quantity,
             )
 
         return await self.repository.update_quantity(owner_id, product_id, quantity)

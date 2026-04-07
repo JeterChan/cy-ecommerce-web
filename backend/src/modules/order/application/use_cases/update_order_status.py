@@ -4,12 +4,10 @@ from modules.order.domain.repository import IOrderRepository
 from modules.order.domain.value_objects import OrderStatus
 from modules.order.domain.ports import IProductPort
 
+
 class UpdateOrderStatusUseCase:
     def __init__(
-        self,
-        db: AsyncSession,
-        order_repo: IOrderRepository,
-        product_port: IProductPort
+        self, db: AsyncSession, order_repo: IOrderRepository, product_port: IProductPort
     ):
         self.db = db
         self.order_repo = order_repo
@@ -42,9 +40,14 @@ class UpdateOrderStatusUseCase:
                 return order
 
             # 如果是從 PENDING 取消，則回補庫存
-            if target_status == OrderStatus.CANCELLED and old_status == OrderStatus.PENDING.value:
+            if (
+                target_status == OrderStatus.CANCELLED
+                and old_status == OrderStatus.PENDING.value
+            ):
                 for item in order.items:
-                    await self.product_port.restore_stock(item.product_id, item.quantity)
+                    await self.product_port.restore_stock(
+                        item.product_id, item.quantity
+                    )
 
             # 更新狀態
             order.status = target_status.value

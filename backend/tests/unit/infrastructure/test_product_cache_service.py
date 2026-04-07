@@ -129,7 +129,9 @@ class TestBuildListCacheKey:
 
     def test_none_params_are_excluded(self):
         key1 = ProductCacheService.build_list_cache_key(skip=0, limit=10)
-        key2 = ProductCacheService.build_list_cache_key(skip=0, limit=10, category_id=None)
+        key2 = ProductCacheService.build_list_cache_key(
+            skip=0, limit=10, category_id=None
+        )
 
         assert key1 == key2
 

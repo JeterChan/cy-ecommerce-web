@@ -18,5 +18,5 @@ class GetCartSummaryUseCase:
         items = await self.repository.get_cart(owner_id)
         return {
             "total_quantity": sum(item.quantity for item in items),
-            "total_items": len(items)
+            "total_items": len(items),
         }
