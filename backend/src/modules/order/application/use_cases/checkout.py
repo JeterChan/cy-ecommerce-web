@@ -1,27 +1,26 @@
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.exc import IntegrityError
-from uuid import UUID
-from typing import List, Optional, TYPE_CHECKING
-from decimal import Decimal
-from datetime import datetime
 import logging
+from datetime import datetime
+from decimal import Decimal
+from typing import TYPE_CHECKING, List, Optional
+from uuid import UUID
 
-logger = logging.getLogger(__name__)
-
-from modules.order.domain.exceptions import (
-    InsufficientStockException,
-    EmptyCartException,
-)
-from modules.order.domain.repository import IOrderRepository, ICartAdapter
-from modules.order.domain.entities import Order, OrderItem
-from modules.order.domain.value_objects import OrderStatus
-from modules.order.domain.ports import IProductPort
 from modules.order.application.dtos.checkout_request import CheckoutRequest
 from modules.order.application.dtos.order_response import OrderResponse
-from modules.order.application.dtos.order_item_response import OrderItemResponse
+from modules.order.domain.entities import Order, OrderItem
+from modules.order.domain.exceptions import (
+    EmptyCartException,
+    InsufficientStockException,
+)
+from modules.order.domain.ports import IProductPort
+from modules.order.domain.repository import IOrderRepository
+from modules.order.domain.value_objects import OrderStatus
+from sqlalchemy.exc import IntegrityError
+from sqlalchemy.ext.asyncio import AsyncSession
 
 if TYPE_CHECKING:
     from infrastructure.stock_redis_service import StockRedisService
+
+logger = logging.getLogger(__name__)
 
 
 class CheckoutUseCase:

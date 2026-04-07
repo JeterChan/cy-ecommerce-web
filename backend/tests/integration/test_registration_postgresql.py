@@ -22,7 +22,6 @@ from src.infrastructure.database import Base
 from src.modules.auth.use_cases.register import RegisterUserUseCase
 from src.modules.auth.use_cases.dtos import RegisterUserInputDTO
 from src.modules.auth.infrastructure.repositories.user_repository import UserRepository
-from src.modules.auth.infrastructure.models import UserModel
 from src.core.exceptions import DuplicateEmailError
 from src.core.security import verify_password
 
@@ -390,7 +389,7 @@ class TestRegisterUserIntegration:
         await register_use_case.execute(first_input)
 
         # Act & Assert - 嘗試用大寫 email 註冊（應該失敗，因為是重複）
-        second_input = RegisterUserInputDTO(
+        _second_input = RegisterUserInputDTO(
             username="user2",
             email="TEST@EXAMPLE.COM",  # 大寫
             password="TestPass123!",

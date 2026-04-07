@@ -8,7 +8,6 @@ from modules.auth.application.use_cases import (
     LoginUserUseCase,
     VerifyEmailUseCase,
     ForgotPasswordUseCase,
-    ResetPasswordUseCase,
     ChangePasswordUseCase,
     DeleteAccountUseCase,
     UpdateProfileUseCase,
@@ -17,7 +16,6 @@ from modules.auth.application.dtos import RegisterRequestDTO, LoginRequestDTO
 from modules.auth.application.dtos.update_profile_request import UpdateProfileRequest
 from modules.auth.domain.entities import UserEntity
 from core.exceptions import (
-    DuplicateEmailError,
     InvalidCredentialsError,
     UserNotRegisteredError,
     EmailNotVerifiedError,
@@ -55,7 +53,7 @@ async def test_register_user_use_case_success(user_repo, token_manager):
     # Act
     with patch(
         "modules.auth.application.use_cases.register.send_registration_verification"
-    ) as mock_email_task:
+    ):
         result = await use_case.execute(data)
 
     # Assert
@@ -122,7 +120,7 @@ async def test_forgot_password_use_case_success(user_repo, token_manager):
     # Act
     with patch(
         "modules.auth.application.use_cases.forgot_password.send_password_reset"
-    ) as mock_email_task:
+    ):
         result = await use_case.execute("test@example.com")
 
     # Assert

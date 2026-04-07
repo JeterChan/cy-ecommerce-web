@@ -1,6 +1,5 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func
-from sqlalchemy.dialects.postgresql import insert as pg_insert
 from typing import List, Optional, Tuple
 from uuid import UUID
 from modules.product.domain.repository import IProductRepository
@@ -8,7 +7,6 @@ from modules.product.domain.entities import Product, ProductImage
 from modules.product.infrastructure.models import (
     ProductModel,
     ProductImageModel,
-    CategoryModel,
 )
 
 
@@ -163,7 +161,7 @@ class SqlAlchemyProductRepository(IProductRepository):
         stmt = (
             select(func.count())
             .select_from(ProductModel)
-            .where(ProductModel.is_active == True)
+            .where(ProductModel.is_active.is_(True))
         )
         result = await self.db.execute(stmt)
         return result.scalar() or 0
@@ -173,7 +171,7 @@ class SqlAlchemyProductRepository(IProductRepository):
         stmt = (
             select(func.count())
             .select_from(ProductModel)
-            .where(ProductModel.is_active == True)
+            .where(ProductModel.is_active.is_(True))
             .where(ProductModel.stock_quantity > 0)
             .where(ProductModel.stock_quantity < 5)
         )
