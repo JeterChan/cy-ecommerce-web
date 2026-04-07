@@ -10,7 +10,7 @@ Unit Tests for UserEntity Profile Fields
 from datetime import datetime, timezone
 import uuid
 
-from modules.auth.domain.entities.UserEntity import UserEntity
+from modules.auth.domain.entities import UserEntity
 
 
 class TestUserEntityProfileFields:
@@ -29,7 +29,7 @@ class TestUserEntityProfileFields:
             avatar_url="https://example.com/avatar.jpg",
             bio="這是我的個人介紹",
             created_at=datetime.now(timezone.utc),
-            updated_at=datetime.now(timezone.utc)
+            updated_at=datetime.now(timezone.utc),
         )
 
         assert user.display_name == "Test User"
@@ -46,7 +46,7 @@ class TestUserEntityProfileFields:
             username="testuser",
             password_hash="hashed_password",
             created_at=datetime.now(timezone.utc),
-            updated_at=datetime.now(timezone.utc)
+            updated_at=datetime.now(timezone.utc),
         )
 
         assert user.display_name is None
@@ -64,7 +64,7 @@ class TestUserEntityProfileFields:
             password_hash="hashed_password",
             is_active=True,
             created_at=datetime.now(timezone.utc),
-            updated_at=datetime.now(timezone.utc)
+            updated_at=datetime.now(timezone.utc),
         )
 
         # 執行軟刪除
@@ -83,7 +83,7 @@ class TestUserEntityProfileFields:
             username="testuser",
             password_hash="hashed_password",
             created_at=datetime.now(timezone.utc),
-            updated_at=datetime.now(timezone.utc)
+            updated_at=datetime.now(timezone.utc),
         )
 
         # 初始狀態：未刪除
@@ -104,7 +104,7 @@ class TestUserEntityProfileFields:
             password_hash="hashed_password",
             is_active=True,
             created_at=datetime.now(timezone.utc),
-            updated_at=datetime.now(timezone.utc)
+            updated_at=datetime.now(timezone.utc),
         )
 
         assert user.is_active is True
@@ -123,7 +123,7 @@ class TestUserEntityProfileFields:
             password_hash="hashed_password",
             is_active=False,
             created_at=datetime.now(timezone.utc),
-            updated_at=datetime.now(timezone.utc)
+            updated_at=datetime.now(timezone.utc),
         )
 
         # 測試啟用
@@ -147,7 +147,7 @@ class TestUserEntityProfileFields:
             carrier_number="/ABC123",
             tax_id="12345678",
             created_at=datetime.now(timezone.utc),
-            updated_at=datetime.now(timezone.utc)
+            updated_at=datetime.now(timezone.utc),
         )
 
         assert user.phone == "0912345678"
@@ -155,4 +155,3 @@ class TestUserEntityProfileFields:
         assert user.carrier_type == "MOBILE"
         assert user.carrier_number == "/ABC123"
         assert user.tax_id == "12345678"
-

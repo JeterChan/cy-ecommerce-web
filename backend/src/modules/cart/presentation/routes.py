@@ -4,6 +4,7 @@ Cart API Routes
 定義 Cart 模組的 HTTP API 端點
 支援訪客購物車 (Guest Cart) 與會員購物車 (Member Cart)
 """
+
 from fastapi import APIRouter, Depends, HTTPException, status, Request, Response
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from typing import List, Optional, Tuple
@@ -14,9 +15,12 @@ from infrastructure.database import get_redis, get_db
 from redis.asyncio import Redis
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from modules.cart.infrastructure.repositories.redis_repository import RedisCartRepository
-from modules.cart.infrastructure.repositories.sql_repository import SQLCartRepository
-from modules.cart.infrastructure.repositories.hybrid_repository import HybridCartRepository
+from modules.cart.infrastructure.repositories.redis_repository import (
+    RedisCartRepository,
+)
+from modules.cart.infrastructure.repositories.hybrid_repository import (
+    HybridCartRepository,
+)
 from modules.cart.domain.repository import ICartRepository
 from modules.cart.application.use_cases import (
     AddToCartUseCase,
@@ -28,17 +32,21 @@ from modules.cart.application.use_cases import (
     GetCartSummaryUseCase,
     MergeCartUseCase,
 )
-from modules.cart.domain.entities import CartItemResponse, CartItemCreate, CartItemUpdate, CartMergeRequest
+from modules.cart.domain.entities import (
+    CartItemResponse,
+    CartItemCreate,
+    CartItemUpdate,
+    CartMergeRequest,
+)
 from modules.cart.infrastructure.utils import (
     generate_guest_token,
     set_guest_token_cookie,
     get_guest_token_from_cookie,
-    validate_guest_token
+    validate_guest_token,
 )
 from core.security import verify_token
 from modules.auth.infrastructure.repository import UserRepository
-from modules.product.infrastructure.repository import SqlAlchemyProductRepository
-
+from modules.cart.infrastructure.adapters import ProductInfoAdapter
 
 logger = logging.getLogger(__name__)
 
@@ -48,64 +56,60 @@ security = HTTPBearer(auto_error=False)  # auto_error=False 使其成為可選
 
 # ==================== Helper Functions ====================
 
+
 async def enrich_cart_items_with_product_info(
-    items: List["CartItemResponse"],
-    db: AsyncSession
+    items: List["CartItemResponse"], db: AsyncSession
 ) -> List["CartItemResponse"]:
     """
     將購物車項目與商品信息結合
-    
+
     Args:
         items: 購物車項目列表
         db: 資料庫連接
-        
+
     Returns:
         List[CartItemResponse]: 富化後的購物車項目列表
     """
     if not items:
         return items
-    
-    product_repo = SqlAlchemyProductRepository(db)
+
+    product_port = ProductInfoAdapter(db)
     enriched_items = []
-    
+
     for item in items:
         try:
-            # 查詢商品信息
-            product = await product_repo.get_by_id(item.product_id)
-            
-            if product:
-                # 計算小計
-                product_price = float(product.price)
+            snapshot = await product_port.get_product_info(item.product_id)
+
+            if snapshot:
+                product_price = float(snapshot.price)
                 subtotal = product_price * item.quantity
-                
-                # 取得第一張圖片 URL
-                image_url = None
-                if product.images:
-                    primary_image = next((img for img in product.images if img.is_primary), None)
-                    image_url = (primary_image or product.images[0]).url if (primary_image or product.images) else None
-                
-                # 更新項目字段
-                item.product_name = product.name
+
+                item.product_name = snapshot.name
                 item.unit_price = product_price
                 item.subtotal = subtotal
-                item.image_url = image_url
+                item.image_url = snapshot.image_url
         except Exception as e:
-            # 商品查詢失敗時，使用預設值
-            logger.error(f"Failed to enrich product info for {item.product_id}: {e}", exc_info=True)
-            item.product_name = item.product_name or f"Unknown Product ({item.product_id})"
+            logger.error(
+                f"Failed to enrich product info for {item.product_id}: {e}",
+                exc_info=True,
+            )
+            item.product_name = (
+                item.product_name or f"Unknown Product ({item.product_id})"
+            )
             item.unit_price = item.unit_price or 0.0
             item.subtotal = item.subtotal or 0.0
-        
+
         enriched_items.append(item)
-    
+
     return enriched_items
 
 
 # ==================== Dependency Injection ====================
 
+
 async def get_current_user_optional(
     credentials: Optional[HTTPAuthorizationCredentials] = Depends(security),
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
 ):
     """
     取得當前使用者（可選）
@@ -146,7 +150,7 @@ async def get_cart_repository(
     response: Response,
     redis: Redis = Depends(get_redis),
     db: AsyncSession = Depends(get_db),
-    user = Depends(get_current_user_optional)
+    user=Depends(get_current_user_optional),
 ) -> Tuple[ICartRepository, str]:
     """
     根據使用者狀態選擇 Repository
@@ -180,17 +184,18 @@ async def get_cart_repository(
 
 # ==================== API Endpoints ====================
 
+
 @router.post(
     "/items",
     response_model=CartItemResponse,
     status_code=status.HTTP_201_CREATED,
     summary="新增商品到購物車",
-    description="將商品加入購物車，若商品已存在則累加數量（支援訪客與會員）"
+    description="將商品加入購物車，若商品已存在則累加數量（支援訪客與會員）",
 )
 async def add_to_cart(
     item: CartItemCreate,
     repo_and_id: Tuple[ICartRepository, str] = Depends(get_cart_repository),
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
 ) -> CartItemResponse:
     """
     新增商品到購物車
@@ -205,39 +210,34 @@ async def add_to_cart(
     - 訪客儲存在 Redis，會員儲存在 PostgreSQL
     """
     repository, owner_id = repo_and_id
-    product_repo = SqlAlchemyProductRepository(db)
+    product_port = ProductInfoAdapter(db)
 
     try:
-        use_case = AddToCartUseCase(repository, product_repo)
+        use_case = AddToCartUseCase(repository, product_port)
         result = await use_case.execute(
-            owner_id=owner_id,
-            product_id=item.product_id,
-            quantity=item.quantity
+            owner_id=owner_id, product_id=item.product_id, quantity=item.quantity
         )
-        
+
         # 若為 Redis 或 Hybrid Repository，進行富化
         if isinstance(repository, (RedisCartRepository, HybridCartRepository)):
             items = await enrich_cart_items_with_product_info([result], db)
             if items:
                 result = items[0]
-        
+
         return result
     except ValueError as e:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=str(e)
-        )
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 
 
 @router.get(
     "",
     response_model=List[CartItemResponse],
     summary="取得購物車",
-    description="取得購物車所有商品（支援訪客與會員）"
+    description="取得購物車所有商品（支援訪客與會員）",
 )
 async def get_cart(
     repo_and_id: Tuple[ICartRepository, str] = Depends(get_cart_repository),
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
 ) -> List[CartItemResponse]:
     """
     取得購物車所有商品
@@ -248,11 +248,11 @@ async def get_cart(
     repository, owner_id = repo_and_id
     use_case = GetCartUseCase(repository)
     items = await use_case.execute(owner_id=owner_id)
-    
+
     # 若為 Redis 或 Hybrid Repository，進行富化（確保 UI 看到最新價格與名稱）
     if isinstance(repository, (RedisCartRepository, HybridCartRepository)):
         items = await enrich_cart_items_with_product_info(items, db)
-    
+
     return items
 
 
@@ -260,12 +260,12 @@ async def get_cart(
     "/items/{product_id}",
     response_model=CartItemResponse,
     summary="查詢購物車中的單一商品",
-    description="根據商品 ID 查詢購物車中的項目"
+    description="根據商品 ID 查詢購物車中的項目",
 )
 async def get_cart_item(
     product_id: uuid.UUID,
     repo_and_id: Tuple[ICartRepository, str] = Depends(get_cart_repository),
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
 ) -> CartItemResponse:
     """
     查詢購物車中的單一商品
@@ -274,15 +274,12 @@ async def get_cart_item(
     """
     repository, owner_id = repo_and_id
     use_case = GetCartItemUseCase(repository)
-    item = await use_case.execute(
-        owner_id=owner_id,
-        product_id=product_id
-    )
+    item = await use_case.execute(owner_id=owner_id, product_id=product_id)
 
     if item is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Product {product_id} not found in cart"
+            detail=f"Product {product_id} not found in cart",
         )
 
     # 若為 Redis 或 Hybrid Repository，進行富化
@@ -290,7 +287,7 @@ async def get_cart_item(
         items = await enrich_cart_items_with_product_info([item], db)
         if items:
             item = items[0]
-    
+
     return item
 
 
@@ -298,13 +295,13 @@ async def get_cart_item(
     "/items/{product_id}",
     response_model=CartItemResponse,
     summary="更新商品數量",
-    description="更新購物車中指定商品的數量"
+    description="更新購物車中指定商品的數量",
 )
 async def update_cart_item(
     product_id: uuid.UUID,
     item_update: CartItemUpdate,
     repo_and_id: Tuple[ICartRepository, str] = Depends(get_cart_repository),
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
 ) -> CartItemResponse:
     """
     更新購物車商品數量
@@ -313,39 +310,34 @@ async def update_cart_item(
     - **quantity**: 新數量 (必填，大於 0)
     """
     repository, owner_id = repo_and_id
-    product_repo = SqlAlchemyProductRepository(db)
+    product_port = ProductInfoAdapter(db)
 
     try:
-        use_case = UpdateCartItemQuantityUseCase(repository, product_repo)
+        use_case = UpdateCartItemQuantityUseCase(repository, product_port)
         result = await use_case.execute(
-            owner_id=owner_id,
-            product_id=product_id,
-            quantity=item_update.quantity
+            owner_id=owner_id, product_id=product_id, quantity=item_update.quantity
         )
-        
+
         # 若為 Redis 或 Hybrid Repository，進行富化
         if isinstance(repository, (RedisCartRepository, HybridCartRepository)):
             items = await enrich_cart_items_with_product_info([result], db)
             if items:
                 result = items[0]
-        
+
         return result
     except ValueError as e:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=str(e)
-        )
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 
 
 @router.delete(
     "/items/{product_id}",
     status_code=status.HTTP_204_NO_CONTENT,
     summary="移除商品",
-    description="從購物車移除指定商品"
+    description="從購物車移除指定商品",
 )
 async def remove_cart_item(
     product_id: uuid.UUID,
-    repo_and_id: Tuple[ICartRepository, str] = Depends(get_cart_repository)
+    repo_and_id: Tuple[ICartRepository, str] = Depends(get_cart_repository),
 ) -> None:
     """
     從購物車移除商品
@@ -354,20 +346,17 @@ async def remove_cart_item(
     """
     repository, owner_id = repo_and_id
     use_case = RemoveFromCartUseCase(repository)
-    await use_case.execute(
-        owner_id=owner_id,
-        product_id=product_id
-    )
+    await use_case.execute(owner_id=owner_id, product_id=product_id)
 
 
 @router.delete(
     "",
     status_code=status.HTTP_204_NO_CONTENT,
     summary="清空購物車",
-    description="清空購物車所有商品"
+    description="清空購物車所有商品",
 )
 async def clear_cart(
-    repo_and_id: Tuple[ICartRepository, str] = Depends(get_cart_repository)
+    repo_and_id: Tuple[ICartRepository, str] = Depends(get_cart_repository),
 ) -> None:
     """
     清空購物車所有商品
@@ -382,12 +371,12 @@ async def clear_cart(
     response_model=List[CartItemResponse],
     status_code=status.HTTP_200_OK,
     summary="合併訪客購物車到用戶購物車",
-    description="將訪客購物車的商品合併到認證用戶的購物車"
+    description="將訪客購物車的商品合併到認證用戶的購物車",
 )
 async def merge_cart(
     merge_request: CartMergeRequest,
     repo_and_id: Tuple[ICartRepository, str] = Depends(get_cart_repository),
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
 ) -> List[CartItemResponse]:
     """
     合併訪客購物車到用戶購物車
@@ -416,33 +405,27 @@ async def merge_cart(
     if isinstance(repository, RedisCartRepository):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Only authenticated users can merge cart"
+            detail="Only authenticated users can merge cart",
         )
 
     try:
         use_case = MergeCartUseCase(repository)
         result = await use_case.execute(
-            owner_id=owner_id,
-            guest_items=merge_request.guest_items
+            owner_id=owner_id, guest_items=merge_request.guest_items
         )
 
         # 若為 SQL Repository（會員），返回的結果已包含商品信息
         # 若為 Redis Repository，需要進行富化（但上面已拒絕了訪客請求）
         return result
     except ValueError as e:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=str(e)
-        )
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 
 
 @router.get(
-    "/summary",
-    summary="取得購物車摘要",
-    description="取得購物車商品總數量和商品種類數"
+    "/summary", summary="取得購物車摘要", description="取得購物車商品總數量和商品種類數"
 )
 async def get_cart_summary(
-    repo_and_id: Tuple[ICartRepository, str] = Depends(get_cart_repository)
+    repo_and_id: Tuple[ICartRepository, str] = Depends(get_cart_repository),
 ):
     """
     取得購物車摘要
@@ -457,4 +440,3 @@ async def get_cart_summary(
     repository, owner_id = repo_and_id
     use_case = GetCartSummaryUseCase(repository)
     return await use_case.execute(owner_id=owner_id)
-

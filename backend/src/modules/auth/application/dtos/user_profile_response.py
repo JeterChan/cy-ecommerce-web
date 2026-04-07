@@ -2,8 +2,10 @@ from pydantic import BaseModel, Field, ConfigDict
 from typing import Optional
 from modules.auth.domain.entities import UserEntity
 
+
 class UserProfileResponse(BaseModel):
     """使用者個人檔案回應 DTO"""
+
     user_id: str = Field(..., description="使用者 ID")
     username: str = Field(..., description="使用者名稱")
     email: str = Field(..., description="電子郵件")
@@ -25,7 +27,11 @@ class UserProfileResponse(BaseModel):
             username=user.username,
             email=str(user.email),
             created_at=user.created_at.isoformat(),
-            updated_at=user.updated_at.isoformat() if user.updated_at else user.created_at.isoformat(),
+            updated_at=(
+                user.updated_at.isoformat()
+                if user.updated_at
+                else user.created_at.isoformat()
+            ),
             phone=user.phone,
             address=user.address,
             carrier_type=user.carrier_type,

@@ -1,9 +1,10 @@
-from pydantic import BaseModel, Field, ConfigDict
+from pydantic import BaseModel, ConfigDict
 from datetime import datetime
 from decimal import Decimal
 from typing import List, Optional
 from uuid import UUID
 from modules.order.application.dtos.order_item_response import OrderItemResponse
+
 
 class OrderResponse(BaseModel):
     id: UUID
@@ -21,5 +22,5 @@ class OrderResponse(BaseModel):
     created_at: datetime
     updated_at: datetime
     status_updated_at: Optional[datetime] = None
-    
+
     model_config = ConfigDict(from_attributes=True)

@@ -11,8 +11,8 @@ class Password:
         error_msgs = self._validate()
         if error_msgs:
             raise ValueError(f"密碼不符合安全標準: {', '.join(error_msgs)}")
-    def _validate(self) -> List[str]:
 
+    def _validate(self) -> List[str]:
         error_msgs = []
         if len(self.value) < 8:
             error_msgs.append("密碼長度至少需要 8 個字元")

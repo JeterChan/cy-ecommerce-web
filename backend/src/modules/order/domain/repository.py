@@ -26,14 +26,11 @@ class IOrderRepository(ABC):
 
     @abstractmethod
     async def get_by_user_id(
-        self,
-        user_id: UUID,
-        skip: int = 0,
-        limit: int = 100
+        self, user_id: UUID, skip: int = 0, limit: int = 100
     ) -> List[Order]:
         """查詢特定使用者的所有訂單"""
         pass
-        
+
     @abstractmethod
     async def count_by_user_id(self, user_id: UUID) -> int:
         """計算特定使用者的訂單總數"""

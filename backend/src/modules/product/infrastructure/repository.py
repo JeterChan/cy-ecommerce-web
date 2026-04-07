@@ -1,17 +1,20 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func
-from sqlalchemy.dialects.postgresql import insert as pg_insert
 from typing import List, Optional, Tuple
 from uuid import UUID
 from modules.product.domain.repository import IProductRepository
 from modules.product.domain.entities import Product, ProductImage
-from modules.product.infrastructure.models import ProductModel, ProductImageModel, CategoryModel
+from modules.product.infrastructure.models import (
+    ProductModel,
+    ProductImageModel,
+)
+
 
 class SqlAlchemyProductRepository(IProductRepository):
     def __init__(self, db: AsyncSession):
         self.db = db
 
-# _fetch_category_models removed
+    # _fetch_category_models removed
 
     async def create(self, product: Product) -> Product:
         model = self._to_model(product)
@@ -29,14 +32,21 @@ class SqlAlchemyProductRepository(IProductRepository):
         model = result.scalar_one_or_none()
         return self._to_entity(model) if model else None
 
-    async def list(self, skip: int = 0, limit: int = 100, category_id: Optional[int] = None, category_ids: Optional[List[int]] = None, is_active: Optional[bool] = None) -> Tuple[List[Product], int]:
+    async def list(
+        self,
+        skip: int = 0,
+        limit: int = 100,
+        category_id: Optional[int] = None,
+        category_ids: Optional[List[int]] = None,
+        is_active: Optional[bool] = None,
+    ) -> Tuple[List[Product], int]:
         stmt = select(ProductModel)
         count_stmt = select(func.count()).select_from(ProductModel)
 
         if is_active is not None:
             stmt = stmt.where(ProductModel.is_active == is_active)
             count_stmt = count_stmt.where(ProductModel.is_active == is_active)
-        
+
         if category_ids:
             stmt = stmt.where(ProductModel.category_id.in_(category_ids))
             count_stmt = count_stmt.where(ProductModel.category_id.in_(category_ids))
@@ -107,10 +117,9 @@ class SqlAlchemyProductRepository(IProductRepository):
         if product.images:
             model.images = [
                 ProductImageModel(
-                    url=img.url,
-                    alt_text=img.alt_text,
-                    is_primary=img.is_primary
-                ) for img in product.images
+                    url=img.url, alt_text=img.alt_text, is_primary=img.is_primary
+                )
+                for img in product.images
             ]
         else:
             model.images = []
@@ -119,10 +128,17 @@ class SqlAlchemyProductRepository(IProductRepository):
         await self.db.refresh(model)
         return self._to_entity(model)
 
-    async def atomic_adjust_stock(self, product_id: UUID, quantity_change: int) -> Product:
+    async def atomic_adjust_stock(
+        self, product_id: UUID, quantity_change: int
+    ) -> Product:
         """實作 T016a: 原子扣減庫存 (使用 with_for_update)"""
         # 注意：必須加上 populate_existing() 確保屬性會重新從資料庫載入
-        stmt = select(ProductModel).where(ProductModel.id == product_id).with_for_update(of=ProductModel).execution_options(populate_existing=True)
+        stmt = (
+            select(ProductModel)
+            .where(ProductModel.id == product_id)
+            .with_for_update(of=ProductModel)
+            .execution_options(populate_existing=True)
+        )
         result = await self.db.execute(stmt)
         model = result.scalar_one_or_none()
 
@@ -131,7 +147,9 @@ class SqlAlchemyProductRepository(IProductRepository):
 
         new_quantity = model.stock_quantity + quantity_change
         if new_quantity < 0:
-            raise ValueError(f"庫存不足 (現有: {model.stock_quantity}, 預計扣除: {abs(quantity_change)})")
+            raise ValueError(
+                f"庫存不足 (現有: {model.stock_quantity}, 預計扣除: {abs(quantity_change)})"
+            )
 
         model.stock_quantity = new_quantity
         await self.db.flush()
@@ -140,7 +158,11 @@ class SqlAlchemyProductRepository(IProductRepository):
 
     async def count_total_active(self) -> int:
         """計算啟用中的商品總數"""
-        stmt = select(func.count()).select_from(ProductModel).where(ProductModel.is_active == True)
+        stmt = (
+            select(func.count())
+            .select_from(ProductModel)
+            .where(ProductModel.is_active.is_(True))
+        )
         result = await self.db.execute(stmt)
         return result.scalar() or 0
 
@@ -149,7 +171,7 @@ class SqlAlchemyProductRepository(IProductRepository):
         stmt = (
             select(func.count())
             .select_from(ProductModel)
-            .where(ProductModel.is_active == True)
+            .where(ProductModel.is_active.is_(True))
             .where(ProductModel.stock_quantity > 0)
             .where(ProductModel.stock_quantity < 5)
         )
@@ -172,14 +194,17 @@ class SqlAlchemyProductRepository(IProductRepository):
         """實作：批量鎖定商品 (悲觀鎖)"""
         if not product_ids:
             return []
-        
+
         # 按照 ID 排序以防止死鎖 (Deadlock Prevention)
         # 注意：必須加上 populate_existing() 確保屬性會重新從資料庫載入
-        stmt = select(ProductModel).where(ProductModel.id.in_(product_ids))\
-            .order_by(ProductModel.id.asc())\
-            .with_for_update(of=ProductModel)\
+        stmt = (
+            select(ProductModel)
+            .where(ProductModel.id.in_(product_ids))
+            .order_by(ProductModel.id.asc())
+            .with_for_update(of=ProductModel)
             .execution_options(populate_existing=True)
-        
+        )
+
         result = await self.db.execute(stmt)
         models = result.scalars().all()
         return [self._to_entity(m) for m in models]
@@ -188,10 +213,9 @@ class SqlAlchemyProductRepository(IProductRepository):
         """Domain Entity -> SQLAlchemy Model（不含分類，分類需非同步處理）"""
         images = [
             ProductImageModel(
-                url=img.url,
-                alt_text=img.alt_text,
-                is_primary=img.is_primary
-            ) for img in product.images
+                url=img.url, alt_text=img.alt_text, is_primary=img.is_primary
+            )
+            for img in product.images
         ]
 
         model = ProductModel(
@@ -200,7 +224,7 @@ class SqlAlchemyProductRepository(IProductRepository):
             price=product.price,
             stock_quantity=product.stock_quantity,
             is_active=product.is_active,
-            images=images
+            images=images,
         )
 
         if product.id:
@@ -214,14 +238,19 @@ class SqlAlchemyProductRepository(IProductRepository):
         category_name = model.category.name if model.category else None
 
         try:
-            images = [
-                ProductImage(
-                    id=img.id,
-                    url=img.url,
-                    alt_text=img.alt_text,
-                    is_primary=img.is_primary
-                ) for img in model.images
-            ] if model.images else []
+            images = (
+                [
+                    ProductImage(
+                        id=img.id,
+                        url=img.url,
+                        alt_text=img.alt_text,
+                        is_primary=img.is_primary,
+                    )
+                    for img in model.images
+                ]
+                if model.images
+                else []
+            )
         except Exception:
             images = []
 
@@ -236,6 +265,5 @@ class SqlAlchemyProductRepository(IProductRepository):
             category_id=category_id,
             category_name=category_name,
             created_at=model.created_at,
-            updated_at=model.updated_at
+            updated_at=model.updated_at,
         )
-

@@ -1,14 +1,16 @@
 import pytest
-from unittest.mock import AsyncMock, MagicMock, patch
-from decimal import Decimal
+from unittest.mock import AsyncMock, MagicMock
 from uuid import uuid4
 
 from modules.order.application.use_cases.checkout import CheckoutUseCase
-from modules.order.application.use_cases.update_order_status import UpdateOrderStatusUseCase
-from modules.order.domain.exceptions import EmptyCartException, InsufficientStockException
+from modules.order.application.use_cases.update_order_status import (
+    UpdateOrderStatusUseCase,
+)
+from modules.order.domain.exceptions import (
+    EmptyCartException,
+    InsufficientStockException,
+)
 from modules.order.domain.value_objects import OrderStatus
-from modules.order.domain.entities import Order, OrderItem
-
 
 # ── CheckoutUseCase ──
 
@@ -31,7 +33,7 @@ class TestCheckoutUseCase:
         return repo
 
     @pytest.fixture
-    def product_repo(self):
+    def product_port(self):
         return AsyncMock()
 
     @pytest.fixture
@@ -41,17 +43,21 @@ class TestCheckoutUseCase:
         return svc
 
     @pytest.mark.asyncio
-    async def test_empty_cart_raises(self, db, order_repo, cart_repo, product_repo, stock_service):
+    async def test_empty_cart_raises(
+        self, db, order_repo, cart_repo, product_port, stock_service
+    ):
         cart_repo.get_cart.return_value = []
 
-        use_case = CheckoutUseCase(db, order_repo, cart_repo, product_repo, stock_service)
+        use_case = CheckoutUseCase(
+            db, order_repo, cart_repo, product_port, stock_service
+        )
 
         with pytest.raises(EmptyCartException):
             await use_case.execute(uuid4(), MagicMock())
 
     @pytest.mark.asyncio
     async def test_redis_deduct_failure_rolls_back_previous(
-        self, db, order_repo, cart_repo, product_repo, stock_service
+        self, db, order_repo, cart_repo, product_port, stock_service
     ):
         pid1, pid2 = uuid4(), uuid4()
         item1 = MagicMock(product_id=pid1, quantity=2)
@@ -61,7 +67,9 @@ class TestCheckoutUseCase:
         # 第一個成功，第二個失敗
         stock_service.try_deduct.side_effect = [(True, 8), (False, 0)]
 
-        use_case = CheckoutUseCase(db, order_repo, cart_repo, product_repo, stock_service)
+        use_case = CheckoutUseCase(
+            db, order_repo, cart_repo, product_port, stock_service
+        )
 
         with pytest.raises(InsufficientStockException):
             await use_case.execute(uuid4(), MagicMock())
@@ -98,7 +106,7 @@ class TestUpdateOrderStatusUseCase:
         return AsyncMock()
 
     @pytest.fixture
-    def product_repo(self):
+    def product_port(self):
         return AsyncMock()
 
     def _make_order(self, user_id, status="PENDING"):
@@ -112,36 +120,36 @@ class TestUpdateOrderStatusUseCase:
         return order
 
     @pytest.mark.asyncio
-    async def test_non_owner_rejected(self, db, order_repo, product_repo):
+    async def test_non_owner_rejected(self, db, order_repo, product_port):
         owner_id = uuid4()
         other_id = uuid4()
         order = self._make_order(owner_id)
         order_repo.get_by_id.return_value = order
 
-        use_case = UpdateOrderStatusUseCase(db, order_repo, product_repo)
+        use_case = UpdateOrderStatusUseCase(db, order_repo, product_port)
 
         with pytest.raises(ValueError, match="無權操作此訂單"):
             await use_case.execute(uuid4(), other_id, "CANCELLED")
 
     @pytest.mark.asyncio
-    async def test_cancel_order_restores_stock(self, db, order_repo, product_repo):
+    async def test_cancel_order_restores_stock(self, db, order_repo, product_port):
         user_id = uuid4()
         order = self._make_order(user_id, status=OrderStatus.PENDING.value)
         order_repo.get_by_id.return_value = order
         order_repo.update.return_value = order
 
-        use_case = UpdateOrderStatusUseCase(db, order_repo, product_repo)
+        use_case = UpdateOrderStatusUseCase(db, order_repo, product_port)
         await use_case.execute(uuid4(), user_id, "CANCELLED")
 
-        product_repo.atomic_adjust_stock.assert_called_once_with(
+        product_port.restore_stock.assert_called_once_with(
             order.items[0].product_id, order.items[0].quantity
         )
 
     @pytest.mark.asyncio
-    async def test_order_not_found_raises(self, db, order_repo, product_repo):
+    async def test_order_not_found_raises(self, db, order_repo, product_port):
         order_repo.get_by_id.return_value = None
 
-        use_case = UpdateOrderStatusUseCase(db, order_repo, product_repo)
+        use_case = UpdateOrderStatusUseCase(db, order_repo, product_port)
 
         with pytest.raises(ValueError, match="訂單不存在"):
             await use_case.execute(uuid4(), uuid4(), "CANCELLED")

@@ -3,6 +3,7 @@ from typing import List, Tuple, Optional
 from modules.order.domain.repository import IOrderRepository
 from modules.order.domain.entities import Order
 
+
 class AdminListOrdersUseCase:
     def __init__(self, order_repo: IOrderRepository):
         self.order_repo = order_repo

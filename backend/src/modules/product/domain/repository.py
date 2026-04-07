@@ -20,10 +20,9 @@ class IProductRepository(ABC):
         limit: int = 100,
         category_id: Optional[int] = None,
         category_ids: Optional[List[int]] = None,
-        is_active: Optional[bool] = None
+        is_active: Optional[bool] = None,
     ) -> Tuple[List[Product], int]:
         pass
-
 
     @abstractmethod
     async def list_admin(

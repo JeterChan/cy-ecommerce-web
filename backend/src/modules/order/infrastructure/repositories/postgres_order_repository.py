@@ -27,7 +27,11 @@ class PostgresOrderRepository(IOrderRepository):
         order_model = OrderModel(
             user_id=order.user_id,
             order_number=order.order_number,
-            status=OrderStatus(order.status) if isinstance(order.status, str) else order.status,
+            status=(
+                OrderStatus(order.status)
+                if isinstance(order.status, str)
+                else order.status
+            ),
             total_amount=float(order.total_amount),
             shipping_fee=float(order.shipping_fee),
             note=order.note,
@@ -36,7 +40,7 @@ class PostgresOrderRepository(IOrderRepository):
             recipient_phone=order.recipient_phone,
             shipping_address=order.shipping_address,
             payment_method=order.payment_method,
-            status_updated_at=func.now() # Initial status timestamp
+            status_updated_at=func.now(),  # Initial status timestamp
         )
 
         # 轉換訂單項目
@@ -46,7 +50,7 @@ class PostgresOrderRepository(IOrderRepository):
                 product_name=item.product_name,
                 quantity=item.quantity,
                 unit_price=float(item.unit_price),
-                subtotal=float(item.subtotal)
+                subtotal=float(item.subtotal),
             )
             order_model.items.append(item_model)
 
@@ -69,10 +73,7 @@ class PostgresOrderRepository(IOrderRepository):
         return self._to_domain_entity(order_model)
 
     async def get_by_user_id(
-        self,
-        user_id: UUID,
-        skip: int = 0,
-        limit: int = 100
+        self, user_id: UUID, skip: int = 0, limit: int = 100
     ) -> List[Order]:
         stmt = (
             select(OrderModel)
@@ -87,7 +88,11 @@ class PostgresOrderRepository(IOrderRepository):
         return [self._to_domain_entity(om) for om in order_models]
 
     async def count_by_user_id(self, user_id: UUID) -> int:
-        stmt = select(func.count()).select_from(OrderModel).where(OrderModel.user_id == user_id)
+        stmt = (
+            select(func.count())
+            .select_from(OrderModel)
+            .where(OrderModel.user_id == user_id)
+        )
         result = await self.session.execute(stmt)
         return result.scalar_one()
 
@@ -103,7 +108,15 @@ class PostgresOrderRepository(IOrderRepository):
         date_to: Optional[date] = None,
     ) -> List[Order]:
         stmt = select(OrderModel).order_by(OrderModel.created_at.desc())
-        stmt = self._apply_filters(stmt, status, search_order_number, search_recipient_name, search_phone, date_from, date_to)
+        stmt = self._apply_filters(
+            stmt,
+            status,
+            search_order_number,
+            search_recipient_name,
+            search_phone,
+            date_from,
+            date_to,
+        )
         stmt = stmt.offset(skip).limit(limit)
         result = await self.session.execute(stmt)
         order_models = result.unique().scalars().all()
@@ -119,23 +132,46 @@ class PostgresOrderRepository(IOrderRepository):
         date_to: Optional[date] = None,
     ) -> int:
         stmt = select(func.count()).select_from(OrderModel)
-        stmt = self._apply_filters(stmt, status, search_order_number, search_recipient_name, search_phone, date_from, date_to)
+        stmt = self._apply_filters(
+            stmt,
+            status,
+            search_order_number,
+            search_recipient_name,
+            search_phone,
+            date_from,
+            date_to,
+        )
         result = await self.session.execute(stmt)
         return result.scalar_one()
 
-    def _apply_filters(self, stmt, status, search_order_number, search_recipient_name, search_phone, date_from, date_to):
+    def _apply_filters(
+        self,
+        stmt,
+        status,
+        search_order_number,
+        search_recipient_name,
+        search_phone,
+        date_from,
+        date_to,
+    ):
         if status:
             stmt = stmt.where(OrderModel.status == OrderStatus(status.upper()))
         if search_order_number:
             stmt = stmt.where(OrderModel.order_number.ilike(f"%{search_order_number}%"))
         if search_recipient_name:
-            stmt = stmt.where(OrderModel.recipient_name.ilike(f"%{search_recipient_name}%"))
+            stmt = stmt.where(
+                OrderModel.recipient_name.ilike(f"%{search_recipient_name}%")
+            )
         if search_phone:
             stmt = stmt.where(OrderModel.recipient_phone.ilike(f"%{search_phone}%"))
         if date_from:
-            stmt = stmt.where(OrderModel.created_at >= datetime.combine(date_from, time.min))
+            stmt = stmt.where(
+                OrderModel.created_at >= datetime.combine(date_from, time.min)
+            )
         if date_to:
-            stmt = stmt.where(OrderModel.created_at <= datetime.combine(date_to, time.max))
+            stmt = stmt.where(
+                OrderModel.created_at <= datetime.combine(date_to, time.max)
+            )
         return stmt
 
     async def update(self, order: Order) -> Order:
@@ -147,7 +183,9 @@ class PostgresOrderRepository(IOrderRepository):
             raise ValueError(f"訂單 {order.id} 不存在")
 
         # 檢查狀態是否改變
-        new_status = OrderStatus(order.status) if isinstance(order.status, str) else order.status
+        new_status = (
+            OrderStatus(order.status) if isinstance(order.status, str) else order.status
+        )
         if order_model.status != new_status:
             order_model.status_updated_at = func.now()
 
@@ -169,14 +207,16 @@ class PostgresOrderRepository(IOrderRepository):
 
     async def get_today_stats(self) -> dict:
         """取得台灣時區今日訂單數及銷售額（排除 CANCELLED、REFUNDED）"""
-        taipei_date = cast(func.timezone('Asia/Taipei', OrderModel.created_at), Date)
-        today_taipei = cast(func.timezone('Asia/Taipei', func.now()), Date)
+        taipei_date = cast(func.timezone("Asia/Taipei", OrderModel.created_at), Date)
+        today_taipei = cast(func.timezone("Asia/Taipei", func.now()), Date)
         excluded_statuses = [OrderStatus.CANCELLED, OrderStatus.REFUNDED]
 
         stmt = (
             select(
-                func.count().label('count'),
-                func.coalesce(func.sum(OrderModel.total_amount), 0).label('total_sales')
+                func.count().label("count"),
+                func.coalesce(func.sum(OrderModel.total_amount), 0).label(
+                    "total_sales"
+                ),
             )
             .select_from(OrderModel)
             .where(taipei_date == today_taipei)
@@ -184,7 +224,7 @@ class PostgresOrderRepository(IOrderRepository):
         )
         result = await self.session.execute(stmt)
         row = result.one()
-        return {'count': row.count, 'total_sales': Decimal(str(row.total_sales))}
+        return {"count": row.count, "total_sales": Decimal(str(row.total_sales))}
 
     async def delete(self, order_id: UUID) -> bool:
         stmt = select(OrderModel).where(OrderModel.id == order_id)
@@ -210,11 +250,11 @@ class PostgresOrderRepository(IOrderRepository):
                 unit_price=Decimal(str(item.unit_price)),
                 subtotal=Decimal(str(item.subtotal)),
                 created_at=None,
-                updated_at=None
+                updated_at=None,
             )
             for item in order_model.items
         ]
-        
+
         return Order(
             id=order_model.id,
             user_id=order_model.user_id,
@@ -231,6 +271,5 @@ class PostgresOrderRepository(IOrderRepository):
             items=items,
             created_at=order_model.created_at,
             updated_at=order_model.updated_at,
-            status_updated_at=order_model.status_updated_at
+            status_updated_at=order_model.status_updated_at,
         )
-

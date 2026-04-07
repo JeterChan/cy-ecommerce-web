@@ -102,8 +102,12 @@ class TestOrderValidate:
         order.validate()
 
     def test_multiple_items_total(self):
-        item1 = _make_order_item(quantity=1, unit_price=Decimal("100"), subtotal=Decimal("100"))
-        item2 = _make_order_item(quantity=3, unit_price=Decimal("50"), subtotal=Decimal("150"))
+        item1 = _make_order_item(
+            quantity=1, unit_price=Decimal("100"), subtotal=Decimal("100")
+        )
+        item2 = _make_order_item(
+            quantity=3, unit_price=Decimal("50"), subtotal=Decimal("150")
+        )
         order = _make_order(
             items=[item1, item2],
             total_amount=Decimal("250"),
@@ -124,8 +128,12 @@ class TestOrderCalculateTotal:
         assert order.calculate_total() == Decimal("360")
 
     def test_calculate_total_multiple_items(self):
-        item1 = _make_order_item(quantity=1, unit_price=Decimal("100"), subtotal=Decimal("100"))
-        item2 = _make_order_item(quantity=2, unit_price=Decimal("200"), subtotal=Decimal("400"))
+        item1 = _make_order_item(
+            quantity=1, unit_price=Decimal("100"), subtotal=Decimal("100")
+        )
+        item2 = _make_order_item(
+            quantity=2, unit_price=Decimal("200"), subtotal=Decimal("400")
+        )
         order = _make_order(items=[item1, item2], shipping_fee=Decimal("50"))
         order.total_amount = Decimal("550")
         assert order.calculate_total() == Decimal("550")

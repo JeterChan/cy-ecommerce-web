@@ -1,4 +1,5 @@
 """取得使用者個人檔案 Use Case"""
+
 from uuid import UUID
 
 from modules.auth.domain.repository import IUserRepository

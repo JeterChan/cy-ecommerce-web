@@ -5,19 +5,16 @@ from fastapi.exceptions import RequestValidationError
 from shared.exceptions.base import DomainException
 from shared.exceptions.common import (
     ResourceNotFoundException,
-    BusinessRuleViolationException
+    BusinessRuleViolationException,
 )
 from core.exceptions import (
-    DuplicateEmailError,
-    UserNotFoundError,
     InvalidCredentialsError,
-    ValidationError
+    ValidationError,
 )
 
 
 async def pydantic_validation_exception_handler(
-    request: Request,
-    exc: RequestValidationError
+    request: Request, exc: RequestValidationError
 ) -> JSONResponse:
     """處理 FastAPI RequestValidationError"""
     errors = []
@@ -29,46 +26,52 @@ async def pydantic_validation_exception_handler(
         }
         if "ctx" in error and error["ctx"]:
             error_detail["ctx"] = {
-                k: str(v) if not isinstance(v, (str, int, float, bool, type(None))) else v
+                k: (
+                    str(v)
+                    if not isinstance(v, (str, int, float, bool, type(None)))
+                    else v
+                )
                 for k, v in error["ctx"].items()
             }
         errors.append(error_detail)
 
     return JSONResponse(
-        status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-        content={"detail": errors}
+        status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, content={"detail": errors}
     )
+
 
 # Domin exceptions handler
 async def resource_not_found_exception_handler(
-    request: Request,
-    exc: ResourceNotFoundException
+    request: Request, exc: ResourceNotFoundException
 ) -> JSONResponse:
     return JSONResponse(
         status_code=status.HTTP_404_NOT_FOUND,
         content={"detail": exc.message},
     )
 
+
 async def business_rule_violation_exception_handler(
-    request: Request,
-    exc: BusinessRuleViolationException
+    request: Request, exc: BusinessRuleViolationException
 ) -> JSONResponse:
     return JSONResponse(
         status_code=status.HTTP_409_CONFLICT,
         content={"detail": exc.message},
     )
 
+
 async def domain_exception_handler(
-    request: Request,
-    exc: DomainException
+    request: Request, exc: DomainException
 ) -> JSONResponse:
     return JSONResponse(
         status_code=status.HTTP_400_BAD_REQUEST,
         content={"detail": exc.message},
     )
 
+
 # 特定異常處理器
-async def invalid_credentials_exception_handler(request: Request, exc: InvalidCredentialsError):
+async def invalid_credentials_exception_handler(
+    request: Request, exc: InvalidCredentialsError
+):
     """處理登入憑證無效錯誤"""
     return JSONResponse(
         status_code=status.HTTP_401_UNAUTHORIZED,

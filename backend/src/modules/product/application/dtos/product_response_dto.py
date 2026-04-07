@@ -1,8 +1,9 @@
-from pydantic import BaseModel, Field, ConfigDict, field_validator, computed_field
+from pydantic import BaseModel, Field, ConfigDict, computed_field
 from decimal import Decimal
 from typing import Optional, List
 from datetime import datetime
 from uuid import UUID
+
 
 class ProductImageDTO(BaseModel):
     id: Optional[UUID] = None
@@ -10,6 +11,7 @@ class ProductImageDTO(BaseModel):
     alt_text: Optional[str] = None
     is_primary: bool = False
     model_config = ConfigDict(from_attributes=True)
+
 
 class ProductResponseDTO(BaseModel):
     id: UUID
@@ -43,7 +45,7 @@ class ProductResponseDTO(BaseModel):
         """即時計算庫存緊張狀態"""
         return 0 < self.stock_quantity < 5
 
-# extract_category_ids validator removed
+    # extract_category_ids validator removed
 
     @computed_field
     @property
@@ -53,6 +55,7 @@ class ProductResponseDTO(BaseModel):
             if img.is_primary:
                 return img.url
         return self.images[0].url if self.images else None
+
 
 class ProductListResponseDTO(BaseModel):
     items: List[ProductResponseDTO]

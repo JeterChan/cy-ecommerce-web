@@ -27,8 +27,12 @@ venv/
 .codex/
 .cursor/
 .gemini/
-.github/
+.github/skills/
+.github/prompts/
 backend/scripts/
+
+# GCP deployment secrets (never commit)
+scripts/gcp/vm/.env
 
 # Load test outputs
 backend/load_tests/users.json

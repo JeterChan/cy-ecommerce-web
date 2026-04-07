@@ -1,18 +1,29 @@
 from modules.auth.domain.repository import IUserRepository
 from modules.auth.domain.services.password_hasher import IPasswordHasher
-from modules.auth.application.dtos import LoginRequestDTO, LoginResponseDTO, UserResponseDTO
-from core.exceptions import InvalidCredentialsError, EmailNotVerifiedError, UserNotRegisteredError
+from modules.auth.application.dtos import (
+    LoginRequestDTO,
+    LoginResponseDTO,
+    UserResponseDTO,
+)
+from core.exceptions import (
+    InvalidCredentialsError,
+    EmailNotVerifiedError,
+    UserNotRegisteredError,
+)
 from core.security import create_access_token, create_refresh_token
 import logging
 
 logger = logging.getLogger(__name__)
+
 
 class LoginUserUseCase:
     """
     使用者登入 Use Case
     """
 
-    def __init__(self, user_repository: IUserRepository, password_hasher: IPasswordHasher):
+    def __init__(
+        self, user_repository: IUserRepository, password_hasher: IPasswordHasher
+    ):
         self.user_repository = user_repository
         self.password_hasher = password_hasher
 

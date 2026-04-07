@@ -1,4 +1,5 @@
 """刪除帳戶 Use Case（軟刪除）"""
+
 from uuid import UUID
 from datetime import datetime, timezone
 from modules.auth.domain.repository import IUserRepository
@@ -7,6 +8,7 @@ from core.exceptions import UserNotFoundError, InvalidCredentialsError
 import logging
 
 logger = logging.getLogger(__name__)
+
 
 class DeleteAccountUseCase:
     """
@@ -18,7 +20,9 @@ class DeleteAccountUseCase:
     3. 儲存變更至資料庫
     """
 
-    def __init__(self, user_repository: IUserRepository, password_hasher: IPasswordHasher):
+    def __init__(
+        self, user_repository: IUserRepository, password_hasher: IPasswordHasher
+    ):
         self.user_repository = user_repository
         self.password_hasher = password_hasher
 
@@ -46,7 +50,7 @@ class DeleteAccountUseCase:
         # 軟刪除：停用帳號並記錄刪除時間
         user.is_active = False
         user.deleted_at = datetime.now(timezone.utc)
-        
+
         # 依照 Plan，釋放 Email 資源 (這裡可以選擇清空 email 或加前綴，以利重新註冊)
         # 決策：在軟刪除時保留 email 但在 Unique 檢查時排除已刪除帳號 (已在 UserRepository 實作)
         # 或者這裡將 email 加上刪除標記以釋出原始 email
@@ -54,5 +58,7 @@ class DeleteAccountUseCase:
         user.email = f"deleted_{user.id}_{original_email}"
 
         await self.user_repository.update(user)
-        
-        logger.info(f"帳號已成功軟刪除 (id: {user_id}, original_email: {original_email})")
+
+        logger.info(
+            f"帳號已成功軟刪除 (id: {user_id}, original_email: {original_email})"
+        )

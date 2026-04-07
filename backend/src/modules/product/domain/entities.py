@@ -4,17 +4,21 @@ from typing import Optional, List
 from datetime import datetime
 from uuid import UUID
 
+
 @dataclass
 class ProductImage:
     """商品圖片領域實體"""
+
     url: str
     alt_text: Optional[str] = None
     is_primary: bool = False
     id: Optional[UUID] = None
 
+
 @dataclass
 class Product:
     """商品領域實體"""
+
     name: str
     description: Optional[str]
     price: Decimal
@@ -52,7 +56,7 @@ class Product:
         # 5. 圖片驗證
         if len(self.images) > 5:
             errors.append("每個商品最多只能有 5 張圖片")
-        
+
         if self.images:
             primary_count = sum(1 for img in self.images if img.is_primary)
             if primary_count == 0:
@@ -77,6 +81,7 @@ class Product:
             raise ValueError(f"庫存不足，無法減少 {abs(quantity_change)} 件")
         self.stock_quantity = new_quantity
 
+
 @dataclass
 class Category:
     id: Optional[int]
@@ -92,7 +97,7 @@ class Category:
 
         if not self.slug or not self.slug.strip():
             errors.append("分類 slug 不可為空")
-        elif not self.slug.islower() or ' ' in self.slug:
+        elif not self.slug.islower() or " " in self.slug:
             errors.append("分類 slug 必須是小寫且不含空格")
 
         if errors:
