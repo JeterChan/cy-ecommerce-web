@@ -20,7 +20,6 @@ from modules.auth.domain.entities import UserEntity
 from modules.auth.domain.repository import IUserRepository
 from modules.auth.domain.services.password_hasher import IPasswordHasher
 
-
 # ==================== Mock Classes ====================
 
 

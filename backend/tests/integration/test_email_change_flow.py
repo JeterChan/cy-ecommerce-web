@@ -28,8 +28,8 @@ from redis.asyncio import Redis
 from infrastructure.database import Base
 from infrastructure.redis.token_manager import RedisTokenManager
 from infrastructure.email.brevo_service import BrevoEmailService, EmailSendError
-from modules.auth.infrastructure.repositories.user_repository import UserRepository
-from modules.auth.domain.entities.UserEntity import UserEntity
+from modules.auth.infrastructure.repository import UserRepository
+from modules.auth.domain.entities import UserEntity
 from core.security import get_password_hash, create_access_token
 
 # ──────────────────────────────────────────────

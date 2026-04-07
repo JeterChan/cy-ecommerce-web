@@ -23,10 +23,11 @@ from sqlalchemy.pool import NullPool
 import os
 
 from infrastructure.database import Base
-from modules.auth.infrastructure.repositories.user_repository import UserRepository
+from modules.auth.infrastructure.repository import UserRepository
+from modules.auth.infrastructure.password_hasher import BcryptPasswordHasher
 from modules.auth.application.use_cases.get_profile import GetProfileUseCase
 from modules.auth.application.dtos import UserProfileResponse
-from modules.auth.domain.entities.UserEntity import UserEntity
+from modules.auth.domain.entities import UserEntity
 from core.exceptions import UserNotFoundError
 from core.security import get_password_hash
 
@@ -434,7 +435,7 @@ class TestUpdateProfileUseCase:
         from modules.auth.application.use_cases.update_profile import (
             UpdateProfileUseCase,
         )
-        from modules.auth.application.dtos.inputs import UpdateProfileRequest
+        from modules.auth.application.dtos import UpdateProfileRequest
 
         use_case = UpdateProfileUseCase(user_repository)
         request = UpdateProfileRequest(phone="0987654321", address="新北市板橋區")
@@ -456,7 +457,7 @@ class TestUpdateProfileUseCase:
         from modules.auth.application.use_cases.update_profile import (
             UpdateProfileUseCase,
         )
-        from modules.auth.application.dtos.inputs import UpdateProfileRequest
+        from modules.auth.application.dtos import UpdateProfileRequest
 
         use_case = UpdateProfileUseCase(user_repository)
         request = UpdateProfileRequest(
@@ -471,7 +472,7 @@ class TestUpdateProfileUseCase:
 
     async def test_update_with_invalid_tax_id_raises_validation_error(self):
         """tax_id 格式不符（非8碼數字）應拋出 Pydantic ValidationError。"""
-        from modules.auth.application.dtos.inputs import UpdateProfileRequest
+        from modules.auth.application.dtos import UpdateProfileRequest
         from pydantic import ValidationError
 
         with pytest.raises(ValidationError):
@@ -485,7 +486,7 @@ class TestUpdateProfileUseCase:
         from modules.auth.application.use_cases.update_profile import (
             UpdateProfileUseCase,
         )
-        from modules.auth.application.dtos.inputs import UpdateProfileRequest
+        from modules.auth.application.dtos import UpdateProfileRequest
 
         use_case = UpdateProfileUseCase(user_repository)
         request = UpdateProfileRequest(phone="0912345678")
@@ -512,7 +513,7 @@ class TestRequestEmailChangeUseCase:
         from modules.auth.application.use_cases.request_email_change import (
             RequestEmailChangeUseCase,
         )
-        from modules.auth.application.dtos.inputs import EmailChangeRequest
+        from modules.auth.application.dtos import EmailChangeRequest
         from infrastructure.redis.token_manager import RedisTokenManager
 
         mock_redis = AsyncMock()
@@ -543,7 +544,7 @@ class TestRequestEmailChangeUseCase:
         from modules.auth.application.use_cases.request_email_change import (
             RequestEmailChangeUseCase,
         )
-        from modules.auth.application.dtos.inputs import EmailChangeRequest
+        from modules.auth.application.dtos import EmailChangeRequest
         from infrastructure.redis.token_manager import RedisTokenManager
         from core.exceptions import InvalidCredentialsError
 
@@ -570,7 +571,7 @@ class TestRequestEmailChangeUseCase:
         from modules.auth.application.use_cases.request_email_change import (
             RequestEmailChangeUseCase,
         )
-        from modules.auth.application.dtos.inputs import EmailChangeRequest
+        from modules.auth.application.dtos import EmailChangeRequest
         from infrastructure.redis.token_manager import RedisTokenManager
         from core.exceptions import ValidationError
 
@@ -606,10 +607,7 @@ class TestVerifyEmailChangeUseCase:
         from modules.auth.application.use_cases.verify_email_change import (
             VerifyEmailChangeUseCase,
         )
-        from modules.auth.application.dtos.inputs import (
-            VerifyEmailChangeRequest,
-            EmailVerifyType,
-        )
+        from modules.auth.application.dtos import VerifyEmailChangeRequest, EmailVerifyType
         from infrastructure.redis.token_manager import RedisTokenManager
 
         old_token = "valid_old_token_abc"
@@ -643,10 +641,7 @@ class TestVerifyEmailChangeUseCase:
         from modules.auth.application.use_cases.verify_email_change import (
             VerifyEmailChangeUseCase,
         )
-        from modules.auth.application.dtos.inputs import (
-            VerifyEmailChangeRequest,
-            EmailVerifyType,
-        )
+        from modules.auth.application.dtos import VerifyEmailChangeRequest, EmailVerifyType
         from infrastructure.redis.token_manager import RedisTokenManager
         from core.exceptions import ValidationError
 
@@ -682,8 +677,8 @@ class TestDeleteAccountUseCase:
             DeleteAccountUseCase,
         )
 
-        use_case = DeleteAccountUseCase(user_repository)
-        await use_case.execute(existing_user.id)
+        use_case = DeleteAccountUseCase(user_repository, BcryptPasswordHasher())
+        await use_case.execute(existing_user.id, "SecurePass123!")
 
         # 重新查詢確認
         updated_user = await user_repository.get_by_id(existing_user.id)
@@ -702,8 +697,8 @@ class TestDeleteAccountUseCase:
             DeleteAccountUseCase,
         )
 
-        use_case = DeleteAccountUseCase(user_repository)
-        await use_case.execute(existing_user.id)
+        use_case = DeleteAccountUseCase(user_repository, BcryptPasswordHasher())
+        await use_case.execute(existing_user.id, "SecurePass123!")
 
         deleted_user = await user_repository.get_by_id(existing_user.id)
         assert deleted_user is not None
@@ -718,10 +713,10 @@ class TestDeleteAccountUseCase:
             DeleteAccountUseCase,
         )
 
-        use_case = DeleteAccountUseCase(user_repository)
+        use_case = DeleteAccountUseCase(user_repository, BcryptPasswordHasher())
 
         with pytest.raises(UserNotFoundError):
-            await use_case.execute(uuid4())
+            await use_case.execute(uuid4(), "AnyPassword123!")
 
     async def test_deleted_at_is_recent(
         self,
@@ -734,8 +729,8 @@ class TestDeleteAccountUseCase:
         )
         from datetime import datetime, timezone
 
-        use_case = DeleteAccountUseCase(user_repository)
-        await use_case.execute(existing_user.id)
+        use_case = DeleteAccountUseCase(user_repository, BcryptPasswordHasher())
+        await use_case.execute(existing_user.id, "SecurePass123!")
 
         updated_user = await user_repository.get_by_id(existing_user.id)
         assert updated_user is not None
