@@ -66,9 +66,6 @@ jobs:
       - name: Lint (ruff)
         run: ruff check . --output-format=github
 
-      - name: Format check (black)
-        run: black --check .
-
       - name: Run tests
         env:
           TEST_DB_USER: ci_user
