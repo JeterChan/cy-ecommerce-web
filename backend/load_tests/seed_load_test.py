@@ -197,13 +197,15 @@ async def seed(args):
             """),
             {"pid": str(PRODUCT_ID)},
         )
-        await session.execute(text("""
+        await session.execute(
+            text("""
                 DELETE FROM orders WHERE id NOT IN (
                     SELECT DISTINCT order_id FROM order_items
                 ) AND user_id IN (
                     SELECT id FROM users WHERE email LIKE 'loadtest_%@test.com'
                 )
-            """))
+            """)
+        )
         await session.commit()
         print("Cleaned up old loadtest orders")
 

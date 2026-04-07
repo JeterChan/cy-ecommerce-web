@@ -167,7 +167,9 @@ class TestRedisTokenManager:
 
         # 驗證使用預設 TTL
         mock_redis.setex.assert_called_once_with(
-            "email_change:123:new_verified", 86400, "true"  # default_ttl
+            "email_change:123:new_verified",
+            86400,
+            "true",  # default_ttl
         )
 
     async def test_check_both_verified_true(self, token_manager, mock_redis):

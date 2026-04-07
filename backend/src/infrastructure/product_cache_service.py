@@ -29,7 +29,6 @@ LIST_PREFIX = "product:list:"
 
 
 class ProductCacheService:
-
     def __init__(self, redis: Optional[Redis]):
         self.redis = redis
 

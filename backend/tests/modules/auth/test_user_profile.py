@@ -607,7 +607,10 @@ class TestVerifyEmailChangeUseCase:
         from modules.auth.application.use_cases.verify_email_change import (
             VerifyEmailChangeUseCase,
         )
-        from modules.auth.application.dtos import VerifyEmailChangeRequest, EmailVerifyType
+        from modules.auth.application.dtos import (
+            VerifyEmailChangeRequest,
+            EmailVerifyType,
+        )
         from infrastructure.redis.token_manager import RedisTokenManager
 
         old_token = "valid_old_token_abc"
@@ -618,7 +621,9 @@ class TestVerifyEmailChangeUseCase:
             side_effect=lambda key: (
                 old_token
                 if "old_token" in key
-                else "false" if "old_verified" in key or "new_verified" in key else None
+                else "false"
+                if "old_verified" in key or "new_verified" in key
+                else None
             )
         )
         mock_redis.ttl = AsyncMock(return_value=86000)
@@ -641,7 +646,10 @@ class TestVerifyEmailChangeUseCase:
         from modules.auth.application.use_cases.verify_email_change import (
             VerifyEmailChangeUseCase,
         )
-        from modules.auth.application.dtos import VerifyEmailChangeRequest, EmailVerifyType
+        from modules.auth.application.dtos import (
+            VerifyEmailChangeRequest,
+            EmailVerifyType,
+        )
         from infrastructure.redis.token_manager import RedisTokenManager
         from core.exceptions import ValidationError
 

@@ -60,12 +60,14 @@ async def test_password_reset_flow_integration(async_session, redis_client):
     password_hasher = BcryptPasswordHasher()
     token_manager = RedisTokenManager(redis_client)
 
-    with patch(
-        "modules.auth.application.use_cases.register.send_registration_verification"
-    ), patch(
-        "modules.auth.application.use_cases.forgot_password.send_password_reset.delay"
-    ) as mock_reset_task:
-
+    with (
+        patch(
+            "modules.auth.application.use_cases.register.send_registration_verification"
+        ),
+        patch(
+            "modules.auth.application.use_cases.forgot_password.send_password_reset.delay"
+        ) as mock_reset_task,
+    ):
         register_use_case = RegisterUserUseCase(user_repo, token_manager)
         login_use_case = LoginUserUseCase(user_repo, password_hasher)
         forgot_use_case = ForgotPasswordUseCase(user_repo, token_manager)

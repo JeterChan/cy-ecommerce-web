@@ -146,12 +146,10 @@ class TestCartSyncTaskIntegration:
 
         # 3. 執行同步邏輯 (直接呼叫 async function)
         # 需 Mock settings 與 redis_manager
-        with patch(
-            "modules.cart.infrastructure.tasks.settings"
-        ) as mock_settings, patch(
-            "modules.cart.infrastructure.tasks.redis_manager"
-        ) as mock_rm:
-
+        with (
+            patch("modules.cart.infrastructure.tasks.settings") as mock_settings,
+            patch("modules.cart.infrastructure.tasks.redis_manager") as mock_rm,
+        ):
             # 設定 Test DB
             mock_settings.database_url = TEST_DATABASE_URL
 
@@ -220,12 +218,10 @@ class TestCartSyncTaskIntegration:
         await async_session.commit()
 
         # Mock settings & redis_manager context
-        with patch(
-            "modules.cart.infrastructure.tasks.settings"
-        ) as mock_settings, patch(
-            "modules.cart.infrastructure.tasks.redis_manager"
-        ) as mock_rm:
-
+        with (
+            patch("modules.cart.infrastructure.tasks.settings") as mock_settings,
+            patch("modules.cart.infrastructure.tasks.redis_manager") as mock_rm,
+        ):
             mock_settings.database_url = TEST_DATABASE_URL
             mock_rm.client = redis_client
             mock_rm.connect = AsyncMock()
@@ -263,12 +259,10 @@ class TestCartSyncTaskIntegration:
             "Retry triggered"
         )  # Simulate retry exception
 
-        with patch(
-            "modules.cart.infrastructure.tasks.settings"
-        ) as mock_settings, patch(
-            "modules.cart.infrastructure.tasks.redis_manager"
-        ) as mock_rm:
-
+        with (
+            patch("modules.cart.infrastructure.tasks.settings") as mock_settings,
+            patch("modules.cart.infrastructure.tasks.redis_manager") as mock_rm,
+        ):
             mock_settings.database_url = TEST_DATABASE_URL
             mock_rm.connect = AsyncMock()
 

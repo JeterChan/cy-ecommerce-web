@@ -629,7 +629,6 @@ class TestEmailChangeAPIFlow:
             async with httpx.AsyncClient(
                 transport=ASGITransport(app=app), base_url="http://test"
             ) as client:
-
                 # ── Step 1：申請 Email 變更 ──
                 with patch(
                     "infrastructure.tasks.email_tasks.send_email_change_verification.delay"
