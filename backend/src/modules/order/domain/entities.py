@@ -6,7 +6,7 @@ Order Module - Domain Entities
 
 from dataclasses import dataclass, field
 from decimal import Decimal
-from typing import Optional, List, Union
+from typing import Optional, List
 from datetime import datetime
 from uuid import UUID
 

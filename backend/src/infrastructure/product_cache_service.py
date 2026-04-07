@@ -14,7 +14,7 @@ import hashlib
 import json
 import logging
 import uuid
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, Optional
 
 from redis.asyncio import Redis
 from redis.exceptions import RedisError

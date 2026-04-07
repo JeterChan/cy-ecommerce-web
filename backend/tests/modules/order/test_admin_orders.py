@@ -2,7 +2,6 @@ import pytest
 import pytest_asyncio
 import uuid
 import os
-from decimal import Decimal
 from httpx import AsyncClient, ASGITransport
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
 from sqlalchemy import select
@@ -10,7 +9,7 @@ from sqlalchemy import select
 from main import app
 from infrastructure.database import Base, get_db
 from modules.auth.infrastructure.models import UserModel
-from modules.order.infrastructure.models import OrderModel, OrderItemModel
+from modules.order.infrastructure.models import OrderModel
 from modules.order.domain.value_objects import OrderStatus
 from core.security import create_access_token
 

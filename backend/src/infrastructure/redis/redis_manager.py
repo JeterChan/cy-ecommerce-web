@@ -1,7 +1,6 @@
 from redis.asyncio import Redis, from_url
 from infrastructure.config import settings
 from typing import AsyncGenerator
-import time
 from contextlib import asynccontextmanager
 
 

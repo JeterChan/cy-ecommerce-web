@@ -8,8 +8,6 @@ from shared.exceptions.common import (
     BusinessRuleViolationException,
 )
 from core.exceptions import (
-    DuplicateEmailError,
-    UserNotFoundError,
     InvalidCredentialsError,
     ValidationError,
 )

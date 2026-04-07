@@ -32,7 +32,6 @@ from modules.auth.application.use_cases import (
     ForgotPasswordUseCase,
     ResetPasswordUseCase,
     ChangePasswordUseCase,
-    DeleteAccountUseCase,
 )
 from modules.auth.application.dtos import (
     RegisterRequestDTO,

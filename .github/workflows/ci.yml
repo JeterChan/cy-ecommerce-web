@@ -1,6 +1,7 @@
 name: Backend CI
 on:
   push:
+    branches: [master]
     paths:
       - 'backend/**'
       - '.github/workflows/ci.yml'
@@ -8,6 +9,11 @@ on:
       branches: [master]
       paths:
         - 'backend/**'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   lint-and-test:
     runs-on: ubuntu-latest
@@ -53,10 +59,12 @@ jobs:
             backend/requirements-test.txt
 
       - name: Install dependencies
-        run: pip install -r requirements.txt -r requirements-test.txt
+        run: |
+          pip install --upgrade pip
+          pip install -r requirements.txt -r requirements-test.txt
 
       - name: Lint (ruff)
-        run: ruff check .
+        run: ruff check . --output-format=github
 
       - name: Format check (black)
         run: black --check .
@@ -69,9 +77,32 @@ jobs:
           TEST_DB_PORT: "5432"
           TEST_DB_NAME: test_ecommerce_db
           TEST_REDIS_URL: redis://localhost:6379/1
-          SECRET_KEY: test-secret-key-for-ci-only
+          SECRET_KEY: ${{ secrets.CI_SECRET_KEY }}
           ALGORITHM: HS256
           ACCESS_TOKEN_EXPIRE_MINUTES: "30"
           REFRESH_TOKEN_EXPIRE_DAYS: "7"
-        run: pytest
+          PROJECT_NAME: cy-ecommerce-web
+          ENV: test
+          FRONTEND_URL: http://localhost:3000
+          GUEST_TOKEN_COOKIE_NAME: guest_token
+          GUEST_TOKEN_MAX_AGE: "86400"
+          GUEST_TOKEN_PATH: /
+          GUEST_TOKEN_SECURE: "false"
+          GUEST_TOKEN_SAMESITE: lax
+          BREVO_API_KEY: ${{ secrets.CI_BREVO_API_KEY }}
+          BREVO_SENDER_EMAIL: ci@example.com
+          BREVO_SENDER_NAME: CI Test
+        run: |
+          pytest \
+            --cov=. \
+            --cov-report=xml \
+            --junitxml=junit.xml
 
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: |
+            backend/junit.xml
+            backend/coverage.xml

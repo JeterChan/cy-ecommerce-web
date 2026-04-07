@@ -1,6 +1,5 @@
 import pytest
-from unittest.mock import AsyncMock, MagicMock, patch
-from decimal import Decimal
+from unittest.mock import AsyncMock, MagicMock
 from uuid import uuid4
 
 from modules.order.application.use_cases.checkout import CheckoutUseCase
@@ -12,7 +11,6 @@ from modules.order.domain.exceptions import (
     InsufficientStockException,
 )
 from modules.order.domain.value_objects import OrderStatus
-from modules.order.domain.entities import Order, OrderItem
 
 # ── CheckoutUseCase ──
 

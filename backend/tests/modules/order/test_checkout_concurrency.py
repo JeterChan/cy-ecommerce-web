@@ -6,13 +6,12 @@ import asyncio
 from httpx import AsyncClient, ASGITransport
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
 from redis.asyncio import Redis
-from sqlalchemy import select, func
+from sqlalchemy import select
 
 from main import app
 from infrastructure.database import Base, get_db, get_redis
 from modules.product.infrastructure.models import ProductModel
 from modules.auth.infrastructure.models import UserModel
-from modules.order.infrastructure.models import OrderModel
 from modules.cart.infrastructure.repositories.hybrid_repository import (
     HybridCartRepository,
 )

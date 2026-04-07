@@ -20,7 +20,7 @@ import os
 import pytest
 import pytest_asyncio
 import httpx
-from unittest.mock import MagicMock, patch, AsyncMock
+from unittest.mock import MagicMock, patch
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
 from sqlalchemy.pool import NullPool
 from redis.asyncio import Redis
