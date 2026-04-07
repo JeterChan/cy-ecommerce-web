@@ -15,7 +15,8 @@ from modules.auth.application.use_cases.register import RegisterUserUseCase
 from modules.auth.application.use_cases.login import LoginUserUseCase
 from modules.auth.application.use_cases.verify_email import VerifyEmailUseCase
 from modules.auth.application.dtos import RegisterRequestDTO, LoginRequestDTO
-from modules.auth.infrastructure.repositories.user_repository import UserRepository
+from modules.auth.infrastructure.repository import UserRepository
+from modules.auth.infrastructure.password_hasher import BcryptPasswordHasher
 from infrastructure.redis.token_manager import RedisTokenManager
 from core.exceptions import InvalidCredentialsError
 
@@ -48,7 +49,7 @@ async def redis_client():
     client = Redis.from_url(TEST_REDIS_URL)
     await client.flushdb()
     yield client
-    await client.close()
+    await client.aclose()
 
 
 @pytest.mark.asyncio
@@ -59,10 +60,11 @@ async def test_verification_flow_integration(async_session, redis_client):
 
     # Mock Celery delay to avoid real email sending
     with patch(
-        "modules.auth.use_cases.register.send_registration_verification.delay"
+        "modules.auth.application.use_cases.register.send_registration_verification"
     ) as mock_email_task:
+        mock_email_task.delay = mock_email_task
         register_use_case = RegisterUserUseCase(user_repo, token_manager)
-        login_use_case = LoginUserUseCase(user_repo)
+        login_use_case = LoginUserUseCase(user_repo, BcryptPasswordHasher())
         verify_use_case = VerifyEmailUseCase(user_repo, token_manager)
 
         email = "verify_test@example.com"
