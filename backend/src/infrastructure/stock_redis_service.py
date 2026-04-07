@@ -19,7 +19,6 @@ logger = logging.getLogger(__name__)
 
 
 class StockRedisService:
-
     def __init__(self, redis: Redis, db: Optional[AsyncSession] = None):
         self.redis = redis
         self.db = db
