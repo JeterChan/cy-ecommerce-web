@@ -28,8 +28,8 @@ COPY src/ ./src/
 COPY start.sh .
 RUN chmod +x start.sh
 
-# 開放應用程式埠口
-EXPOSE 10000
+# 開放應用程式埠口（Cloud Run 預設注入 PORT=8080）
+EXPOSE 8080
 
 # 啟用命令：使用 start.sh 腳本啟動
 CMD ["./start.sh"]
