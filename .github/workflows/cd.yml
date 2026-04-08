@@ -1,0 +1,224 @@
+name: Backend CD
+
+on:
+  workflow_run:
+    workflows: ["Backend CI"]
+    types: [completed]
+    branches: [master]
+
+  workflow_dispatch:
+
+concurrency:
+  group: cd-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  REGION: asia-east1
+  ZONE: asia-east1-b
+  CLOUD_RUN_SERVICE: cy-ecommerce-api
+  ARTIFACT_REPO: cy-ecommerce-repo
+  IMAGE_NAME: cy-ecommerce-api
+  VM_NAME: cy-ecommerce-worker
+  VM_WORKDIR: /opt/cy-ecommerce
+  VPC_CONNECTOR: cy-ecommerce-connector
+  CLOUD_SQL_CONNECTION_NAME: cy-ecommerce-v1:asia-east1:cy-ecommerce-db
+  CLOUD_SQL_USER: ecommerce_user
+  CLOUD_SQL_DB: ecommerce
+  SA_CLOUD_RUN: cy-ecommerce-api-sa
+  SA_SCHEDULER: cy-ecommerce-scheduler-sa
+  SCHEDULER_JOB: hard-delete-expired-accounts
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    # workflow_run 觸發時，僅在 CI 成功時執行
+    if: >
+      github.event_name == 'workflow_dispatch' ||
+      github.event.workflow_run.conclusion == 'success'
+
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # ---------------------------------------------------------------
+      # GCP 認證：WIF + OIDC
+      # ---------------------------------------------------------------
+      - name: Authenticate to GCP
+        id: auth
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.GCP_WIF_PROVIDER }}
+          service_account: ${{ secrets.GCP_CD_SA_EMAIL }}
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+
+      # ---------------------------------------------------------------
+      # Docker image 建置與推送
+      # ---------------------------------------------------------------
+      - name: Configure Docker for Artifact Registry
+        run: gcloud auth configure-docker "${REGION}-docker.pkg.dev" --quiet
+
+      - name: Build and push Docker image
+        working-directory: backend
+        run: |
+          IMAGE_FULL="${REGION}-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/${ARTIFACT_REPO}/${IMAGE_NAME}"
+          SHORT_SHA=$(git rev-parse --short HEAD)
+
+          docker build \
+            --platform linux/amd64 \
+            -t "${IMAGE_FULL}:latest" \
+            -t "${IMAGE_FULL}:${SHORT_SHA}" \
+            .
+
+          docker push "${IMAGE_FULL}:latest"
+          docker push "${IMAGE_FULL}:${SHORT_SHA}"
+
+          echo "IMAGE_FULL=${IMAGE_FULL}" >> "$GITHUB_ENV"
+          echo "SHORT_SHA=${SHORT_SHA}" >> "$GITHUB_ENV"
+
+      # ---------------------------------------------------------------
+      # Cloud Run 部署
+      # ---------------------------------------------------------------
+      - name: Get VM internal IP
+        id: vm-ip
+        run: |
+          VM_IP=$(gcloud compute instances describe "${VM_NAME}" \
+            --zone="${ZONE}" \
+            --format="value(networkInterfaces[0].networkIP)" \
+            --project="${{ secrets.GCP_PROJECT_ID }}")
+          echo "ip=${VM_IP}" >> "$GITHUB_OUTPUT"
+
+      - name: Deploy to Cloud Run
+        env:
+          FRONTEND_URL: ${{ secrets.FRONTEND_URL }}
+          VM_IP: ${{ steps.vm-ip.outputs.ip }}
+          GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+        run: |
+          gcloud run deploy "${CLOUD_RUN_SERVICE}" \
+            --image="${IMAGE_FULL}:latest" \
+            --region="${REGION}" \
+            --platform=managed \
+            --allow-unauthenticated \
+            --port=8080 \
+            --min-instances=0 \
+            --max-instances=3 \
+            --memory=512Mi \
+            --cpu=1 \
+            --timeout=300 \
+            --service-account="${SA_CLOUD_RUN}@${GCP_PROJECT_ID}.iam.gserviceaccount.com" \
+            --vpc-connector="${VPC_CONNECTOR}" \
+            --add-cloudsql-instances="${CLOUD_SQL_CONNECTION_NAME}" \
+            --set-env-vars="\
+          ENV=production,\
+          PROJECT_NAME=E-commerce Backend,\
+          ALGORITHM=HS256,\
+          ACCESS_TOKEN_EXPIRE_MINUTES=1440,\
+          REFRESH_TOKEN_EXPIRE_DAYS=30,\
+          BREVO_SENDER_EMAIL=clocklife0226@gmail.com,\
+          BREVO_SENDER_NAME=cyWeb,\
+          FRONTEND_URL=${FRONTEND_URL},\
+          AWS_S3_BUCKET=cy-ecommerce-bucket,\
+          AWS_S3_REGION=ap-northeast-1,\
+          GUEST_TOKEN_COOKIE_NAME=guest_cart_token,\
+          GUEST_TOKEN_MAX_AGE=604800,\
+          GUEST_TOKEN_PATH=/api/cart,\
+          GUEST_TOKEN_SECURE=true,\
+          GUEST_TOKEN_SAMESITE=none,\
+          REDIS_URL=redis://${VM_IP}:6379/0,\
+          DB_USER=${CLOUD_SQL_USER},\
+          DB_HOST=/cloudsql/${CLOUD_SQL_CONNECTION_NAME},\
+          DB_PORT=5432,\
+          DB_NAME=${CLOUD_SQL_DB},\
+          DOCS_URL=,\
+          REDOC_URL=" \
+            --set-secrets="\
+          DB_PASSWORD=db-password:latest,\
+          SECRET_KEY=jwt-secret-key:latest,\
+          BREVO_API_KEY=brevo-api-key:latest,\
+          AWS_ACCESS_KEY_ID=aws-access-key-id:latest,\
+          AWS_SECRET_ACCESS_KEY=aws-secret-access-key:latest,\
+          CLEANUP_API_KEY=cleanup-api-key:latest" \
+            --project="${GCP_PROJECT_ID}"
+
+      - name: Get Cloud Run URL
+        id: cloud-run-url
+        run: |
+          URL=$(gcloud run services describe "${CLOUD_RUN_SERVICE}" \
+            --region="${REGION}" \
+            --format="value(status.url)" \
+            --project="${{ secrets.GCP_PROJECT_ID }}")
+          echo "url=${URL}" >> "$GITHUB_OUTPUT"
+
+      # ---------------------------------------------------------------
+      # GCE VM Celery Worker 更新
+      # ---------------------------------------------------------------
+      - name: Update Celery Worker on VM
+        id: update-worker
+        continue-on-error: true
+        env:
+          GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+        run: |
+          MAX_RETRIES=3
+          RETRY=0
+          until [ $RETRY -ge $MAX_RETRIES ]; do
+            gcloud compute ssh "${VM_NAME}" \
+              --zone="${ZONE}" \
+              --project="${GCP_PROJECT_ID}" \
+              --tunnel-through-iap \
+              --command="cd ${VM_WORKDIR} && \
+                sudo docker compose pull celery-worker && \
+                sudo docker compose up -d celery-worker" \
+              && break
+            RETRY=$((RETRY + 1))
+            echo "SSH 連線失敗，重試 ${RETRY}/${MAX_RETRIES}..."
+            sleep 10
+          done
+          if [ $RETRY -ge $MAX_RETRIES ]; then
+            echo "::error::VM Worker 更新失敗：SSH 連線重試 ${MAX_RETRIES} 次後仍失敗"
+            exit 1
+          fi
+
+      # ---------------------------------------------------------------
+      # Cloud Scheduler 更新
+      # ---------------------------------------------------------------
+      - name: Update Cloud Scheduler
+        env:
+          CLOUD_RUN_URL: ${{ steps.cloud-run-url.outputs.url }}
+          GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+        run: |
+          CLEANUP_API_KEY=$(gcloud secrets versions access latest \
+            --secret="cleanup-api-key" \
+            --project="${GCP_PROJECT_ID}")
+
+          gcloud scheduler jobs update http "${SCHEDULER_JOB}" \
+            --location="${REGION}" \
+            --uri="${CLOUD_RUN_URL}/internal/cleanup/expired-accounts" \
+            --headers="X-Cleanup-Api-Key=${CLEANUP_API_KEY}" \
+            --project="${GCP_PROJECT_ID}"
+
+      # ---------------------------------------------------------------
+      # 部署結果摘要
+      # ---------------------------------------------------------------
+      - name: Deployment summary
+        if: always()
+        env:
+          CLOUD_RUN_URL: ${{ steps.cloud-run-url.outputs.url }}
+          WORKER_OUTCOME: ${{ steps.update-worker.outcome }}
+        run: |
+          echo "## 部署結果" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "| 步驟 | 狀態 |" >> "$GITHUB_STEP_SUMMARY"
+          echo "|------|------|" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Docker Image | ✅ ${IMAGE_FULL}:${SHORT_SHA} |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Cloud Run | ✅ ${CLOUD_RUN_URL} |" >> "$GITHUB_STEP_SUMMARY"
+          if [ "${WORKER_OUTCOME}" == "success" ]; then
+            echo "| VM Worker | ✅ |" >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "| VM Worker | ❌ 更新失敗 |" >> "$GITHUB_STEP_SUMMARY"
+          fi
+          echo "| Cloud Scheduler | ✅ |" >> "$GITHUB_STEP_SUMMARY"

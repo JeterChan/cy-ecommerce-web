@@ -1,0 +1,78 @@
+services:
+  # ---------------------------------------------------------------------------
+  # Cloud SQL Auth Proxy
+  #
+  # 設計原因：
+  #   Celery Worker 的購物車同步任務需要寫入 PostgreSQL。
+  #   Auth Proxy 在 VM 上作為 sidecar，監聽 5432 port，
+  #   Celery Worker 透過 cloud-sql-proxy:5432 連線。
+  #   VM 的 Service Account 已授予 cloudsql.client 角色，
+  #   Proxy 會自動透過 GCE Metadata Server 取得認證，不需要 credentials 檔案。
+  # ---------------------------------------------------------------------------
+  cloud-sql-proxy:
+    image: gcr.io/cloud-sql-connectors/cloud-sql-proxy:2
+    container_name: cloud_sql_proxy
+    command:
+      - "--address=0.0.0.0"
+      - "--port=5432"
+      - "${CLOUD_SQL_CONNECTION_NAME}"
+    restart: always
+    # Cloud SQL Proxy v2 使用 distroless base image，無法使用 shell 指令做 healthcheck
+    # celery-worker 本身有 retry 機制，不需要等 proxy 完全就緒才啟動
+
+  # ---------------------------------------------------------------------------
+  # Redis
+  #
+  # 設計原因：
+  #   Redis 在 VM 上本地運行，讓 Celery Worker 透過 localhost 連線（最低延遲）。
+  #   Cloud Run 透過 VPC Connector 以 VM 內部 IP 存取 Redis。
+  #   appendonly yes 確保 Redis 重啟後資料不遺失。
+  #   maxmemory 256mb 防止記憶體無限成長（e2-small 共 2GB RAM）。
+  # ---------------------------------------------------------------------------
+  redis:
+    image: redis:7-alpine
+    container_name: ecommerce_redis
+    restart: always
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    command: >
+      redis-server
+      --appendonly yes
+      --maxmemory 256mb
+      --maxmemory-policy allkeys-lru
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ---------------------------------------------------------------------------
+  # Celery Worker
+  #
+  # 設計原因：
+  #   Celery Worker 是長時間運行的進程，不適合 Cloud Run 的無狀態模型。
+  #   與 Redis 共置同一 VM：用 localhost:6379 連 broker（零延遲）。
+  #   使用 Artifact Registry 的 Image 確保與 Cloud Run 執行相同版本的程式碼。
+  #   concurrency=2 配合 e2-small 的 CPU 資源（2 vCPU）。
+  # ---------------------------------------------------------------------------
+  celery-worker:
+    image: ${IMAGE_FULL}:latest
+    container_name: ecommerce_celery_worker
+    command: celery -A infrastructure.celery_app worker -l info -c 2
+    working_dir: /app/src
+    env_file:
+      - .env
+    environment:
+      - REDIS_URL=redis://redis:6379/0
+      - DATABASE_URL=postgresql+asyncpg://${DB_USER}:${DB_PASSWORD}@cloud-sql-proxy:5432/${DB_NAME}
+    depends_on:
+      redis:
+        condition: service_healthy
+      cloud-sql-proxy:
+        condition: service_started
+    restart: always
+
+volumes:
+  redis_data:
