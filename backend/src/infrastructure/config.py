@@ -74,7 +74,7 @@ class Settings(BaseSettings):
         if self.DB_HOST.startswith("/"):
             return (
                 f"postgresql+asyncpg://{self.DB_USER}:{self.DB_PASSWORD}"
-                f"@/{self.DB_NAME}?host={self.DB_HOST}"
+                f"@/{self.DB_NAME}?host={self.DB_HOST}&port={self.DB_PORT}"
             )
 
         return f"postgresql+asyncpg://{self.DB_USER}:{self.DB_PASSWORD}@{self.DB_HOST}:{self.DB_PORT}/{self.DB_NAME}"
