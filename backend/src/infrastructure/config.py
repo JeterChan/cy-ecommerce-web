@@ -70,6 +70,13 @@ class Settings(BaseSettings):
             # Handle Render/Heroku postgres:// scheme for asyncpg
             return self.DATABASE_URL.replace("postgres://", "postgresql+asyncpg://")
 
+        # Cloud SQL Unix socket: DB_HOST starts with "/"
+        if self.DB_HOST.startswith("/"):
+            return (
+                f"postgresql+asyncpg://{self.DB_USER}:{self.DB_PASSWORD}"
+                f"@/{self.DB_NAME}?host={self.DB_HOST}"
+            )
+
         return f"postgresql+asyncpg://{self.DB_USER}:{self.DB_PASSWORD}@{self.DB_HOST}:{self.DB_PORT}/{self.DB_NAME}"
 
     @computed_field
