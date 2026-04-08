@@ -198,7 +198,7 @@ jobs:
           gcloud scheduler jobs update http "${SCHEDULER_JOB}" \
             --location="${REGION}" \
             --uri="${CLOUD_RUN_URL}/internal/cleanup/expired-accounts" \
-            --headers="X-Cleanup-Api-Key=${CLEANUP_API_KEY}" \
+            --update-headers="X-Cleanup-Api-Key=${CLEANUP_API_KEY}" \
             --project="${GCP_PROJECT_ID}"
 
       # ---------------------------------------------------------------
