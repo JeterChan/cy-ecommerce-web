@@ -23,10 +23,8 @@ venv/
 
 # AI/Agent Configuration Directories
 .agent/
+.agents/
 .claude/
-.codex/
-.cursor/
-.gemini/
 .github/skills/
 .github/prompts/
 backend/scripts/
