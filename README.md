@@ -28,7 +28,7 @@
 - **程式碼品質**: Ruff + Black
 
 ### 前端 (Frontend)
-- **框架**: [Vue 3.5](https://vuejs.org/) (Composition API + TypeScript)
+- **框架**: [Vue 3.5](https://vuejs.org/) (Composition API + TypeScript 5)
 - **建構工具**: [Vite 7](https://vitejs.dev/)
 - **狀態管理**: [Pinia 3](https://pinia.vuejs.org/)
 - **路由**: Vue Router 4
@@ -39,6 +39,7 @@
 - **表單驗證**: VeeValidate 4 + Zod
 - **多國語系**: vue-i18n 11（繁體中文）
 - **日期處理**: date-fns 4
+- **輪播元件**: Embla Carousel
 - **測試**: Vitest + Vue Test Utils
 
 ### 部署 (Deployment)
@@ -49,18 +50,18 @@
 
 ## ✨ 核心功能
 
-- **商品模組**: 分類篩選、模糊搜尋、多圖片展示、庫存管理。
-- **購物車系統**: 支援訪客 Redis 暫存與登入後 PostgreSQL 混合式同步機制（HybridCartRepository）。
+- **商品模組**: 分類篩選、模糊搜尋、多圖片展示、庫存管理、商品上下架控制。商品列表採 **Cache-Aside 模式**以 Redis 快取加速讀取。
+- **購物車系統**: 支援訪客 Redis 暫存與登入後 PostgreSQL 混合式同步機制（HybridCartRepository）；登入後自動合併本地購物車。
 - **原子結帳流程**:
   - **Redis 預扣庫存**：使用 `DECRBY` 原子操作在進入 DB 事務前過濾庫存不足的請求，大幅降低高併發回應時間。
   - **悲觀鎖 (Pessimistic Locking)**（`SELECT ... FOR UPDATE`）作為最終防線，確保庫存扣減一致性。
   - 雙重保障機制：Redis 預扣 + DB 悲觀鎖，兼顧效能與資料正確性。
   - 具備防碰撞機制的日期前綴訂單編號產生演算法。
   - 支援「貨到付款」與「銀行轉帳」等多種支付方式。
-- **會員系統**: JWT 雙 Token 認證（Access + Refresh）、個人資料編輯、Email 變更驗證、帳號刪除（軟刪除 + 定期硬刪除）。
+- **會員系統**: JWT 雙 Token 認證（Access + Refresh）、Email 註冊驗證、忘記密碼 / 重設密碼、個人資料編輯、Email 變更驗證、帳號刪除（軟刪除 + 定期硬刪除）。
 - **訂單管理**: 訂單狀態追蹤、取消功能（取消時自動回補庫存）、收件人資訊管理。
-- **管理員後台**: 商品與分類的 CRUD 管理、訂單狀態管理、儀表板統計數據。
-- **非同步任務**: Email 寄送、購物車同步、過期帳號清理（每 24 小時）。
+- **管理員後台**: 商品與分類的 CRUD 管理、S3 圖片上傳（預簽名 URL）、訂單狀態管理、儀表板統計數據。
+- **非同步任務**: Email 寄送（驗證信、密碼重設、Email 變更驗證）、購物車同步（含分散式鎖防重入）、過期帳號清理（每 24 小時）。
 
 ---
 
@@ -68,39 +69,45 @@
 
 ### 前置需求
 - 安裝 [Docker](https://www.docker.com/) 與 [Docker Compose](https://docs.docker.com/compose/)
+- 安裝 [Node.js](https://nodejs.org/)（前端開發）
 
 ### 啟動開發環境
 
 1. **配置環境變數**:
    在 `backend` 目錄下根據 `.env.example` 建立 `.env` 檔案。
 
-2. **啟動容器**:
+2. **啟動後端容器**:
    ```bash
    cd backend
    docker compose up --build
    ```
-   啟動後，各服務位址如下：
-   - **前端頁面**: `http://localhost:5173`
+   容器啟動時會自動執行 `alembic upgrade head`，完成後各服務位址如下：
    - **後端 API**: `http://localhost:8000`
    - **API 文檔 (Swagger)**: `http://localhost:8000/api/docs`
    - **Flower (Celery 監控)**: `http://localhost:5555`
 
-3. **（可選）填入測試資料**:
+3. **啟動前端開發伺服器**（另開終端機）:
+   ```bash
+   cd frontend
+   npm install
+   npm run dev   # http://localhost:5173
+   ```
+
+4. **（可選）填入測試資料**:
    ```bash
    cd backend
    bash scripts/seed.sh
    ```
 
-### 🗄️ 資料庫遷移（Dev / Production）
+### 🗄️ 資料庫遷移
 
-- **Dev 環境**: 容器啟動時不自動執行 Alembic，有新 Migration 時手動執行：
+- **Dev 環境**：`docker compose up` 啟動時自動執行 `alembic upgrade head`，無需手動操作。
+  有新的 Schema 變更時，產生新 Migration：
   ```bash
-  cd backend
-  docker compose --profile tools run --rm migrate
+  docker exec ecommerce_api alembic revision --autogenerate -m "描述"
   ```
-  `migrate` 服務會自動偵測舊 DB 已有資料表但無 `alembic_version` 的情況，先 `stamp` 基線再 `upgrade`，避免 `DuplicateTableError`。
 
-- **Production 環境**: 由 `backend/start.sh` 在啟動前自動執行 `alembic upgrade head`，再啟動 API。
+- **Production 環境**：由 `backend/start.sh` 在啟動前自動執行 `alembic upgrade head`，再啟動 Uvicorn。
 
 ---
 
@@ -115,22 +122,30 @@
 │   │   │   ├── cart/               # 購物車
 │   │   │   └── order/              # 訂單
 │   │   ├── infrastructure/         # 跨模組基礎設施
-│   │   │   ├── database.py         # 非同步 SQLAlchemy 連線
+│   │   │   ├── database.py         # 非同步 SQLAlchemy 連線與 Redis
 │   │   │   ├── stock_redis_service.py # Redis 庫存預扣服務
+│   │   │   ├── product_cache_service.py # 商品快取服務（Cache-Aside）
 │   │   │   ├── celery_app.py       # Celery 設定
 │   │   │   ├── s3.py               # AWS S3 整合
+│   │   │   ├── email/              # Brevo Email 服務
+│   │   │   ├── redis/              # Redis 工具（Token 管理、分散式鎖）
 │   │   │   └── tasks/              # 跨模組 Celery 任務
 │   │   ├── core/                   # 安全工具（JWT、密碼雜湊）
+│   │   ├── shared/                 # 共用型別、異常、工具函式
 │   │   └── main.py                 # FastAPI 入口
 │   ├── tests/                      # 單元與整合測試
+│   │   ├── unit/                   # 單元測試
+│   │   ├── integration/            # 整合測試
+│   │   └── modules/                # 模組級測試
 │   ├── alembic/                    # 資料庫遷移腳本
+│   ├── load_tests/                 # k6 壓力測試腳本
 │   ├── start.sh                    # Production 啟動腳本
 │   └── docker-compose.yml          # 容器配置（API, DB, Redis, Celery, Flower）
 ├── frontend/                        # Vue 3 前端
 │   ├── src/
 │   │   ├── components/             # 共用元件（含 shadcn/ui）
 │   │   ├── views/                  # 頁面路由元件
-│   │   ├── stores/                 # Pinia 狀態管理
+│   │   ├── stores/                 # Pinia 狀態管理（auth, cart, checkout, order）
 │   │   ├── services/               # API 介接層
 │   │   ├── models/                 # Zod Schema 與 TypeScript 型別
 │   │   ├── composables/            # Composition API 可重用邏輯
@@ -170,19 +185,20 @@ modules/{module}/
 - **Access Token**: 有效期 24 小時（可設定）
 - **Refresh Token**: 有效期 30 天
 - 前端 Axios 攔截器自動偵測 401，呼叫 `/api/v1/auth/refresh` 換發，無感知刷新。
+- 完整 Email 驗證流程：註冊驗證信、忘記密碼、重設密碼、Email 變更驗證。
 
 ### 購物車系統
 
 - **訪客**: Redis hash 儲存（以 guest_token 為 key）
-- **已登入**: `HybridCartRepository`——寫入 Redis，透過 Celery 非同步同步至 PostgreSQL
+- **已登入**: `HybridCartRepository`——寫入 Redis，透過 Celery 非同步同步至 PostgreSQL（使用分散式鎖確保串行化）
 - **登入後**: 本地 localStorage 購物車自動合併至後端
 
 ### Celery 任務隊列
 
 | 隊列 | 用途 |
 |---|---|
-| `email_queue` | Email 寄送（驗證信、重設密碼等） |
-| `cart_sync_queue` | Redis → PostgreSQL 購物車同步 |
+| `email_queue` | Email 寄送（驗證信、重設密碼、Email 變更驗證） |
+| `cart_sync_queue` | Redis → PostgreSQL 購物車同步（含分散式鎖，max_retries=5） |
 | `default` | 清理與雜項任務 |
 
 Beat 排程：每 24 小時自動硬刪除到期的軟刪除帳號。
